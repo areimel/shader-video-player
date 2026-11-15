@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ExternalSubtitle, PlaybackPlan } from "../types/player";
+import { isSuperseded } from "../../shared/superseded";
 import { friendlyError } from "../utils/format";
 
 export const SUB_OFF = "off";
@@ -58,7 +59,7 @@ export function useSubtitles(plan: PlaybackPlan | null, onError: (m: string) => 
         made = URL.createObjectURL(new Blob([vtt], { type: "text/vtt" }));
         setUrl(made);
       })
-      .catch((e) => { if (!cancelled) { setChoice(SUB_OFF); onError(friendlyError(e)); } });
+      .catch((e) => { if (!cancelled && !isSuperseded(e)) { setChoice(SUB_OFF); onError(friendlyError(e)); } });
     return () => { cancelled = true; if (made) URL.revokeObjectURL(made); };
   }, [choice, offset, file, onError]);
 

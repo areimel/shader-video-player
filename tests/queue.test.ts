@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { pickPlayable } from "../electron/queue";
-import { EMPTY_QUEUE, nextIndex, previousTarget, queueReducer, type QueueState } from "../renderer/utils/queue";
+import { EMPTY_QUEUE, nextIndex, previousTarget, queueReducer, reachedEnd, type QueueState } from "../renderer/utils/queue";
 
 const item = (n: string) => ({ path: `/v/${n}.mp4`, name: `${n}.mp4` });
 const three: QueueState = { items: [item("a"), item("b"), item("c")], index: 1 };
@@ -56,5 +56,18 @@ describe("pickPlayable", () => {
   });
   it("drops non-strings and empties", () => {
     expect(pickPlayable([42, "", null, "/v/a.mp4"])).toEqual(["/v/a.mp4"]);
+  });
+});
+
+describe("reachedEnd", () => {
+  it("is false mid-file even if <video> fired ended (disposed transcode)", () => {
+    expect(reachedEnd(30, 2, 120)).toBe(false);
+  });
+  it("is true at the absolute end, including after a restart offset", () => {
+    expect(reachedEnd(0, 119, 120)).toBe(true);
+    expect(reachedEnd(100, 19.5, 120)).toBe(true);
+  });
+  it("trusts ended when the duration is unknown", () => {
+    expect(reachedEnd(0, 5, 0)).toBe(true);
   });
 });

@@ -40,8 +40,12 @@ export function App() {
 
   useEffect(() => { window.player.setPlaying(!!plan && !player.paused); }, [plan, player.paused]);
   useEffect(() => { setShowInfo(false); if (plan) push("success", `Playing ${plan.info.name}`); }, [plan?.info.path]);
+  // `player.time` still holds the previous file's playhead right after a plan change; save only once it has moved.
+  const timeBase = useRef<{ plan: typeof plan; stale: number }>({ plan, stale: player.time });
   useEffect(() => {
-    if (plan && player.time > 0) savePosition(plan.info, player.time);
+    const base = timeBase.current;
+    if (base.plan !== plan) { timeBase.current = { plan, stale: player.time }; return; }
+    if (plan && player.time > 0 && player.time !== base.stale) savePosition(plan.info, player.time);
   }, [plan, Math.floor(player.time / 3)]);
 
   const togglePip = () => {

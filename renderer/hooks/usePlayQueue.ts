@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, type RefObject } from "react";
 import type { QueueItem, ToastKind } from "../types/player";
-import { EMPTY_QUEUE, nextIndex, previousTarget, queueReducer } from "../utils/queue";
+import { EMPTY_QUEUE, nextIndex, previousTarget, queueReducer, reachedEnd } from "../utils/queue";
 import { usePlaybackSource } from "./usePlaybackSource";
 
 /** Owns the play queue and the playback source it drives; every item plays via the single-file open path. */
@@ -12,18 +12,27 @@ export function usePlayQueue(
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  const replace = useCallback((items: QueueItem[]) => dispatch({ type: "replace", items }), []);
+  const replace = useCallback((items: QueueItem[], index = 0) => dispatch({ type: "replace", items, index }), []);
   const source = usePlaybackSource(notify, replace);
-  const { plan, openQueued, restartAt } = source;
+  const { plan, loading, openQueued, restartAt } = source;
+  const loadingRef = useRef(false);
+  loadingRef.current = loading;
+
+  /** The path being opened; navigation is ignored meanwhile so "next" twice cannot chase the same item. */
+  const pending = useRef<string | null>(null);
 
   /** Opens item `i`; the highlight moves only once it plays. `auto` skips unplayable items. */
   const goTo = useCallback(async (i: number, auto = false): Promise<void> => {
-    const { items } = stateRef.current;
-    if (!items[i]) return;
-    const ok = await openQueued(items[i].path);
-    if (stateRef.current.items !== items) return; // the queue was replaced meanwhile
-    if (ok) dispatch({ type: "jumpTo", index: i });
-    else if (auto) await goTo(i + 1, true);
+    const target = stateRef.current.items[i];
+    if (!target || pending.current) return;
+    pending.current = target.path;
+    let ok: boolean;
+    try { ok = await openQueued(target.path); } finally { pending.current = null; }
+    // The queue may have changed meanwhile (remove/replace): find the target by path, not by old index.
+    const at = stateRef.current.items.findIndex((it) => it.path === target.path);
+    if (at < 0) return;
+    if (ok) dispatch({ type: "jumpTo", index: at });
+    else if (auto) await goTo(at + 1, true);
   }, [openQueued]);
 
   const next = useCallback(() => {
@@ -46,6 +55,8 @@ export function usePlayQueue(
     const v = videoRef.current;
     if (!v || !plan) return;
     const onEnded = () => {
+      // A restart/seek on a transcode disposes the old stream, which ends the old <video> cleanly.
+      if (loadingRef.current || !reachedEnd(plan.startOffset, v.currentTime, plan.info.durationSec)) return;
       const n = nextIndex(stateRef.current);
       if (n !== null) void goTo(n, true);
     };

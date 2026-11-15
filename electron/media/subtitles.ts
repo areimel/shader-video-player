@@ -1,21 +1,36 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { supersededError } from "../../shared/superseded";
 import { buildExternalSubtitleArgs, buildSubtitleArgs } from "./ffmpegArgs";
 import { ffmpegPath } from "./binaries";
-import { spawnTracked } from "./processes";
+import { killProcess, spawnTracked } from "./processes";
 import { CACHE_ROOT } from "./session";
 
+/** The one embedded-track extraction in flight; it reads the whole file, so a newer request or a close kills it. */
+let active: { cancel(): void } | null = null;
+
+export function cancelSubtitleExtraction(): void {
+  active?.cancel();
+}
+
 /** Runs ffmpeg with the args built for a temp output path and returns the WebVTT text. */
-function runToVtt(buildArgs: (out: string) => string[]): Promise<string> {
+function runToVtt(buildArgs: (out: string) => string[], cancellable = false): Promise<string> {
   mkdirSync(CACHE_ROOT, { recursive: true });
   const dir = mkdtempSync(join(CACHE_ROOT, "sub-"));
   const out = join(dir, "sub.vtt");
   return new Promise((resolve, reject) => {
     const child = spawnTracked(ffmpegPath(), buildArgs(out));
-    const cleanup = () => rmSync(dir, { recursive: true, force: true });
+    let cancelled = false;
+    const job = { cancel() { cancelled = true; killProcess(child); } };
+    if (cancellable) active = job;
+    const cleanup = () => {
+      if (active === job) active = null;
+      rmSync(dir, { recursive: true, force: true });
+    };
     child.on("error", (e) => { cleanup(); reject(e); });
     child.on("exit", (code) => {
       try {
+        if (cancelled) throw supersededError();
         if (code !== 0) throw new Error("Could not extract subtitles");
         resolve(readFileSync(out, "utf8"));
       } catch (e) {
@@ -28,7 +43,8 @@ function runToVtt(buildArgs: (out: string) => string[]): Promise<string> {
 }
 
 export function extractSubtitle(input: string, ordinal: number, startSec: number): Promise<string> {
-  return runToVtt((out) => buildSubtitleArgs(input, ordinal, startSec, out));
+  cancelSubtitleExtraction();
+  return runToVtt((out) => buildSubtitleArgs(input, ordinal, startSec, out), true);
 }
 
 export function convertExternalSubtitle(

@@ -39,7 +39,7 @@ const bridge: PlayerBridge = {
   setPlaying: (on) => ipcRenderer.send("media:playing", on),
   closeMedia: () => ipcRenderer.send("media:close"),
   onPlan: (cb) => listen<PlaybackPlan>("media:plan", cb),
-  onQueue: (cb) => listen<QueueItem[]>("media:queue", cb),
+  onQueue: (cb) => listen<{ queue: QueueItem[]; index: number }>("media:queue", (v) => cb(v.queue, v.index)),
   onError: (cb) => listen<string>("media:error", cb),
   ready: () => ipcRenderer.send("app:ready"),
 };

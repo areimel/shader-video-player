@@ -61,10 +61,11 @@ export interface QueueItem {
   name: string;
 }
 
-/** A user selection: the plan for the first file plus the whole queue (first file included). */
+/** A user selection: the whole queue plus the plan of the first item that opened, at `index`. */
 export interface OpenResult {
   plan: PlaybackPlan;
   queue: QueueItem[];
+  index: number;
 }
 
 export interface PlayerBridge {
@@ -84,7 +85,7 @@ export interface PlayerBridge {
   setPlaying(playing: boolean): void;
   closeMedia(): void;
   onPlan(cb: (plan: PlaybackPlan) => void): () => void;
-  onQueue(cb: (queue: QueueItem[]) => void): () => void;
+  onQueue(cb: (queue: QueueItem[], index: number) => void): () => void;
   onError(cb: (message: string) => void): () => void;
   ready(): void;
 }

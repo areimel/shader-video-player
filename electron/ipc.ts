@@ -1,9 +1,8 @@
 import { dialog, ipcMain, shell } from "electron";
 import { existsSync } from "node:fs";
 import type { OpenResult } from "../shared/types";
-import { isAllowed } from "./allowlist";
 import { SUPPORTED_EXTENSIONS } from "./media/formats";
-import { closeMedia, openMedia, restartStream, subtitleFor } from "./playback";
+import { closeMedia, currentVideoPath, openMedia, restartStream, subtitleFor } from "./playback";
 import { setPreventSleep } from "./powerSave";
 import { isQueued } from "./queue";
 import { getRecents, isRecent } from "./recents";
@@ -46,7 +45,7 @@ export function registerIpc(): void {
     subtitleFor(Number(ordinal) || 0, Math.max(0, Number(offset) || 0)));
   ipcMain.handle("media:recents", () => getRecents());
   ipcMain.on("media:reveal", (_e, p: unknown) => {
-    if (typeof p === "string" && isAllowed(p)) shell.showItemInFolder(p);
+    if (typeof p === "string" && p === currentVideoPath()) shell.showItemInFolder(p);
   });
   ipcMain.on("media:playing", (_e, on: unknown) => setPreventSleep(on === true));
   ipcMain.on("media:close", () => { closeMedia(); setPreventSleep(false); });

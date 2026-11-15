@@ -59,3 +59,17 @@ export function canRemuxVideo(info: MediaInfo): boolean {
 export function isTextSubtitle(codec: string): boolean {
   return ["subrip", "srt", "ass", "ssa", "webvtt", "mov_text", "text"].includes(codec);
 }
+
+/** Demuxers that read images, text, generated sources or playlists that reference other files/URLs: not real video files. */
+const REJECTED_FORMATS = new Set([
+  "image2", "image2pipe", "tty", "lavfi", "concat", "hls", "applehttp", "dash", "sdp", "rtsp", "rtp",
+  "ffmetadata", "gif_pipe",
+]);
+
+/** ffprobe `format_name` is a comma list (e.g. "mov,mp4,m4a"); any rejected member rejects the file. */
+export function isRejectedFormat(formatName: string): boolean {
+  return formatName.split(",").some((n) => {
+    const name = n.trim().toLowerCase();
+    return REJECTED_FORMATS.has(name) || name.endsWith("_pipe");
+  });
+}

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { ChildProcess } from "node:child_process";
 import type { MediaInfo } from "../../shared/types";
+import { supersededError } from "../../shared/superseded";
 import { ENCODER_FALLBACKS, buildStreamArgs } from "./ffmpegArgs";
 import { ffmpegPath } from "./binaries";
 import { killProcess, spawnTracked } from "./processes";
@@ -19,6 +20,8 @@ export class StreamSession {
   private stopped = false;
   private encoderIdx = 0;
   private stderr = "";
+  private poll: ReturnType<typeof setInterval> | null = null;
+  private rejectStart: ((e: Error) => void) | null = null;
 
   constructor(
     readonly info: MediaInfo,
@@ -32,9 +35,10 @@ export class StreamSession {
     try { return statSync(this.file).size; } catch { return 0; }
   }
 
-  /** Resolves once data is flowing, rejects if every encoder fails. */
+  /** Resolves once data is flowing, rejects if every encoder fails or the session is disposed first (superseded). */
   start(): Promise<void> {
     return new Promise((resolve, reject) => {
+      this.rejectStart = reject;
       const launch = () => {
         const args = buildStreamArgs(this.info, {
           input: this.info.path, output: this.file, startSec: this.startSec,
@@ -47,6 +51,7 @@ export class StreamSession {
         const poll = setInterval(() => {
           if (this.bytesWritten() > 0) { clearInterval(poll); resolve(); }
         }, 40);
+        this.poll = poll;
         child.on("error", (e) => { clearInterval(poll); this.done = true; reject(e); });
         child.on("exit", (code) => {
           clearInterval(poll);
@@ -68,6 +73,9 @@ export class StreamSession {
   dispose(): void {
     this.stopped = true;
     this.done = true;
+    if (this.poll) clearInterval(this.poll);
+    this.rejectStart?.(supersededError()); // no-op if start() already settled
+    this.rejectStart = null;
     killProcess(this.proc);
     rmSync(this.dir, { recursive: true, force: true });
   }

@@ -2,8 +2,9 @@ import { execFile } from "node:child_process";
 import { statSync } from "node:fs";
 import { basename } from "node:path";
 import type { MediaInfo } from "../../shared/types";
-import { extensionOf, isTextSubtitle } from "./formats";
+import { extensionOf, isRejectedFormat, isTextSubtitle } from "./formats";
 import { ffprobePath } from "./binaries";
+import { INPUT_PROTOCOLS } from "./ffmpegArgs";
 
 interface RawStream {
   codec_type?: string; codec_name?: string; profile?: string; pix_fmt?: string;
@@ -22,7 +23,21 @@ function parseRate(rate?: string): number {
   return d ? n / d : n || 0;
 }
 
+/**
+ * Gate for "is this a video file we may open": rejects images, text, generated sources and playlists
+ * (which ffprobe happily reads) and files with no video stream or an explicitly zero duration.
+ * A missing duration is allowed: some live recordings (ts/mkv) legitimately have none.
+ */
+export function assertRealVideo(raw: RawProbe): void {
+  const fail = () => { throw new Error("No video stream found"); };
+  if (isRejectedFormat(raw.format?.format_name ?? "")) fail();
+  if (!raw.streams?.some((s) => s.codec_type === "video" && !s.disposition?.attached_pic)) fail();
+  const d = raw.format?.duration;
+  if (d !== undefined && !(Number(d) > 0)) fail();
+}
+
 export function parseProbe(raw: RawProbe, path: string, sizeBytes = 0): MediaInfo {
+  assertRealVideo(raw);
   const streams = raw.streams ?? [];
   const video = streams.find(
     (s) => s.codec_type === "video" && !s.disposition?.attached_pic,
@@ -59,7 +74,7 @@ export function parseProbe(raw: RawProbe, path: string, sizeBytes = 0): MediaInf
 }
 
 export function probeFile(path: string): Promise<MediaInfo> {
-  const args = ["-v", "error", "-print_format", "json", "-show_format", "-show_streams", path];
+  const args = ["-v", "error", ...INPUT_PROTOCOLS, "-print_format", "json", "-show_format", "-show_streams", path];
   return new Promise((resolve, reject) => {
     execFile(ffprobePath(), args, { maxBuffer: 16 * 1024 * 1024 }, (err, stdout) => {
       if (err) return reject(new Error("Could not read this file"));
@@ -75,7 +90,7 @@ export function probeFile(path: string): Promise<MediaInfo> {
 /** Stream-copy seeks land on the keyframe at or before `t`; returns that time. */
 export function keyframeBefore(info: MediaInfo, t: number): Promise<number> {
   const args = [
-    "-v", "error", "-select_streams", "v:0", "-show_entries", "packet=pts_time",
+    "-v", "error", ...INPUT_PROTOCOLS, "-select_streams", "v:0", "-show_entries", "packet=pts_time",
     "-of", "csv=p=0", "-read_intervals", `${t}%+#1`, info.path,
   ];
   return new Promise((resolve) => {

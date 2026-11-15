@@ -12,7 +12,7 @@ import { writeFileSync } from "node:fs";
  */
 export function setupDevCapture(win: BrowserWindow): void {
   const out = process.env.SVP_CAPTURE;
-  if (!out) return;
+  if (!out || app.isPackaged) return;
   const delay = Number(process.env.SVP_CAPTURE_DELAY) || 3000;
   const keys = (process.env.SVP_CAPTURE_KEYS ?? "").split(",").filter(Boolean);
 
@@ -37,10 +37,12 @@ export function setupDevCapture(win: BrowserWindow): void {
       const evaluated = probe
         ? win.webContents.executeJavaScript(probe).then((r) => console.log(`[eval] ${JSON.stringify(r)}`), (e) => console.log(`[eval error] ${e}`))
         : Promise.resolve();
-      void evaluated.then(() => win.webContents.capturePage()).then((image) => {
-        writeFileSync(out, image.toPNG());
-        app.quit();
-      });
+      // Quit whether or not the capture worked, so an unattended run never hangs.
+      void evaluated
+        .then(() => win.webContents.capturePage())
+        .then((image) => writeFileSync(out, image.toPNG()))
+        .catch((e) => console.log(`[capture error] ${e}`))
+        .finally(() => app.quit());
     }, delay);
   });
 }

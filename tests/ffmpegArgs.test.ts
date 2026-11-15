@@ -57,3 +57,14 @@ describe("misc args", () => {
     expect(targetBitrate(makeInfo({ bitrate: 90_000_000 }))).toBe(12_000_000);
   });
 });
+
+describe("protocol whitelist", () => {
+  it("restricts stream and subtitle inputs to local protocols, before -i", () => {
+    const stream = buildStreamArgs(makeInfo(), { ...base, encoder: "libx264" });
+    const sub = buildSubtitleArgs("/v/a.mkv", 0, 0, "/tmp/o.vtt");
+    for (const a of [stream, sub]) {
+      expect(a[a.indexOf("-protocol_whitelist") + 1]).toBe("file,crypto,data");
+      expect(a.indexOf("-protocol_whitelist")).toBeLessThan(a.indexOf("-i"));
+    }
+  });
+});

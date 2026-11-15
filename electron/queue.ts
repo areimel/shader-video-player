@@ -17,14 +17,18 @@ export function pickPlayable(paths: readonly unknown[]): string[] {
   return valid.length > 1 ? valid.filter(isSupportedExtension) : valid;
 }
 
-/** Validates a user selection, makes it the current allow-set (replacing the old one) and returns the queue. */
+/** Validates a user selection and returns it as queue items. Nothing is committed until a file opens. */
 export function selectFiles(paths: unknown): QueueItem[] {
   if (!Array.isArray(paths)) throw new Error("File not found");
   const items = pickPlayable(paths).filter((p) => existsSync(p))
     .map((p) => ({ path: resolve(p), name: basename(p) }));
   if (!items.length) throw new Error("File not found");
-  handedOut = new Set(items.map((i) => i.path));
   return items;
+}
+
+/** Makes `items` the current allow-set (replacing the old one); call only once one of them has opened. */
+export function commitQueue(items: readonly QueueItem[]): void {
+  handedOut = new Set(items.map((i) => i.path));
 }
 
 export function isQueued(path: unknown): path is string {

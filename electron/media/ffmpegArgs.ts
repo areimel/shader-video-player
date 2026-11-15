@@ -5,6 +5,9 @@ import { canRemuxVideo } from "./formats";
 export type VideoEncoder = "libx264";
 export const ENCODER_FALLBACKS: VideoEncoder[] = ["libx264"];
 
+/** Local files only: a playlist-style file must not make ffmpeg/ffprobe fetch URLs or open sockets. */
+export const INPUT_PROTOCOLS = ["-protocol_whitelist", "file,crypto,data"];
+
 export interface StreamOptions {
   input: string;
   output: string;
@@ -42,7 +45,7 @@ export function buildStreamArgs(info: MediaInfo, o: StreamOptions): string[] {
   const seek = o.startSec > 0 ? ["-ss", o.startSec.toFixed(3)] : [];
   return [
     "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
-    ...seek, "-i", o.input,
+    ...INPUT_PROTOCOLS, ...seek, "-i", o.input,
     "-map", "0:v:0", ...videoArgs(info, o.encoder),
     ...audioArgs(info, o.audioOrdinal),
     "-sn", "-dn",
@@ -57,7 +60,7 @@ export function buildSubtitleArgs(
   const seek = startSec > 0 ? ["-ss", startSec.toFixed(3)] : [];
   return [
     "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
-    ...seek, "-i", input,
+    ...INPUT_PROTOCOLS, ...seek, "-i", input,
     "-map", `0:s:${ordinal}`, "-c:s", "webvtt", "-f", "webvtt", output,
   ];
 }

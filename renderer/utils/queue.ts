@@ -51,3 +51,14 @@ export function queueReducer(s: QueueState, a: QueueAction): QueueState {
       return EMPTY_QUEUE;
   }
 }
+
+/** Seconds before the end within which playback counts as having reached it. */
+export const END_SLACK_SEC = 2;
+
+/**
+ * Whether an `ended` event is a real end of the file. A disposed transcode session also ends the old
+ * <video> cleanly, so the absolute playhead must be at the end too (when the duration is known).
+ */
+export function reachedEnd(startOffset: number, currentTime: number, durationSec: number): boolean {
+  return !(durationSec > 0) || startOffset + currentTime >= durationSec - END_SLACK_SEC;
+}

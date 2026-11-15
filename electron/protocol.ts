@@ -1,7 +1,7 @@
 import { protocol } from "electron";
 import { createReadStream, openSync, readSync, closeSync, statSync } from "node:fs";
 import { Readable } from "node:stream";
-import { isAllowed } from "./allowlist";
+import { allowedRealPath } from "./allowlist";
 import { mimeForPath } from "./media/formats";
 import { getStream } from "./playback";
 import type { StreamSession } from "./media/session";
@@ -26,12 +26,19 @@ function parseRange(header: string | null, size: number): [number, number] | nul
 }
 
 function serveFile(path: string, rangeHeader: string | null): Response {
-  if (!isAllowed(path)) return deny();
+  // Resolve once and use that path for stat/open too, so a swapped symlink cannot redirect the read.
+  const real = allowedRealPath(path);
+  if (!real) return deny();
   let size: number;
-  try { size = statSync(path).size; } catch { return new Response("Not found", { status: 404 }); }
+  try {
+    const st = statSync(real);
+    if (!st.isFile()) return new Response("Not found", { status: 404 });
+    size = st.size;
+  } catch { return new Response("Not found", { status: 404 }); }
   const headers: Record<string, string> = {
-    "Content-Type": mimeForPath(path), "Accept-Ranges": "bytes",
+    "Content-Type": mimeForPath(real), "Accept-Ranges": "bytes",
   };
+  if (size === 0) return new Response(null, { status: 200, headers: { ...headers, "Content-Length": "0" } });
   const range = parseRange(rangeHeader, size);
   if (rangeHeader && !range) {
     return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${size}` } });
@@ -39,35 +46,56 @@ function serveFile(path: string, rangeHeader: string | null): Response {
   const [start, end] = range ?? [0, size - 1];
   headers["Content-Length"] = String(end - start + 1);
   if (range) headers["Content-Range"] = `bytes ${start}-${end}/${size}`;
-  const body = Readable.toWeb(createReadStream(path, { start, end })) as ReadableStream;
+  const body = Readable.toWeb(createReadStream(real, { start, end })) as ReadableStream;
   return new Response(body, { status: range ? 206 : 200, headers });
 }
 
-/** Tails the growing fragmented MP4 until ffmpeg finishes. */
+/** Tails the growing fragmented MP4 until ffmpeg finishes. The fd is opened on first pull and closed exactly once. */
 function serveStream(s: StreamSession, signal: AbortSignal): Response {
-  const fd = openSync(s.file, "r");
+  let fd: number | null = null;
+  let closed = false;
   let pos = 0;
+  const close = () => {
+    closed = true;
+    if (fd === null) return;
+    const old = fd;
+    fd = null;
+    try { closeSync(old); } catch { /* already closed */ }
+  };
   const body = new ReadableStream<Uint8Array>({
     async pull(controller) {
       const buf = Buffer.alloc(256 * 1024);
-      for (;;) {
-        if (signal.aborted) { closeSync(fd); return controller.close(); }
-        const n = readSync(fd, buf, 0, buf.length, pos);
-        if (n > 0) {
-          pos += n;
-          return controller.enqueue(new Uint8Array(buf.subarray(0, n)));
+      try {
+        for (;;) {
+          if (closed) return; // cancelled: the stream is already closed, do not touch the controller
+          if (signal.aborted) { close(); return controller.close(); }
+          fd ??= openSync(s.file, "r");
+          const n = readSync(fd, buf, 0, buf.length, pos);
+          if (n > 0) {
+            pos += n;
+            return controller.enqueue(new Uint8Array(buf.subarray(0, n)));
+          }
+          if (s.done) { close(); return controller.close(); }
+          await new Promise((r) => setTimeout(r, 40));
         }
-        if (s.done) { closeSync(fd); return controller.close(); }
-        await new Promise((r) => setTimeout(r, 40));
+      } catch (e) {
+        const wasClosed = closed;
+        close();
+        if (!wasClosed) controller.error(e);
       }
     },
-    cancel() { try { closeSync(fd); } catch { /* already closed */ } },
+    cancel() { close(); },
   });
   return new Response(body, { status: 200, headers: { "Content-Type": "video/mp4" } });
 }
 
-/** The dev server and packaged (file://) renderer; a file:// page sends `Origin: null`. */
-const ALLOWED_ORIGINS = new Set(["http://localhost:5173", "file://", "null"]);
+/**
+ * The dev server, and the packaged renderer: pages loaded from file:// send the literal string
+ * `Origin: null` (never "file://"), so "null" is what the packaged app needs. Other opaque origins
+ * (sandboxed iframes, data: URLs) also send "null"; the renderer embeds none, and the scheme only
+ * serves allowlisted files, so accepting it is the price of file:// support.
+ */
+const ALLOWED_ORIGINS = new Set(["http://localhost:5173", "null"]);
 
 /** CORS lets WebGL sample the video; only the app's own origins get it. */
 function withCors(res: Response, origin: string | null): Response {

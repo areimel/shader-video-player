@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { canRemuxVideo, extensionOf, isSupportedExtension, nativeMime } from "../electron/media/formats";
-import { parseProbe } from "../electron/media/probe";
+import { canRemuxVideo, extensionOf, isRejectedFormat, isSupportedExtension, nativeMime } from "../electron/media/formats";
+import { assertRealVideo, parseProbe } from "../electron/media/probe";
 import { makeInfo } from "./fixtures";
 
 describe("extensions", () => {
@@ -57,5 +57,38 @@ describe("parseProbe", () => {
   });
   it("throws without a video stream", () => {
     expect(() => parseProbe({ streams: [] }, "/v/a.mp4")).toThrow();
+  });
+});
+
+describe("isRejectedFormat", () => {
+  it("rejects images, text, generated sources and playlists", () => {
+    for (const n of ["image2", "png_pipe", "jpeg_pipe", "tty", "lavfi", "concat", "hls,applehttp", "image2pipe"]) {
+      expect(isRejectedFormat(n)).toBe(true);
+    }
+  });
+  it("accepts real containers", () => {
+    for (const n of ["mov,mp4,m4a,3gp,3g2,mj2", "matroska,webm", "avi", "mpegts", "flv"]) {
+      expect(isRejectedFormat(n)).toBe(false);
+    }
+  });
+});
+
+describe("assertRealVideo", () => {
+  const video = { codec_type: "video", codec_name: "h264" };
+  it("passes a normal video, with or without a known duration", () => {
+    expect(() => assertRealVideo({ format: { format_name: "matroska,webm", duration: "10" }, streams: [video] })).not.toThrow();
+    expect(() => assertRealVideo({ format: { format_name: "mpegts" }, streams: [video] })).not.toThrow();
+  });
+  it("rejects an image read by the image2 demuxer", () => {
+    expect(() => assertRealVideo({ format: { format_name: "image2", duration: "0.04" }, streams: [{ codec_type: "video", codec_name: "mjpeg" }] })).toThrow();
+    expect(() => assertRealVideo({ format: { format_name: "png_pipe" }, streams: [video] })).toThrow();
+  });
+  it("rejects no video stream, only cover art, or zero duration", () => {
+    expect(() => assertRealVideo({ format: { format_name: "mp3", duration: "9" }, streams: [{ codec_type: "audio" }] })).toThrow();
+    expect(() => assertRealVideo({ format: { format_name: "mp3", duration: "9" }, streams: [{ ...video, disposition: { attached_pic: 1 } }] })).toThrow();
+    expect(() => assertRealVideo({ format: { format_name: "mov,mp4", duration: "0.000000" }, streams: [video] })).toThrow();
+  });
+  it("parseProbe applies the gate", () => {
+    expect(() => parseProbe({ format: { format_name: "tty" }, streams: [video] }, "/v/a.txt")).toThrow();
   });
 });
