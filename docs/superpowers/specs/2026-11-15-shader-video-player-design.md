@@ -154,3 +154,14 @@ Permissive sources we may adapt, each credited in `THIRD_PARTY_NOTICES.md`: Lott
 ## Left to the builder
 
 Exact filter kernels and tap counts, panel styling, shortcut keys, how the queue is displayed, golden-image tolerance.
+
+## Settled details (from the builder review)
+
+- **Playback path** is inherited from the base: ffprobe every file; play natively when the container and codecs are ones Chromium decodes, otherwise ffmpeg remuxes (video copied) or transcodes (libx264) live into a growing fragmented MP4 that is streamed to the `<video>`. Seeking in that mode restarts ffmpeg at the target time. Either way the `<video>` element is the frame source for the shader layer.
+- **Feedback inputs** (`<id>:prev`) are black on the first frame and after every reset.
+- **Disabled passes** are skipped; readers receive the disabled pass's first input, whatever its size.
+- **RGBA16F support** is probed at runtime by building a real framebuffer; RGBA8 is the fallback.
+- **Performance target:** smooth 1080p playback with every CRT pass on this machine's GPU; 4K is best effort. There is no automatic quality degradation; the user lowers settings.
+- **Settings persistence:** renderer `localStorage`, one entry per effect holding the active preset id and the full parameter values, plus which effect is active. Built-in presets only; changing any control marks the state "Custom".
+- **Acceptance for the CRT look:** every pass compiles on a real GPU (`pnpm check:shaders`), each preset renders a non-blank frame from test patterns, and the result is judged by eye against real footage. Preset values are starting points to be tuned.
+- **Derived-value keys** returned by `derive()` are unprefixed; the engine adds `d_` (and `p_` for parameters).

@@ -1,48 +1,69 @@
-# Babu Video Player
+# Shader Video Player
 
-A fast, simple, open-source video player for macOS (Apple Silicon and Intel).
-Plays MP4, MKV, MOV, AVI, WebM, HEVC, AV1 and more, with multiple audio tracks, embedded subtitles and
-resume playback. No camera or microphone access, no telemetry.
+A desktop video player that plays your files through real-time shader effects. The first effect is a physically inspired **CRT television**: scanline beams, phosphor masks, glow, tube curvature and analog composite/S-Video signal artefacts, with presets and a control for every parameter. A VHS effect is planned next.
 
-**[Download](https://babu-studios.github.io/babu-video-player/)** or get the `.dmg` from the
-[Releases page](https://github.com/babu-studios/babu-video-player/releases):
-`-arm64.dmg` for Apple Silicon (M1 and later), `-x64.dmg` for Intel.
+Built on Electron, React and WebGL2. Linux (Wayland/X11) is the supported platform for now.
 
-## Install
+> Status: early development.
 
-1. Open the `.dmg` and drag the app to Applications.
-2. The app isn't notarized yet, so macOS blocks the first launch:
-   - **macOS 15 and later:** click **Done**, then System Settings → Privacy & Security → **Open Anyway**.
-   - **macOS 14 and earlier:** right-click the app → **Open** → **Open**.
-   - **Terminal:** `xattr -cr "/Applications/Babu Video Player.app"`
-3. Optional, to make it your default player: **Finder → Get Info → Open with → Change All**.
+## Features
 
-Open a file from the terminal with `open -a "Babu Video Player" /path/to/video.mp4`.
+- Plays MP4, MKV, WebM, MOV, AVI and more. Formats Chromium cannot decode (HEVC, AC3/DTS audio, AVI…) are converted on the fly with ffmpeg.
+- Open dialog, drag and drop, recent files, resume position, playback speed, audio track and subtitle selection, fullscreen, picture-in-picture, keyboard shortcuts.
+- CRT effect with four presets: Consumer TV (composite), Trinitron (S-Video), Arcade monitor (RGB), Broadcast monitor (PVM).
+- Effects can be switched off instantly; with no effect active the video plays through the normal, low-power path.
 
-## Run from source
+## Requirements
+
+- Node 24 and pnpm
+- `ffmpeg` and `ffprobe` on your `PATH` (`sudo apt install ffmpeg`)
+- A GPU with WebGL2
+
+## Getting started
 
 ```bash
-npm install
-npm install-scripts approve esbuild ffmpeg-static   # npm 12+ blocks install scripts by default
-npm rebuild esbuild ffmpeg-static
-npm run dev
+pnpm install
+pnpm dev                 # run in development
+pnpm dist                # build a .deb into release/
 ```
 
-Other commands: `npm test` (unit tests) and `npm run build` (typecheck and build).
-Architecture, adding formats, releases and licensing are in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+Other commands: `pnpm typecheck`, `pnpm test`, `pnpm check:shaders`, `pnpm build`.
 
-## Contributing
+Environment variables:
 
-This is an open-source project and contributions are welcome.
+| Variable | Purpose |
+|---|---|
+| `SVP_FFMPEG_PATH`, `SVP_FFPROBE_PATH` | Use specific ffmpeg/ffprobe binaries instead of the ones on `PATH` |
+| `SVP_NO_HWDEC=1` | Disable the hardware video decode switches |
 
-1. Found a bug or have an idea? [Open an issue](https://github.com/babu-studios/babu-video-player/issues).
-2. Want to fix or build something? Fork the repo, create a branch, and open a pull request against `main`.
-   `main` is protected, so all changes go through a pull request with passing CI.
-3. Before you open the PR, run `npm run typecheck`, `npm test` and `npm run build`.
+## How the CRT effect works
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for the code guidelines and the full PR checklist.
+The video is not simply overlaid with lines. Each frame goes through a chain of shader passes:
 
-## License
+1. **Raster** — the picture is resampled onto the tube's raster (240–576 scan lines), with overscan and colour controls.
+2. **Signal** — the raster is carried over a simulated RGB, S-Video or composite connection. Composite modulates colour onto a subcarrier and decodes it again, which is what produces colour bleed, dot crawl and rainbowing.
+3. **Linearize + persistence** — tube gamma, then phosphor afterglow from the previous frame.
+4. **Glow and diffusion** — light spreading in and through the glass.
+5. **Tube** — at full screen resolution: curvature, convergence, a per-channel electron beam whose width grows with brightness, the phosphor mask (aperture grille, slot or shadow mask) locked to your display's pixels, brightness compensation, vignette, reflection and noise.
 
-MIT, see [LICENSE](LICENSE). Release builds bundle an LGPL ffmpeg, see
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Every parameter is declared once in `renderer/shader/effects/crt/params.ts`; the settings panel, shader uniforms, presets and saved settings are all generated from that table.
+
+## Project layout
+
+```
+electron/                  main process, local-file protocol, ffmpeg sessions
+renderer/                  React UI
+renderer/shader/gl/        small WebGL2 multi-pass engine
+renderer/shader/effects/   effect definitions (crt/)
+shared/                    IPC types
+tests/                     unit tests
+docs/superpowers/specs/    design documents
+```
+
+See `CLAUDE.md` for the conventions used in this codebase.
+
+## Credits and licence
+
+MIT — see [LICENSE](LICENSE).
+
+The player is based on [babu-video-player](https://github.com/babu-studios/babu-video-player) by Babu Studios (MIT). Shader techniques draw on published work credited in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). ffmpeg is used as an external program and is not bundled.
