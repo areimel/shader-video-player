@@ -1,3 +1,4 @@
+import { realpathSync } from "node:fs";
 import type { MediaInfo, PlaybackPlan } from "../shared/types";
 import { allowPath } from "./allowlist";
 import { addRecent } from "./recents";
@@ -39,8 +40,9 @@ async function transcodePlan(startSec: number, audioOrdinal: number): Promise<Pl
 }
 
 export async function openMedia(path: string): Promise<PlaybackPlan> {
-  const real = allowPath(path);
-  const probed = await probeFile(real);
+  // Probe first: a path is only served over svp-media:// once ffprobe confirms it is media.
+  const probed = await probeFile(realpathSync(path));
+  const real = allowPath(probed.path);
   disposeSession();
   info = probed;
   addRecent(real);
