@@ -7,8 +7,9 @@ import { buildMenu } from "./menu";
 import { isSupportedExtension } from "./media/formats";
 import { cleanCacheRoot } from "./media/session";
 import { killAll } from "./media/processes";
-import type { PlaybackPlan } from "../shared/types";
-import { closeMedia, openMedia } from "./playback";
+import type { OpenResult } from "../shared/types";
+import { closeMedia } from "./playback";
+import { openSelection, pushSelection } from "./selection";
 import { setPreventSleep } from "./powerSave";
 import { registerProtocol, registerScheme } from "./protocol";
 import { setupDevCapture } from "./devCapture";
@@ -19,27 +20,19 @@ registerScheme();
 
 let rendererReady = false;
 // Only the most recent request matters; probing starts right away so it overlaps window load.
-let queued: { plan: Promise<PlaybackPlan> } | null = null;
+let queued: { result: Promise<OpenResult> } | null = null;
 
-function deliver(plan: Promise<PlaybackPlan>): void {
+function openInWindow(paths: string[]): void {
   const win = getWindow();
-  plan.then(
-    (p) => win?.webContents.send("media:plan", p),
-    (e: Error) => win?.webContents.send("media:error", e.message),
-  );
-}
-
-function openInWindow(path: string): void {
-  const win = getWindow();
-  const plan = openMedia(path);
+  const result = openSelection(paths);
   if (!win || !rendererReady) {
-    plan.catch(() => undefined);
-    queued = { plan };
+    result.catch(() => undefined);
+    queued = { result };
     return;
   }
   if (win.isMinimized()) win.restore();
   win.focus();
-  deliver(plan);
+  pushSelection(result);
 }
 
 function cliFiles(argv: string[]): string[] {
@@ -59,8 +52,11 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   // open-file can fire before ready; it is queued until the renderer asks.
-  app.on("open-file", (e, path) => { e.preventDefault(); openInWindow(path); });
-  app.on("second-instance", (_e, argv) => cliFiles(argv).forEach(openInWindow));
+  app.on("open-file", (e, path) => { e.preventDefault(); openInWindow([path]); });
+  app.on("second-instance", (_e, argv) => {
+    const files = cliFiles(argv);
+    if (files.length) openInWindow(files);
+  });
   app.on("before-quit", shutdown);
   app.on("window-all-closed", () => app.quit());
   for (const sig of ["SIGINT", "SIGTERM"] as const) {
@@ -68,8 +64,8 @@ if (!app.requestSingleInstanceLock()) {
   }
 
   cleanCacheRoot();
-  const launchFile = cliFiles(process.argv).pop();
-  if (launchFile) openInWindow(launchFile);
+  const launchFiles = cliFiles(process.argv);
+  if (launchFiles.length) openInWindow(launchFiles);
 
   void app.whenReady().then(() => {
     registerProtocol();
@@ -77,7 +73,7 @@ if (!app.requestSingleInstanceLock()) {
     setupDevCapture(createWindow(() => { rendererReady = false; }));
     ipcMain.on("app:ready", () => {
       rendererReady = true;
-      if (queued) deliver(queued.plan);
+      if (queued) pushSelection(queued.result);
       queued = null;
     });
     buildMenu();

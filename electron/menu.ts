@@ -1,14 +1,14 @@
 import { Menu, type MenuItemConstructorOptions } from "electron";
 import { showOpenDialog } from "./ipc";
+import { pushSelection } from "./selection";
 import { getWindow } from "./window";
 
 async function openFromMenu(): Promise<void> {
-  const win = getWindow();
   try {
-    const plan = await showOpenDialog();
-    if (plan) win?.webContents.send("media:plan", plan);
+    const result = await showOpenDialog();
+    if (result) pushSelection(Promise.resolve(result));
   } catch (e) {
-    win?.webContents.send("media:error", (e as Error).message);
+    getWindow()?.webContents.send("media:error", (e as Error).message);
   }
 }
 

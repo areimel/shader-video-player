@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
-import type { PlaybackPlan, ToastKind } from "../types/player";
+import type { OpenResult, PlaybackPlan, QueueItem, ToastKind } from "../types/player";
 import { friendlyError } from "../utils/format";
 import { loadPosition } from "../utils/storage";
 
 type Notify = (kind: ToastKind, msg: string) => void;
+/** Called whenever the user opens something new, with the queue that selection forms. */
+type OnQueue = (items: QueueItem[]) => void;
 
-export function usePlaybackSource(notify: Notify) {
+const single = (plan: PlaybackPlan): QueueItem[] => [{ path: plan.info.path, name: plan.info.name }];
+
+export function usePlaybackSource(notify: Notify, onQueue: OnQueue) {
   const [plan, setPlan] = useState<PlaybackPlan | null>(null);
   const [initialTime, setInitialTime] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -21,15 +25,18 @@ export function usePlaybackSource(notify: Notify) {
     setPlan(next);
   }, []);
 
-  const run = useCallback(async (job: () => Promise<PlaybackPlan | null>, resume = true) => {
+  /** Resolves true when a plan was shown. */
+  const run = useCallback(async (job: () => Promise<PlaybackPlan | null>, resume = true): Promise<boolean> => {
     setLoading(true);
     try {
       const p = await job();
-      if (!p) return;
+      if (!p) return false;
       if (resume) await accept(p);
       else { setInitialTime(0); setPlan(p); }
+      return true;
     } catch (e) {
       notify("error", friendlyError(e));
+      return false;
     } finally {
       setLoading(false);
     }
@@ -37,14 +44,32 @@ export function usePlaybackSource(notify: Notify) {
 
   useEffect(() => {
     const offPlan = window.player.onPlan((p) => void run(async () => p));
+    const offQueue = window.player.onQueue(onQueue);
     const offErr = window.player.onError((m) => notify("error", friendlyError(m)));
     window.player.ready();
-    return () => { offPlan(); offErr(); };
-  }, [run, notify]);
+    return () => { offPlan(); offQueue(); offErr(); };
+  }, [run, notify, onQueue]);
 
-  const openDialog = useCallback(() => run(() => window.player.openDialog()), [run]);
-  const openRecent = useCallback((p: string) => run(() => window.player.openRecent(p)), [run]);
-  const openDropped = useCallback((f: File) => run(() => window.player.openDropped(window.player.pathForFile(f))), [run]);
+  /** Opens a user selection (dialog / drop): the main process returns the first plan and the queue. */
+  const openSelection = useCallback((job: () => Promise<OpenResult | null>) => run(async () => {
+    const r = await job();
+    if (!r) return null;
+    onQueue(r.queue);
+    return r.plan;
+  }), [run, onQueue]);
+
+  const openDialog = useCallback(() => openSelection(() => window.player.openDialog()), [openSelection]);
+  const openDropped = useCallback((files: File[]) => {
+    const paths = files.map((f) => window.player.pathForFile(f)).filter((p) => p.length > 0);
+    return paths.length ? openSelection(() => window.player.openDropped(paths)) : Promise.resolve(false);
+  }, [openSelection]);
+  const openRecent = useCallback((p: string) => run(async () => {
+    const plan = await window.player.openRecent(p);
+    onQueue(single(plan));
+    return plan;
+  }), [run, onQueue]);
+  /** Plays a queue item through the same single-file path; the main process only accepts paths it handed out. */
+  const openQueued = useCallback((p: string) => run(() => window.player.openQueued(p)), [run]);
   const restartAt = useCallback(
     (t: number, audio: number) => run(() => window.player.restart(t, audio), false), [run],
   );
@@ -60,5 +85,5 @@ export function usePlaybackSource(notify: Notify) {
 
   const close = useCallback(() => { window.player.closeMedia(); setPlan(null); }, []);
 
-  return { plan, initialTime, loading, openDialog, openRecent, openDropped, restartAt, onVideoError, close };
+  return { plan, initialTime, loading, openDialog, openRecent, openDropped, openQueued, restartAt, onVideoError, close };
 }
