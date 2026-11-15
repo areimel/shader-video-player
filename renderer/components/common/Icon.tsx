@@ -12,7 +12,11 @@ const PATHS = {
   audio: "M12 3v10.5a4 4 0 1 0 2 3.5V7h4V3z",
   subtitles: "M4 5h16v14H4zM7 10h4v2H7zM13 10h4v2h-4zM7 14h6v2H7z",
   folder: "M3 5h7l2 2h9v12H3z",
+  effects: "M12 2l2.4 5.6L20 10l-5.6 2.4L12 18l-2.4-5.6L4 10l5.6-2.4zM19 15l1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1z",
   speed: "M12 4a9 9 0 0 0-9 9h2a7 7 0 0 1 14 0h2a9 9 0 0 0-9-9zM12 12l4-4",
+  skipNext: "M6 18l8.5-6L6 6zM16 6h2v12h-2z",
+  skipPrev: "M6 6h2v12H6zM9.5 12l8.5 6V6z",
+  queue: "M3 6h13v2H3zM3 11h13v2H3zM3 16h7v2H3zM14 15v6l5-3z",
 } as const;
 
 export type IconName = keyof typeof PATHS;

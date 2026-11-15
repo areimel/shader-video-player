@@ -61,6 +61,10 @@ export function subtitleFor(ordinal: number, offsetSec: number): Promise<string>
   return extractSubtitle(info.path, ordinal, offsetSec);
 }
 
+export function currentVideoPath(): string | null {
+  return info?.path ?? null;
+}
+
 export function closeMedia(): void {
   disposeSession();
   info = null;

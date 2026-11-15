@@ -7,7 +7,8 @@ export interface Option<T extends string | number> {
 }
 
 interface Props<T extends string | number> {
-  icon: IconName;
+  icon?: IconName;
+  className?: string;
   label: string;
   options: Option<T>[];
   selected: T;
@@ -27,10 +28,10 @@ export function Dropdown<T extends string | number>(p: Props<T>) {
   }, [open]);
 
   return (
-    <div className="dropdown" ref={ref}>
+    <div className={`dropdown ${p.className ?? ""}`} ref={ref}>
       <button type="button" className="icon-btn dropdown-btn" title={p.label} aria-label={p.label}
         aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen(!open)}>
-        <Icon name={p.icon} />
+        {p.icon && <Icon name={p.icon} />}
         {p.buttonText && <span className="dropdown-text">{p.buttonText}</span>}
       </button>
       {open && (

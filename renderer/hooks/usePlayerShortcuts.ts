@@ -6,14 +6,19 @@ interface Deps {
   player: PlayerState;
   toggleFullscreen: () => void;
   openFile: () => void;
+  toggleEffect: () => void;
+  toggleEffectsPanel: () => void;
+  /** Set only while the queue has more than one item. */
+  onNext?: () => void;
+  onPrevious?: () => void;
 }
 
-export function usePlayerShortcuts({ enabled, player: p, toggleFullscreen, openFile }: Deps) {
+export function usePlayerShortcuts({ enabled, player: p, toggleFullscreen, openFile, toggleEffect, toggleEffectsPanel, onNext, onPrevious }: Deps) {
   useEffect(() => {
     if (!enabled) return;
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || e.metaKey || e.ctrlKey || e.altKey) return;
       const handlers: Record<string, () => void> = {
         " ": p.toggle,
         ArrowLeft: () => p.seek(p.time - 5),
@@ -22,6 +27,10 @@ export function usePlayerShortcuts({ enabled, player: p, toggleFullscreen, openF
         ArrowDown: () => p.setVolume(p.volume - 0.05),
         f: toggleFullscreen,
         m: p.toggleMute,
+        e: toggleEffect,
+        E: toggleEffectsPanel,
+        ...(onNext && { n: onNext }),
+        ...(onPrevious && { p: onPrevious }),
         "[": () => p.stepRate(-1),
         "]": () => p.stepRate(1),
       };
@@ -32,5 +41,5 @@ export function usePlayerShortcuts({ enabled, player: p, toggleFullscreen, openF
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [enabled, p, toggleFullscreen, openFile]);
+  }, [enabled, p, toggleFullscreen, openFile, toggleEffect, toggleEffectsPanel, onNext, onPrevious]);
 }

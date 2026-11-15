@@ -1,34 +1,39 @@
 import { dialog, ipcMain, shell } from "electron";
 import { existsSync } from "node:fs";
-import type { PlaybackPlan } from "../shared/types";
+import type { OpenResult } from "../shared/types";
 import { isAllowed } from "./allowlist";
 import { SUPPORTED_EXTENSIONS } from "./media/formats";
 import { closeMedia, openMedia, restartStream, subtitleFor } from "./playback";
 import { setPreventSleep } from "./powerSave";
+import { isQueued } from "./queue";
 import { getRecents, isRecent } from "./recents";
+import { openSelection } from "./selection";
+import { registerSubtitleIpc } from "./subtitleIpc";
 import { getWindow } from "./window";
 
 function validPath(p: unknown): p is string {
   return typeof p === "string" && p.length > 0 && existsSync(p);
 }
 
-export async function showOpenDialog(): Promise<PlaybackPlan | null> {
+export async function showOpenDialog(): Promise<OpenResult | null> {
   const win = getWindow();
   const opts = {
-    properties: ["openFile" as const],
+    properties: ["openFile" as const, "multiSelections" as const],
     filters: [
       { name: "Videos", extensions: SUPPORTED_EXTENSIONS },
       { name: "All files", extensions: ["*"] },
     ],
   };
   const res = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
-  return res.canceled || !res.filePaths[0] ? null : openMedia(res.filePaths[0]);
+  return res.canceled || !res.filePaths.length ? null : openSelection(res.filePaths);
 }
 
 export function registerIpc(): void {
+  registerSubtitleIpc();
   ipcMain.handle("media:open-dialog", () => showOpenDialog());
-  ipcMain.handle("media:open-dropped", (_e, p: unknown) => {
-    if (!validPath(p)) throw new Error("File not found");
+  ipcMain.handle("media:open-dropped", (_e, paths: unknown) => openSelection(paths));
+  ipcMain.handle("media:open-queued", (_e, p: unknown) => {
+    if (!isQueued(p)) throw new Error("File not found");
     return openMedia(p);
   });
   ipcMain.handle("media:open-recent", (_e, p: unknown) => {

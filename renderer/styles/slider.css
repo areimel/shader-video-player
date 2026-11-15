@@ -9,3 +9,5 @@
 .slider:hover .slider-track { height: 6px; }
 .slider-tooltip { position: absolute; bottom: 22px; transform: translateX(-50%); background: var(--panel);
   padding: 2px 6px; border-radius: 4px; font-size: 11px; pointer-events: none; white-space: nowrap; }
+.slider:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.slider:focus-visible .slider-thumb { transform: scale(1); }

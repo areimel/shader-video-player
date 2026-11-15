@@ -7,5 +7,8 @@ import "./styles/menu.css";
 import "./styles/toast.css";
 import "./styles/info.css";
 import "./styles/empty.css";
+import "./styles/queue.css";
+import "./styles/effects.css";
+import "./styles/subtitles.css";
 
 createRoot(document.getElementById("root")!).render(<App />);

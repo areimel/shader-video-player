@@ -43,25 +43,49 @@ export interface PlaybackPlan {
   remuxOnly: boolean;
 }
 
+/** An external subtitle file the main process has approved; the renderer only ever holds the opaque id. */
+export interface ExternalSubtitle {
+  id: string;
+  name: string;
+}
+
 export interface RecentFile {
   path: string;
   name: string;
   openedAt: number;
 }
 
+/** One entry of the play queue; paths are the ones the main process handed out. */
+export interface QueueItem {
+  path: string;
+  name: string;
+}
+
+/** A user selection: the plan for the first file plus the whole queue (first file included). */
+export interface OpenResult {
+  plan: PlaybackPlan;
+  queue: QueueItem[];
+}
+
 export interface PlayerBridge {
-  openDialog(): Promise<PlaybackPlan | null>;
-  openDropped(path: string): Promise<PlaybackPlan>;
+  openDialog(): Promise<OpenResult | null>;
+  openDropped(paths: string[]): Promise<OpenResult>;
+  openQueued(path: string): Promise<PlaybackPlan>;
   openRecent(path: string): Promise<PlaybackPlan>;
   restart(startSec: number, audioOrdinal: number): Promise<PlaybackPlan>;
   forceTranscode(startSec: number): Promise<PlaybackPlan>;
   getSubtitle(ordinal: number, offsetSec: number): Promise<string>;
+  findSubtitles(): Promise<ExternalSubtitle[]>;
+  pickSubtitle(): Promise<ExternalSubtitle | null>;
+  loadDroppedSubtitle(path: string): Promise<ExternalSubtitle>;
+  getExternalSubtitle(id: string, offsetSec: number): Promise<string>;
   getRecents(): Promise<RecentFile[]>;
   reveal(path: string): void;
   setPlaying(playing: boolean): void;
   closeMedia(): void;
   pathForFile(file: File): string;
   onPlan(cb: (plan: PlaybackPlan) => void): () => void;
+  onQueue(cb: (queue: QueueItem[]) => void): () => void;
   onError(cb: (message: string) => void): () => void;
   ready(): void;
 }
