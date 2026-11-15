@@ -3,7 +3,7 @@ precision highp float;
 precision highp int;
 
 // CRT main pass (screen resolution): geometry -> convergence + horizontal reconstruction -> per-channel beam
-// over 3 lines -> halation -> phosphor mask -> exposure + highlight shoulder -> glow + diffusion -> screen finish
+// over 3 lines -> halation -> phosphor mask -> exposure -> + glow + diffusion -> highlight shoulder -> screen finish
 // -> display encoding + dither. Inputs are in tube space (uv 0..1 = the whole tube face), linear light.
 // Texture fetches per pixel: 18 raster (3 lines x 6 taps; 12 when convergence is 0) + 1 glow + 1 diffuse = 20 max.
 
@@ -13,6 +13,7 @@ out vec4 fragColor;
 // Uniforms shared by several chunks are declared here, once.
 uniform vec4 uViewportSize; // canvas size in device pixels
 uniform int uFrame;
+uniform int uVideoFrame;
 
 uniform sampler2D uGlow;    // tight blur of the raster (bloom)
 uniform sampler2D uDiffuse; // wide blur of the raster, 1/8 viewport resolution
@@ -52,11 +53,15 @@ void main() {
   col *= phosphorMask(gl_FragCoord.xy);
 
   float gain = d_exposure * p_brightness;
-  col = softClip(col * gain, gain * beamWhitePeak() * (1.0 + p_halation));
+  col *= gain;
 
   // Light scattered in and through the glass, over the mask.
   if (p_glow > 0.0) col += textureLod(uGlow, g.uv, 0.0).rgb * p_glow;
   col += diffuse * p_diffusion;
+
+  // Highlight shoulder over the whole sum, so glow and diffusion cannot hard-clip at 1. The peak adds the most
+  // glow and diffusion can contribute (a flat white field blurs to white) to the masked beam's peak.
+  col = softClip(col, gain * beamWhitePeak() * (1.0 + p_halation) + p_glow + p_diffusion);
 
   col = screenFinish(col, g, gl_FragCoord.xy);
   fragColor = vec4(clamp(encodeDisplay(col) + ditherOffset(gl_FragCoord.xy), 0.0, 1.0), 1.0);

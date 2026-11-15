@@ -43,6 +43,8 @@ export interface EffectDefinition {
   /** Values computed from parameters and sizes, exposed to shaders as `d_<name>`. */
   derive(values: ParamValues, env: DeriveEnv): ParamValues;
   passes: PassSpec[];
+  /** Passes store signed or >1 values (RGBA8 is not enough): the effect refuses to start without float render targets. */
+  requiresFloat?: boolean;
   /** Effect-local `#include` chunks, keyed by include name. */
   chunks: Record<string, string>;
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PassSpec } from "../../renderer/shader/gl/passTypes";
 import {
-  isEnabled, parseSourceRef, resolveInputs, resolveSize, validatePasses,
+  FLOAT_TARGETS_ERROR, checkFloatRequirement, isEnabled, parseSourceRef, resolveInputs, resolveSize, validatePasses,
 } from "../../renderer/shader/gl/passPlan";
 
 const pass = (id: string, inputs: Record<string, string>, extra: Partial<PassSpec> = {}): PassSpec =>
@@ -92,5 +92,14 @@ describe("resolveInputs", () => {
     expect(isEnabled(passes[1], { p_glow: 0 })).toBe(false);
     expect(isEnabled(passes[1], { p_glow: 0.5 })).toBe(true);
     expect(isEnabled(passes[0], {})).toBe(true);
+  });
+});
+
+describe("checkFloatRequirement", () => {
+  it("throws the float-target message only when required and unavailable", () => {
+    expect(() => checkFloatRequirement(true, false)).toThrow(FLOAT_TARGETS_ERROR);
+    expect(() => checkFloatRequirement(true, true)).not.toThrow();
+    expect(() => checkFloatRequirement(false, false)).not.toThrow();
+    expect(() => checkFloatRequirement(undefined, false)).not.toThrow();
   });
 });

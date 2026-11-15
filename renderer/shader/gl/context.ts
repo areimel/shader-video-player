@@ -11,7 +11,8 @@ export interface GlContext {
   /** Returns an unsubscribe function. */
   onLost(cb: () => void): () => void;
   onRestored(cb: () => void): () => void;
-  dispose(): void;
+  /** Detaches listeners. With `release`, also frees the GPU context (only when the canvas is going away: a lost context cannot be reused). */
+  dispose(release?: boolean): void;
 }
 
 function probeCaps(gl: WebGL2RenderingContext): GlCaps {
@@ -66,11 +67,13 @@ export function createGlContext(canvas: HTMLCanvasElement): GlContext {
     isLost: () => lost || gl.isContextLost(),
     onLost: subscribe(lostCbs),
     onRestored: subscribe(restoredCbs),
-    dispose() {
+    dispose(release = false) {
       canvas.removeEventListener("webglcontextlost", handleLost);
       canvas.removeEventListener("webglcontextrestored", handleRestored);
       lostCbs.clear();
       restoredCbs.clear();
+      // Listeners are gone first, so the resulting webglcontextlost never triggers a rebuild.
+      if (release && !gl.isContextLost()) gl.getExtension("WEBGL_lose_context")?.loseContext();
     },
   };
 }

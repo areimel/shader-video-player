@@ -69,7 +69,13 @@ export class PingPong {
   private i = 0;
 
   constructor(private readonly gl: WebGL2RenderingContext, width: number, height: number, opts: TargetOptions) {
-    this.pair = [createTarget(gl, width, height, opts), createTarget(gl, width, height, opts)];
+    const first = createTarget(gl, width, height, opts);
+    try {
+      this.pair = [first, createTarget(gl, width, height, opts)];
+    } catch (e) {
+      disposeTarget(gl, first);
+      throw e;
+    }
   }
 
   get latest(): RenderTarget { return this.pair[this.i]; }

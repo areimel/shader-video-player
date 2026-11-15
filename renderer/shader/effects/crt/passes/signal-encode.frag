@@ -23,6 +23,7 @@ out vec4 fragColor;
 uniform sampler2D uSource;   // raster: gamma-encoded RGB, H x V
 uniform vec4 uSourceSize;    // (w, h, 1/w, 1/h)
 uniform int uFrame;
+uniform int uVideoFrame;
 
 uniform float p_signalMode;  // 0 RGB, 1 S-Video, 2 Composite (SIGNAL in params.ts)
 uniform float p_phaseMode;   // 0 = 2-phase, 1 = 3-phase

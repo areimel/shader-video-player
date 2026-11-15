@@ -73,7 +73,7 @@ void main() {
 
   vec3 c;
   if (widest <= 1.0) {
-    c = texture(uSource, uv).rgb;  // video is no larger than the raster: plain bilinear
+    c = textureLod(uSource, uv, 0.0).rgb;  // video is no larger than the raster: plain bilinear (LOD 0; no implicit derivatives after the early return)
   } else {
     // Mip texels are ~widest/2 source texels wide, matching the tap spacing above.
     float lod = max(0.0, log2(widest) - 1.0);

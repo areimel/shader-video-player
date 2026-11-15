@@ -75,7 +75,7 @@ effects/
 ### Uniforms
 
 - Samplers are named by the pass's `inputs` map, e.g. `uSource`. For every sampler `uX` the engine also sets `uXSize` = `vec4(width, height, 1/width, 1/height)` if the shader declares it.
-- Engine uniforms, set when declared: `uOutputSize` (vec4, this pass's target), `uViewportSize` (vec4, canvas device pixels), `uVideoSize` (vec4, decoded video), `uTime` (float, media time in seconds), `uFrame` (int, rendered frame counter), `uDeltaTime` (float, seconds since the previous render, clamped to 0.1).
+- Engine uniforms, set when declared: `uOutputSize` (vec4, this pass's target), `uViewportSize` (vec4, canvas device pixels), `uVideoSize` (vec4, decoded video), `uTime` (float, media time in seconds), `uFrame` (int, rendered frame counter: per-render noise and jitter seeds), `uVideoFrame` (int, presented video frame counter, also advanced by a seek: subcarrier crawl phase and bob interlace, which must not change when the same video frame is re-rendered), `uDeltaTime` (float, seconds since the previous render, clamped to 0.1).
 - Parameter uniforms are `float` named `p_<paramId>` (e.g. `p_maskStrength`). Enumerations and toggles are passed as floats holding the option index or 0/1. Values computed in TypeScript rather than set by the user are `d_<name>` (e.g. `d_virtualLines`, `d_maskWidth`, `d_exposure`) and come from `derive.ts`.
 - Unknown or unused uniforms are ignored silently, so every pass can be handed the full parameter set.
 
@@ -91,7 +91,7 @@ interface PassSpec {
   frag: string;                                // raw source, includes not yet resolved
   inputs: Record<string, SourceRef>;           // sampler uniform name -> source
   size: "viewport" | ((env: SizeEnv) => Size); // last pass renders to the canvas
-  format?: "rgba16f" | "rgba8";                // default rgba16f (falls back to rgba8 when unsupported)
+  format?: "rgba16f" | "rgba8";                // default rgba16f (falls back to rgba8 when unsupported, unless the effect has requiresFloat)
   filter?: "linear" | "nearest";               // default linear
   mipmapInputs?: boolean;                      // generate mipmaps on the video texture before this pass
   feedback?: boolean;                          // keep previous frame's output for "<id>:prev"
@@ -114,6 +114,7 @@ interface EffectDefinition {
   derive(values: Record<string, number>, env: { viewport: Size; video: Size }): Record<string, number>;
   passes: PassSpec[];
   chunks: Record<string, string>;              // effect-local #include chunks
+  requiresFloat?: boolean;                     // refuse to start without float render targets
 }
 ```
 
@@ -161,7 +162,7 @@ Exact filter kernels and tap counts, panel styling, shortcut keys, how the queue
 - **Playback path** is inherited from the base: ffprobe every file; play natively when the container and codecs are ones Chromium decodes, otherwise ffmpeg remuxes (video copied) or transcodes (libx264) live into a growing fragmented MP4 that is streamed to the `<video>`. Seeking in that mode restarts ffmpeg at the target time. Either way the `<video>` element is the frame source for the shader layer.
 - **Feedback inputs** (`<id>:prev`) are black on the first frame and after every reset.
 - **Disabled passes** are skipped; readers receive the disabled pass's first input, whatever its size.
-- **RGBA16F support** is probed at runtime by building a real framebuffer; RGBA8 is the fallback.
+- **RGBA16F support** is probed at runtime by building a real framebuffer. A pass without an explicit `format` falls back to RGBA8 when it is missing, but an effect that stores signed or >1 values declares `requiresFloat` (`EffectDefinition`, CRT sets it) and then fails at init with "This effect needs floating-point render targets, which this GPU/driver does not provide" through the normal error path (effect off, toast).
 - **Performance target:** smooth 1080p playback with every CRT pass on this machine's GPU; 4K is best effort. There is no automatic quality degradation; the user lowers settings.
 - **Settings persistence:** renderer `localStorage`, one entry per effect holding the active preset id and the full parameter values, plus which effect is active. Built-in presets only; changing any control marks the state "Custom".
 - **Acceptance for the CRT look:** every pass compiles on a real GPU (`pnpm check:shaders`), each preset renders a non-blank frame from test patterns, and the result is judged by eye against real footage. Preset values are starting points to be tuned.

@@ -1,11 +1,11 @@
 // Subcarrier phase and chroma filter width shared by the signal encode and decode passes, which
-// must agree exactly. Requires PI from "sampling" and the uniforms uFrame, p_crawl, p_phaseMode,
+// must agree exactly. Requires PI from "sampling" and the uniforms uVideoFrame, p_crawl, p_phaseMode,
 // d_subcarrier and d_chromaCutoff, all declared by the including pass.
 
 // 2-phase: pi per line and per frame (NTSC-like 227.5 cycles/line); 3-phase: 2pi/3 per line and
-// per frame (the classic home-computer pattern). Frame index taken mod 6 (divisible by 2 and 3).
+// per frame (the classic home-computer pattern). Video frame index (once per presented frame, not per render) taken mod 6 (divisible by 2 and 3).
 float linePhase(int line) {
-  int f = p_crawl > 0.5 ? uFrame % 6 : 0;
+  int f = p_crawl > 0.5 ? uVideoFrame % 6 : 0;
   if (p_phaseMode > 0.5) return float((line + f) % 3) * (2.0 * PI / 3.0);
   return float((line + f) % 2) * PI;
 }

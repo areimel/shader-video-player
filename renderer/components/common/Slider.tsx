@@ -27,6 +27,7 @@ export function Slider({ value, min = 0, max, step, buffered = 0, label, classNa
     const raw = min + (r.width ? (x / r.width) * (max - min) : 0);
     return { x, v: step ? snapToStep(raw, min, max, step) : raw };
   };
+  const endDrag = () => { dragging.current = false; };
   const pct = (v: number) => (max > min ? clamp(((v - min) / (max - min)) * 100, 0, 100) : 0);
   const onKeyDown = (e: KeyboardEvent) => {
     if (!step) return;
@@ -44,7 +45,9 @@ export function Slider({ value, min = 0, max, step, buffered = 0, label, classNa
       tabIndex={step ? 0 : undefined} onKeyDown={onKeyDown}
       onPointerDown={(e) => { dragging.current = true; e.currentTarget.setPointerCapture(e.pointerId); onChange(valueAt(e).v); }}
       onPointerMove={(e) => { const p = valueAt(e); setHover(p); if (dragging.current) onChange(p.v); }}
-      onPointerUp={() => { dragging.current = false; }}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+      onLostPointerCapture={endDrag}
       onPointerLeave={() => setHover(null)}
     >
       <div className="slider-track">

@@ -18,8 +18,10 @@ export interface FrameInfo {
   time: number;
   /** Seconds since the previous render, already clamped. */
   delta: number;
-  /** Rendered frame counter. */
+  /** Rendered frame counter (advances on every render; use for noise seeds). */
   frame: number;
+  /** Presented video frame counter (advances once per decoded frame; use for crawl and interlace). */
+  videoFrame: number;
 }
 
 interface PassRuntime {
@@ -100,7 +102,7 @@ export class PassGraph {
       Object.assign(uniforms, {
         uFlipY: toCanvas ? 1 : 0,
         uOutputSize: vec4(r.size), uViewportSize: vec4(this.viewport), uVideoSize: vec4(this.videoSize),
-        uTime: frame.time, uFrame: frame.frame, uDeltaTime: frame.delta,
+        uTime: frame.time, uFrame: frame.frame, uVideoFrame: frame.videoFrame, uDeltaTime: frame.delta,
       });
       r.program.setUniforms(uniforms);
       this.quad.draw();

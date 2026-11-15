@@ -1,7 +1,11 @@
+const VIDEO_FRAME_WRAP = 6_000_000;
+
 /** Owns the video texture. Orientation convention: see program.ts (uploaded unflipped, row 0 = top). */
 export class VideoSource {
   readonly texture: WebGLTexture;
   mediaTime = 0;
+  /** Presented video frames, wrapped at VIDEO_FRAME_WRAP (a multiple of 2 and 3, so parity and phase stay continuous). */
+  videoFrame = 0;
   private width = 0;
   private height = 0;
   private frameReady = false;
@@ -16,6 +20,8 @@ export class VideoSource {
     private readonly gl: WebGL2RenderingContext,
     private readonly video: HTMLVideoElement,
     private readonly onFrame: () => void,
+    /** Called once if frames cannot be uploaded to the GPU. */
+    private readonly onFailure: (e: Error) => void,
   ) {
     this.texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
@@ -34,6 +40,7 @@ export class VideoSource {
     this.running = true;
     const tick = (_now: number, meta: VideoFrameCallbackMetadata) => {
       this.mediaTime = meta.mediaTime;
+      this.videoFrame = (this.videoFrame + 1) % VIDEO_FRAME_WRAP;
       this.frameReady = true;
       this.onFrame();
       if (this.running) this.callbackId = this.video.requestVideoFrameCallback(tick);
@@ -51,8 +58,11 @@ export class VideoSource {
     return this.frameReady && this.uploadNow();
   }
 
-  /** Uploads the current frame regardless (paused seeks do not always produce a frame callback). */
-  uploadNow(): boolean {
+  /**
+   * Uploads the current frame regardless (paused seeks do not always produce a frame callback).
+   * `newFrame` counts the upload as a presented video frame (a seek, which may not fire the frame callback).
+   */
+  uploadNow(newFrame = false): boolean {
     const v = this.video;
     if (v.readyState < HTMLMediaElement.HAVE_CURRENT_DATA || v.videoWidth === 0) return false;
     const gl = this.gl;
@@ -66,10 +76,14 @@ export class VideoSource {
         this.height = v.videoHeight;
       }
     } catch (e) {
-      if (!this.failed) console.error("Video upload failed (is the video CORS-clean?)", e);
-      this.failed = true;
+      if (!this.failed) {
+        this.failed = true;
+        console.error("Video upload failed (is the video CORS-clean?)", e);
+        this.onFailure(new Error("Could not upload video frames to the GPU"));
+      }
       return false;
     }
+    if (newFrame) this.videoFrame = (this.videoFrame + 1) % VIDEO_FRAME_WRAP;
     this.frameReady = false;
     this.mipsStale = true;
     return true;

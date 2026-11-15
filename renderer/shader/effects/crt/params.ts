@@ -10,6 +10,13 @@ export const SIGNAL = { rgb: 0, svideo: 1, composite: 2 } as const;
 export const MASK = { none: 0, aperture: 1, slot: 2, shadow: 3, magentaGreen: 4, rgbx: 5 } as const;
 export const FIT = { letterbox: 0, crop: 1, stretch: 2 } as const;
 
+/**
+ * Widest beam sigma (in lines). beam.glsl sums only the 3 nearest lines (fetch budget: 18 raster taps + 2). At the worst
+ * case (Gaussian, shape 2) the lines it leaves out hold 1.8% of the energy at sigma 0.55 but 3% at 0.6 and 17% at 1.0,
+ * which would dim wide beams relative to derive.ts exposureGain. Past this value 3 lines are no longer accurate.
+ */
+export const BEAM_SIGMA_MAX = 0.55;
+
 const P = "Picture", S = "Signal", B = "Beam", M = "Mask", G = "Glow", GEO = "Geometry", SC = "Screen";
 
 export const CRT_PARAMS: ParamSpec[] = [
@@ -40,11 +47,11 @@ export const CRT_PARAMS: ParamSpec[] = [
 
   // Beam: the electron beam drawing each scanline (main pass, beam chunk).
   range("sharpness", "Horizontal sharpness", B, 0, 1, 0.01, 0.6),
-  range("beamMin", "Beam width (dark)", B, 0.12, 0.6, 0.01, 0.2, { hint: "Spot size at black, in scanlines." }),
-  range("beamMax", "Beam width (bright)", B, 0.2, 1, 0.01, 0.4, { hint: "Spot size at white, in scanlines." }),
+  range("beamMin", "Beam width (dark)", B, 0.12, BEAM_SIGMA_MAX, 0.01, 0.2, { hint: "Spot size at black, in scanlines." }),
+  range("beamMax", "Beam width (bright)", B, 0.2, BEAM_SIGMA_MAX, 0.01, 0.4, { hint: "Spot size at white, in scanlines." }),
   range("beamShape", "Beam shape", B, 2, 4, 0.1, 2.5, { hint: "2 = Gaussian, 4 = flatter top." }),
   range("scanlineStrength", "Scanline strength", B, 0, 1, 0.01, 1),
-  select("interlace", "Interlace", B, ["Off", "Bob", "Weave"]),
+  select("interlace", "Interlace", B, ["Off", "Bob"]),
   range("crtGamma", "Tube gamma", B, 2.2, 2.8, 0.05, 2.4),
   range("persistence", "Phosphor persistence", B, 0, 0.5, 0.01, 0.15),
 
@@ -58,7 +65,7 @@ export const CRT_PARAMS: ParamSpec[] = [
 
   // Glow: light spread inside and through the glass (glow / diffuse passes, combined in main).
   range("glow", "Glow", G, 0, 0.5, 0.01, 0.1),
-  range("glowSigma", "Glow radius", G, 0.5, 4, 0.1, 1.5, { unit: "px" }),
+  range("glowSigma", "Glow radius", G, 0.5, 4, 0.1, 1.5, { unit: "lines" }),
   range("halation", "Halation", G, 0, 0.3, 0.01, 0.05, { hint: "Light scattered under the mask." }),
   range("diffusion", "Diffusion", G, 0, 0.3, 0.01, 0.05, { hint: "Light scattered through the glass, over the mask." }),
   range("diffusionRadius", "Diffusion radius", G, 0.01, 0.1, 0.005, 0.03),

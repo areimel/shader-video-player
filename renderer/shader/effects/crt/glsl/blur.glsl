@@ -10,11 +10,11 @@ const int BLUR_MAX_PAIRS = 96;
 // One tap. With `box` set it is the mean of four taps spread over `perp`
 // (a box footprint one output texel wide, perpendicular to the blur axis).
 vec3 blurTap(sampler2D tex, vec2 p, vec2 perp, vec2 lo, vec2 hi, bool box) {
-  if (!box) return texture(tex, clamp(p, lo, hi)).rgb;
-  vec3 s = texture(tex, clamp(p - 0.375 * perp, lo, hi)).rgb;
-  s += texture(tex, clamp(p - 0.125 * perp, lo, hi)).rgb;
-  s += texture(tex, clamp(p + 0.125 * perp, lo, hi)).rgb;
-  s += texture(tex, clamp(p + 0.375 * perp, lo, hi)).rgb;
+  if (!box) return textureLod(tex, clamp(p, lo, hi), 0.0).rgb;
+  vec3 s = textureLod(tex, clamp(p - 0.375 * perp, lo, hi), 0.0).rgb;
+  s += textureLod(tex, clamp(p - 0.125 * perp, lo, hi), 0.0).rgb;
+  s += textureLod(tex, clamp(p + 0.125 * perp, lo, hi), 0.0).rgb;
+  s += textureLod(tex, clamp(p + 0.375 * perp, lo, hi), 0.0).rgb;
   return 0.25 * s;
 }
 

@@ -1,6 +1,7 @@
 import { commonChunks } from "./commonChunks";
 import { createGlContext, type GlContext } from "./context";
 import { PassGraph } from "./passGraph";
+import { checkFloatRequirement } from "./passPlan";
 import type { PassSpec, Size } from "./passTypes";
 import { clampDelta, hasActiveAnimation, shouldRender, type AnimatedParam } from "./renderPolicy";
 import { VideoSource } from "./videoSource";
@@ -10,6 +11,7 @@ export interface RunnableEffect {
   params: readonly AnimatedParam[];
   passes: readonly PassSpec[];
   chunks: Readonly<Record<string, string>>;
+  requiresFloat?: boolean;
   derive(values: Record<string, number>, env: { viewport: Size; video: Size }): Record<string, number>;
 }
 
@@ -50,9 +52,11 @@ export class EffectRenderer {
       video.addEventListener(type, fn);
       this.cleanups.push(() => video.removeEventListener(type, fn));
     };
-    listen("seeked", () => { this.graph?.resetFeedback(); this.source?.uploadNow(); this.invalidate(); });
+    listen("seeked", () => { this.graph?.resetFeedback(); this.source?.uploadNow(true); this.invalidate(); });
     listen("play", () => this.invalidate());
     listen("pause", () => this.invalidate()); // one final render, then the loop idles
+    // The decoded size can change mid-stream (adaptive or concatenated sources): re-upload, then refresh derived values.
+    listen("resize", () => { this.source?.uploadNow(); this.refreshUniforms(); this.invalidate(); });
     listen("loadeddata", () => { this.source?.uploadNow(); this.refreshUniforms(); this.invalidate(); });
     this.init();
   }
@@ -63,16 +67,22 @@ export class EffectRenderer {
     if (this.disposed || this.ctx.isLost()) return;
     try {
       const { gl, caps } = this.ctx;
-      this.source = new VideoSource(gl, this.video, () => this.invalidate());
+      checkFloatRequirement(this.effect.requiresFloat, caps.floatTargets);
+      this.source = new VideoSource(gl, this.video, () => this.invalidate(), (e) => this.fail(e));
       this.graph = new PassGraph(gl, caps, this.effect.passes, { ...commonChunks, ...this.effect.chunks }, this.source);
       this.source.start();
       this.source.uploadNow();
       this.refreshUniforms();
       this.invalidate();
     } catch (e) {
-      this.teardown();
-      this.onError(e instanceof Error ? e : new Error(String(e)));
+      this.fail(e);
     }
+  }
+
+  /** Releases GL resources and reports the failure (the caller turns the effect off). */
+  private fail(e: unknown): void {
+    this.teardown();
+    this.onError(e instanceof Error ? e : new Error(String(e)));
   }
 
   private teardown(): void {
@@ -112,7 +122,9 @@ export class EffectRenderer {
     this.disposed = true;
     this.cleanups.forEach((fn) => fn());
     this.teardown();
-    this.ctx.dispose();
+    // Unmounted canvas (effect turned off): free the GPU context instead of waiting for GC.
+    // A canvas that stays mounted keeps its context for the next effect.
+    this.ctx.dispose(!this.canvas.isConnected);
   }
 
   private refreshUniforms(): void {
@@ -121,7 +133,11 @@ export class EffectRenderer {
       ...prefixed("p_", this.userValues),
       ...prefixed("d_", this.effect.derive(this.userValues, env)),
     };
-    this.graph?.resize(this.viewport, env.video, this.uniformValues);
+    try {
+      this.graph?.resize(this.viewport, env.video, this.uniformValues); // allocates targets, which can throw
+    } catch (e) {
+      this.fail(e);
+    }
   }
 
   private get playing(): boolean {
@@ -150,6 +166,7 @@ export class EffectRenderer {
     const source = this.source;
     if (!graph || !source || this.ctx.isLost()) return;
     source.uploadIfNew();
+    if (this.source !== source) return; // the upload failed and tore everything down
     const now = performance.now();
     const delta = this.lastRender ? clampDelta((now - this.lastRender) / 1000) : 0;
     this.lastRender = now;
@@ -159,10 +176,10 @@ export class EffectRenderer {
         time: this.playing ? source.mediaTime : this.video.currentTime,
         delta,
         frame: this.frame++,
+        videoFrame: source.videoFrame,
       });
     } catch (e) {
-      this.teardown();
-      this.onError(e instanceof Error ? e : new Error(String(e)));
+      this.fail(e);
     }
   }
 }

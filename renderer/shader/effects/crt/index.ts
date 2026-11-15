@@ -18,5 +18,6 @@ export const crtEffect: EffectDefinition = {
   presets: CRT_PRESETS,
   derive: deriveCrt,
   passes: CRT_PASSES,
+  requiresFloat: true, // signed I/Q, modulated chroma, values above 1 and a feedback loop that needs more than 8 bits
   chunks,
 };

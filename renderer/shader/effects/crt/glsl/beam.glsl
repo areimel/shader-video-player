@@ -1,5 +1,5 @@
 // CRT main pass: convergence, horizontal reconstruction and the electron beam (scanlines).
-// Needs (declared in main.frag): uViewportSize, uFrame. Needs geometry.glsl (TubeGeometry, d_tubeW).
+// Needs (declared in main.frag): uViewportSize, uVideoFrame. Needs geometry.glsl (TubeGeometry, d_tubeW).
 
 uniform sampler2D uSource;   // linear-light virtual raster: d_virtualWidth x d_virtualLines, row r = scanline r
 uniform vec4 uSourceSize;
@@ -23,10 +23,9 @@ const float CONVERGENCE_EDGE_GAIN = 3.0;
 
 float scanlineAmount() { return clamp(p_scanlineStrength * d_scanlineFade, 0.0, 1.0); }
 
-/** Vertical position in lines: line r's centre is at r. Bob shifts every line by half a line on odd frames. */
+/** Vertical position in lines: line r's centre is at r. Bob shifts every line by half a line on odd video frames. */
 float beamLineCoord(vec2 tubeUv) {
-  bool bob = p_interlace > 0.5 && p_interlace < 1.5;
-  float shift = bob ? 0.5 * float(uFrame & 1) : 0.0;
+  float shift = p_interlace > 0.5 ? 0.5 * float(uVideoFrame & 1) : 0.0; // 0 Off, 1 Bob
   return tubeUv.y * uSourceSize.y - 0.5 - shift;
 }
 

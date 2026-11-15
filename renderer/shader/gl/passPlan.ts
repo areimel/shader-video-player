@@ -77,3 +77,11 @@ export function resolveInputs(passes: readonly PassSpec[], enabled: readonly boo
   return passes.map((p, i) =>
     enabled[i] ? Object.entries(p.inputs).map(([sampler, ref]) => ({ sampler, source: follow(ref, 0) })) : []);
 }
+
+export const FLOAT_TARGETS_ERROR =
+  "This effect needs floating-point render targets, which this GPU/driver does not provide";
+
+/** Effects whose passes carry signed or >1 values cannot fall back to RGBA8 targets. */
+export function checkFloatRequirement(requiresFloat: boolean | undefined, floatTargets: boolean): void {
+  if (requiresFloat && !floatTargets) throw new Error(FLOAT_TARGETS_ERROR);
+}
