@@ -10,7 +10,7 @@ export const SCHEME = "svp-media";
 
 export function registerScheme(): void {
   protocol.registerSchemesAsPrivileged([
-    { scheme: SCHEME, privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true } },
+    { scheme: SCHEME, privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true, corsEnabled: true } },
   ]);
 }
 
@@ -66,16 +66,40 @@ function serveStream(s: StreamSession, signal: AbortSignal): Response {
   return new Response(body, { status: 200, headers: { "Content-Type": "video/mp4" } });
 }
 
+/** The dev server and packaged (file://) renderer; a file:// page sends `Origin: null`. */
+const ALLOWED_ORIGINS = new Set(["http://localhost:5173", "file://", "null"]);
+
+/** CORS lets WebGL sample the video; only the app's own origins get it. */
+function withCors(res: Response, origin: string | null): Response {
+  if (origin === null || !ALLOWED_ORIGINS.has(origin)) return res;
+  res.headers.set("Access-Control-Allow-Origin", origin);
+  res.headers.set("Vary", "Origin");
+  res.headers.set("Access-Control-Expose-Headers", "Content-Length, Content-Range, Accept-Ranges");
+  return res;
+}
+
+function route(req: Request): Response {
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: { "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS", "Access-Control-Allow-Headers": "Range" },
+    });
+  }
+  const url = new URL(req.url);
+  if (url.hostname === "file") {
+    return serveFile(decodeURIComponent(url.pathname.slice(1)), req.headers.get("range"));
+  }
+  if (url.hostname === "stream") {
+    const s = getStream(url.pathname.slice(1));
+    return s ? serveStream(s, req.signal) : deny();
+  }
+  return deny();
+}
+
 export function registerProtocol(): void {
   protocol.handle(SCHEME, (req) => {
-    const url = new URL(req.url);
-    if (url.hostname === "file") {
-      return serveFile(decodeURIComponent(url.pathname.slice(1)), req.headers.get("range"));
-    }
-    if (url.hostname === "stream") {
-      const s = getStream(url.pathname.slice(1));
-      return s ? serveStream(s, req.signal) : deny();
-    }
-    return deny();
+    let res: Response;
+    try { res = route(req); } catch { res = new Response("Server error", { status: 500 }); }
+    return withCors(res, req.headers.get("origin"));
   });
 }

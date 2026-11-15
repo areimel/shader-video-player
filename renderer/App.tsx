@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type DragEvent } from "react"
 import { Controls } from "./components/Controls";
 import { EmptyState } from "./components/EmptyState";
 import { InfoPanel } from "./components/InfoPanel";
+import { ShaderCanvas } from "./components/ShaderCanvas";
 import { VideoView } from "./components/VideoView";
 import { ToastHost, useToasts } from "./components/common/Toast";
 import { useFullscreen } from "./hooks/useFullscreen";
@@ -10,7 +11,10 @@ import { usePlaybackSource } from "./hooks/usePlaybackSource";
 import { usePlayerShortcuts } from "./hooks/usePlayerShortcuts";
 import { usePlayerState } from "./hooks/usePlayerState";
 import { useSubtitles } from "./hooks/useSubtitles";
+import { devPassthroughEffect } from "./shader/gl/devEffect";
 import { savePosition } from "./utils/storage";
+
+const NO_VALUES: Record<string, number> = {};
 
 export function App() {
   const { items, push } = useToasts();
@@ -20,6 +24,15 @@ export function App() {
   const audioRef = useRef(0);
   const [showInfo, setShowInfo] = useState(false);
   const [dragging, setDragging] = useState(false);
+  // Temporary: the `e` key toggles the dev effect until the settings UI replaces this.
+  const [effectOn, setEffectOn] = useState(false);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "e" && !e.ctrlKey && !e.metaKey && !e.altKey) setEffectOn((on) => !on);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   audioRef.current = plan?.audioOrdinal ?? 0;
   const restart = useCallback((t: number) => void restartAt(t, audioRef.current), [restartAt]);
@@ -60,8 +73,13 @@ export function App() {
       {plan ? (
         <>
           <VideoView
-            videoRef={videoRef} plan={plan} initialTime={initialTime} subtitleUrl={subs.url}
+            videoRef={videoRef} plan={plan} initialTime={initialTime} subtitleUrl={subs.url} hidden={effectOn}
             onToggle={player.toggle} onFullscreen={fs.toggle} onError={onVideoError}
+          />
+          <ShaderCanvas
+            videoRef={videoRef} effect={effectOn ? devPassthroughEffect : null} values={NO_VALUES}
+            sourceKey={plan.url} onToggle={player.toggle} onFullscreen={fs.toggle}
+            onError={(e) => { setEffectOn(false); push("error", e.message.split("\n")[0]); console.error(e); }}
           />
           <Controls
             plan={plan} player={player} visible={visible} fullscreen={fs.active}

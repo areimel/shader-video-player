@@ -11,6 +11,7 @@ import type { PlaybackPlan } from "../shared/types";
 import { closeMedia, openMedia } from "./playback";
 import { setPreventSleep } from "./powerSave";
 import { registerProtocol, registerScheme } from "./protocol";
+import { setupDevCapture } from "./devCapture";
 import { createWindow, getWindow } from "./window";
 
 applyGpuFlags();
@@ -73,7 +74,7 @@ if (!app.requestSingleInstanceLock()) {
   void app.whenReady().then(() => {
     registerProtocol();
     registerIpc();
-    createWindow(() => { rendererReady = false; });
+    setupDevCapture(createWindow(() => { rendererReady = false; }));
     ipcMain.on("app:ready", () => {
       rendererReady = true;
       if (queued) deliver(queued.plan);
