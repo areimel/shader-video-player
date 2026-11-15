@@ -81,7 +81,7 @@ export class VideoSource {
     gl.activeTexture(gl.TEXTURE0 + unit);
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
     this.setFilter(mips);
-    if (mips && this.mipsStale) {
+    if (mips && this.mipsStale && this.width > 0) { // nothing to build before the first frame
       gl.generateMipmap(gl.TEXTURE_2D);
       this.mipsStale = false;
     }

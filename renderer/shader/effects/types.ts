@@ -1,0 +1,48 @@
+import type { PassSpec, Size } from "../gl/passGraph";
+
+export type ParamKind = "range" | "select" | "toggle";
+
+/** Single source of truth for one effect parameter: drives uniforms, UI, presets and persistence. */
+export interface ParamSpec {
+  id: string;
+  label: string;
+  group: string;
+  kind: ParamKind;
+  default: number;
+  min?: number;
+  max?: number;
+  step?: number;
+  /** select only: the value is the option index. */
+  options?: string[];
+  unit?: string;
+  /** A non-zero value keeps the render loop running between video frames. */
+  animated?: boolean;
+  hint?: string;
+}
+
+export type ParamValues = Record<string, number>;
+
+export interface Preset {
+  id: string;
+  label: string;
+  /** Overrides on top of the parameter defaults. */
+  values: Partial<ParamValues>;
+}
+
+export interface DeriveEnv {
+  viewport: Size;
+  video: Size;
+}
+
+export interface EffectDefinition {
+  id: string;
+  label: string;
+  params: ParamSpec[];
+  groups: string[];
+  presets: Preset[];
+  /** Values computed from parameters and sizes, exposed to shaders as `d_<name>`. */
+  derive(values: ParamValues, env: DeriveEnv): ParamValues;
+  passes: PassSpec[];
+  /** Effect-local `#include` chunks, keyed by include name. */
+  chunks: Record<string, string>;
+}

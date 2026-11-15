@@ -12,7 +12,8 @@
     "build:electron": "node scripts/build-electron.mjs",
     "build": "pnpm typecheck && vite build && pnpm build:electron",
     "test": "vitest run",
-    "dist": "pnpm build && electron-builder --linux deb --x64"
+    "dist": "pnpm build && electron-builder --linux deb --x64",
+    "check:shaders": "node scripts/check-shaders.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",
