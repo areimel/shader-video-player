@@ -5,7 +5,6 @@ interface Deps {
   enabled: boolean;
   player: PlayerState;
   toggleFullscreen: () => void;
-  openFile: () => void;
   toggleEffect: () => void;
   toggleEffectsPanel: () => void;
   /** Set only while the queue has more than one item. */
@@ -13,7 +12,7 @@ interface Deps {
   onPrevious?: () => void;
 }
 
-export function usePlayerShortcuts({ enabled, player: p, toggleFullscreen, openFile, toggleEffect, toggleEffectsPanel, onNext, onPrevious }: Deps) {
+export function usePlayerShortcuts({ enabled, player: p, toggleFullscreen, toggleEffect, toggleEffectsPanel, onNext, onPrevious }: Deps) {
   useEffect(() => {
     if (!enabled) return;
     const onKey = (e: KeyboardEvent) => {
@@ -41,5 +40,5 @@ export function usePlayerShortcuts({ enabled, player: p, toggleFullscreen, openF
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [enabled, p, toggleFullscreen, openFile, toggleEffect, toggleEffectsPanel, onNext, onPrevious]);
+  }, [enabled, p, toggleFullscreen, toggleEffect, toggleEffectsPanel, onNext, onPrevious]);
 }

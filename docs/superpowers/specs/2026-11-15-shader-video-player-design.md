@@ -55,7 +55,8 @@ Base: `babu-studios/babu-video-player` (MIT) copied whole at commit `1b33fd2`, c
 ### Shader layer (`renderer/shader/`)
 
 ```
-gl/           context.ts  program.ts  target.ts  quad.ts  includes.ts  passGraph.ts  videoSource.ts
+gl/           context  program  shaderError  target  quad  includes  commonChunks
+              passTypes  passPlan  passGraph  videoSource  renderPolicy  effectRenderer
 glsl/common/  color.glsl  yiq.glsl  gaussian.glsl  sampling.glsl  noise.glsl
 effects/
   types.ts  registry.ts

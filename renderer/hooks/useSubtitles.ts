@@ -15,7 +15,7 @@ export interface SubtitleState {
   /** Registers an already-validated external subtitle and selects it. */
   adopt: (s: ExternalSubtitle) => void;
   pickFile: () => Promise<void>;
-  loadDropped: (path: string) => Promise<void>;
+  loadDropped: (file: File) => Promise<void>;
 }
 
 function fetchVtt(choice: string, offset: number): Promise<string> {

@@ -6,10 +6,20 @@ Built on Electron, React and WebGL2. Linux (Wayland/X11) is the supported platfo
 
 > Status: early development.
 
+![CRT effect with the settings panel open](docs/images/crt-effect-panel.jpg)
+
+<details><summary>Close-up of three presets (Trinitron, Arcade, PVM)</summary>
+
+![Phosphor mask and scanline close-ups](docs/images/presets-closeup.jpg)
+
+</details>
+
 ## Features
 
 - Plays MP4, MKV, WebM, MOV, AVI and more. Formats Chromium cannot decode (HEVC, AC3/DTS audio, AVI…) are converted on the fly with ffmpeg.
-- Open dialog, drag and drop, recent files, resume position, playback speed, audio track and subtitle selection, fullscreen, picture-in-picture, keyboard shortcuts.
+- Open dialog, drag and drop, recent files, resume position, playback speed, audio track selection, fullscreen, picture-in-picture, keyboard shortcuts.
+- Play queue: open or drop several files, next/previous, auto-advance.
+- Subtitles: embedded tracks plus external `.srt`, `.vtt`, `.ass` files (a file named like the video is picked up automatically). Subtitles are drawn above the effect so they stay sharp.
 - CRT effect with four presets: Consumer TV (composite), Trinitron (S-Video), Arcade monitor (RGB), Broadcast monitor (PVM).
 - Effects can be switched off instantly; with no effect active the video plays through the normal, low-power path.
 
@@ -26,6 +36,8 @@ pnpm install
 pnpm dev                 # run in development
 pnpm dist                # build a .deb into release/
 ```
+
+Keyboard: `Space` play/pause, `←`/`→` seek, `↑`/`↓` volume, `F` fullscreen, `M` mute, `[`/`]` speed, `N`/`P` next/previous in the queue, **`E` toggle the effect, `Shift+E` effect settings**.
 
 Other commands: `pnpm typecheck`, `pnpm test`, `pnpm check:shaders`, `pnpm build`.
 

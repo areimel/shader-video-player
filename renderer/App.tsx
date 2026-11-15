@@ -36,7 +36,7 @@ export function App() {
   const visible = useIdleControls(!!plan && !player.paused && !showEffects);
   const subs = useSubtitles(plan, useCallback((m: string) => push("error", m), [push]));
 
-  usePlayerShortcuts({ enabled: !!plan, player, toggleFullscreen: fs.toggle, openFile: openDialog, toggleEffect: fx.toggle, toggleEffectsPanel: toggleEffects, onNext: queue.multi ? queue.next : undefined, onPrevious: queue.multi ? queue.previous : undefined });
+  usePlayerShortcuts({ enabled: !!plan, player, toggleFullscreen: fs.toggle, toggleEffect: fx.toggle, toggleEffectsPanel: toggleEffects, onNext: queue.multi ? queue.next : undefined, onPrevious: queue.multi ? queue.previous : undefined });
 
   useEffect(() => { window.player.setPlaying(!!plan && !player.paused); }, [plan, player.paused]);
   useEffect(() => { setShowInfo(false); if (plan) push("success", `Playing ${plan.info.name}`); }, [plan?.info.path]);
