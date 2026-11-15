@@ -7,7 +7,7 @@ const options = {
   platform: "node",
   format: "cjs",
   target: "node22",
-  external: ["electron", "ffmpeg-static", "ffprobe-static"],
+  external: ["electron"],
   sourcemap: true,
 };
 

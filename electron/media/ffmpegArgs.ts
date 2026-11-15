@@ -1,8 +1,9 @@
 import type { MediaInfo } from "../../shared/types";
 import { canRemuxVideo } from "./formats";
 
-export type VideoEncoder = "h264_videotoolbox" | "libx264";
-export const ENCODER_FALLBACKS: VideoEncoder[] = ["h264_videotoolbox", "libx264"];
+/** Add hardware encoders (e.g. "h264_vaapi") here and in videoArgs; they are tried in order. */
+export type VideoEncoder = "libx264";
+export const ENCODER_FALLBACKS: VideoEncoder[] = ["libx264"];
 
 export interface StreamOptions {
   input: string;
@@ -24,10 +25,8 @@ export function isRemuxOnly(info: MediaInfo): boolean {
 function videoArgs(info: MediaInfo, encoder: VideoEncoder): string[] {
   if (isRemuxOnly(info)) return ["-c:v", "copy"];
   const common = ["-pix_fmt", "yuv420p", "-b:v", String(targetBitrate(info))];
-  if (encoder === "h264_videotoolbox") {
-    return ["-c:v", encoder, "-realtime", "1", "-allow_sw", "1", ...common];
-  }
-  return ["-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency", ...common];
+  // A hardware encoder gets its own branch here, before the libx264 default.
+  return ["-c:v", encoder, "-preset", "veryfast", "-tune", "zerolatency", ...common];
 }
 
 function audioArgs(info: MediaInfo, ordinal: number): string[] {

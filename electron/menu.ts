@@ -14,16 +14,16 @@ async function openFromMenu(): Promise<void> {
 
 export function buildMenu(): void {
   const template: MenuItemConstructorOptions[] = [
-    { role: "appMenu" },
     {
       label: "File",
       submenu: [
         { label: "Open…", accelerator: "CmdOrCtrl+O", click: () => void openFromMenu() },
         { type: "separator" },
-        { role: "close" },
+        { role: "quit" },
       ],
     },
     { role: "editMenu" },
+    { label: "View", submenu: [{ role: "togglefullscreen" }, { role: "toggleDevTools" }] },
     { role: "windowMenu" },
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));

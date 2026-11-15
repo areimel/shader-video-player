@@ -1,6 +1,7 @@
 import { app, ipcMain } from "electron";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { applyGpuFlags } from "./gpuFlags";
 import { registerIpc } from "./ipc";
 import { buildMenu } from "./menu";
 import { isSupportedExtension } from "./media/formats";
@@ -12,6 +13,7 @@ import { setPreventSleep } from "./powerSave";
 import { registerProtocol, registerScheme } from "./protocol";
 import { createWindow, getWindow } from "./window";
 
+applyGpuFlags();
 registerScheme();
 
 let rendererReady = false;

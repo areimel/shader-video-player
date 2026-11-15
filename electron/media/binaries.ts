@@ -1,19 +1,11 @@
-import { app } from "electron";
-
-/** Packaged builds unpack binaries out of the asar archive. */
-function fix(p: string): string {
-  return p.replace("app.asar", "app.asar.unpacked");
-}
-
-// SVP_FFMPEG_PATH / SVP_FFPROBE_PATH let a release ship an LGPL build.
+/**
+ * ffmpeg/ffprobe come from the system. Override with SVP_FFMPEG_PATH / SVP_FFPROBE_PATH;
+ * otherwise plain command names are resolved through PATH by spawn.
+ */
 export function ffmpegPath(): string {
-  if (process.env.SVP_FFMPEG_PATH) return process.env.SVP_FFMPEG_PATH;
-  if (app.isPackaged) return `${process.resourcesPath}/bin/ffmpeg`;
-  return fix(require("ffmpeg-static") as string);
+  return process.env.SVP_FFMPEG_PATH || "ffmpeg";
 }
 
 export function ffprobePath(): string {
-  if (process.env.SVP_FFPROBE_PATH) return process.env.SVP_FFPROBE_PATH;
-  if (app.isPackaged) return `${process.resourcesPath}/bin/ffprobe`;
-  return fix((require("ffprobe-static") as { path: string }).path);
+  return process.env.SVP_FFPROBE_PATH || "ffprobe";
 }

@@ -2,16 +2,15 @@
 
 ## FFmpeg
 
-Shader Video Player bundles the `ffmpeg` and `ffprobe` command-line programs from the FFmpeg project
-(https://ffmpeg.org), licensed under the **GNU Lesser General Public License v2.1 or later**.
+Shader Video Player does not bundle FFmpeg. At runtime it runs the system `ffmpeg` and `ffprobe` programs
+(https://ffmpeg.org) found on `PATH` (the `.deb` declares `ffmpeg` as a dependency), or the paths given in
+the `SVP_FFMPEG_PATH` and `SVP_FFPROBE_PATH` environment variables. They run as separate processes and are
+covered by their own licenses (LGPL/GPL depending on your distribution's build). FFmpeg is a trademark of
+Fabrice Bellard.
 
-The bundled binaries are built without `--enable-gpl` and `--enable-nonfree` by
-[scripts/build-ffmpeg.sh](scripts/build-ffmpeg.sh) from the unmodified official source release
-(version set in that script, downloaded from https://ffmpeg.org/releases/). They run as separate programs,
-located in the app bundle at `Contents/Resources/bin`, so you can replace them with your own build, or set
-the `SVP_FFMPEG_PATH` and `SVP_FFPROBE_PATH` environment variables.
+## babu-video-player
 
-FFmpeg is a trademark of Fabrice Bellard. The LGPL v2.1 text: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+This project is based on babu-video-player, MIT licensed, Copyright Babu Studios.
 
 ## Electron, Chromium, React
 

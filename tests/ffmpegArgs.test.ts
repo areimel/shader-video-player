@@ -1,20 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { buildStreamArgs, buildSubtitleArgs, targetBitrate } from "../electron/media/ffmpegArgs";
+import { ENCODER_FALLBACKS, buildStreamArgs, buildSubtitleArgs, targetBitrate } from "../electron/media/ffmpegArgs";
 import { makeInfo } from "./fixtures";
 
 const base = { input: "/v/a.mkv", output: "/tmp/o.mp4", startSec: 0, audioOrdinal: 0 };
 
+describe("ENCODER_FALLBACKS", () => {
+  it("ends with the software encoder", () => {
+    expect(ENCODER_FALLBACKS[ENCODER_FALLBACKS.length - 1]).toBe("libx264");
+  });
+});
+
 describe("buildStreamArgs", () => {
   it("remuxes h264 + aac with copy only", () => {
-    const a = buildStreamArgs(makeInfo(), { ...base, encoder: "h264_videotoolbox" });
+    const a = buildStreamArgs(makeInfo(), { ...base, encoder: "libx264" });
     expect(a).toContain("copy");
-    expect(a).not.toContain("h264_videotoolbox");
+    expect(a).not.toContain("libx264");
     expect(a.join(" ")).toContain("-c:a copy");
     expect(a.join(" ")).toContain("frag_keyframe+empty_moov");
   });
-  it("transcodes non-h264 with the chosen encoder", () => {
+  it("transcodes non-h264 with libx264", () => {
     const info = makeInfo({ videoCodec: "hevc" });
-    expect(buildStreamArgs(info, { ...base, encoder: "h264_videotoolbox" })).toContain("h264_videotoolbox");
     const sw = buildStreamArgs(info, { ...base, encoder: "libx264" });
     expect(sw).toContain("libx264");
     expect(sw).toContain("yuv420p");
