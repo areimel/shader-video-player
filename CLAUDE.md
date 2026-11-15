@@ -40,7 +40,7 @@ tests/               vitest
 - **Effect off means off.** With no effect selected the plain `<video>` is shown and no GL work happens. Don't add per-frame work to the bypass path.
 - **DRY:** reuse `renderer/components/common/*` (Slider, Dropdown, IconButton, Toast) and existing hooks before writing new ones; extract a shared piece once something appears three times.
 - **File size:** keep files under ~300 lines; split by responsibility when they grow.
-- **Security:** renderer stays sandboxed with context isolation. Files are served over `svp-media://` only after the main process has probed and allowlisted them. New IPC goes through `shared/types.ts` → `preload.ts` → `ipc.ts` and validates its arguments in the main process.
+- **Security:** renderer stays sandboxed with context isolation. The page never sends file paths for drops: the preload resolves real `File` objects to paths itself. Files are served over `svp-media://` only after the main process has probed and allowlisted them. New IPC goes through `shared/types.ts` → `preload.ts` → `ipc.ts` and validates its arguments in the main process.
 - **Media:** system `ffmpeg`/`ffprobe` from `PATH` (override with `SVP_FFMPEG_PATH` / `SVP_FFPROBE_PATH`). Nothing is bundled.
 
 ## Adding an effect

@@ -56,7 +56,7 @@ export function App() {
     setDragging(false);
     const f = e.dataTransfer.files[0];
     // Subtitle branch: a dropped subtitle file while a video is open loads as subtitles.
-    if (f && plan && isSubtitlePath(f.name)) return void subs.loadDropped(window.player.pathForFile(f));
+    if (f && plan && isSubtitlePath(f.name)) return void subs.loadDropped(f);
     const files = Array.from(e.dataTransfer.files);
     if (files.length) void openDropped(files);
   };

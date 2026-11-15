@@ -69,7 +69,7 @@ export interface OpenResult {
 
 export interface PlayerBridge {
   openDialog(): Promise<OpenResult | null>;
-  openDropped(paths: string[]): Promise<OpenResult>;
+  openDropped(files: File[]): Promise<OpenResult>;
   openQueued(path: string): Promise<PlaybackPlan>;
   openRecent(path: string): Promise<PlaybackPlan>;
   restart(startSec: number, audioOrdinal: number): Promise<PlaybackPlan>;
@@ -77,13 +77,12 @@ export interface PlayerBridge {
   getSubtitle(ordinal: number, offsetSec: number): Promise<string>;
   findSubtitles(): Promise<ExternalSubtitle[]>;
   pickSubtitle(): Promise<ExternalSubtitle | null>;
-  loadDroppedSubtitle(path: string): Promise<ExternalSubtitle>;
+  loadDroppedSubtitle(file: File): Promise<ExternalSubtitle>;
   getExternalSubtitle(id: string, offsetSec: number): Promise<string>;
   getRecents(): Promise<RecentFile[]>;
   reveal(path: string): void;
   setPlaying(playing: boolean): void;
   closeMedia(): void;
-  pathForFile(file: File): string;
   onPlan(cb: (plan: PlaybackPlan) => void): () => void;
   onQueue(cb: (queue: QueueItem[]) => void): () => void;
   onError(cb: (message: string) => void): () => void;

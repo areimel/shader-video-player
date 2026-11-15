@@ -74,8 +74,8 @@ export function useSubtitles(plan: PlaybackPlan | null, onError: (m: string) => 
     } catch (e) { onError(friendlyError(e)); }
   }, [adopt, onError]);
 
-  const loadDropped = useCallback(async (path: string) => {
-    try { adopt(await window.player.loadDroppedSubtitle(path)); } catch (e) { onError(friendlyError(e)); }
+  const loadDropped = useCallback(async (file: File) => {
+    try { adopt(await window.player.loadDroppedSubtitle(file)); } catch (e) { onError(friendlyError(e)); }
   }, [adopt, onError]);
 
   return { choice, setChoice, url, external, adopt, pickFile, loadDropped };

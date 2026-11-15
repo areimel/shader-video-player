@@ -60,8 +60,7 @@ export function usePlaybackSource(notify: Notify, onQueue: OnQueue) {
 
   const openDialog = useCallback(() => openSelection(() => window.player.openDialog()), [openSelection]);
   const openDropped = useCallback((files: File[]) => {
-    const paths = files.map((f) => window.player.pathForFile(f)).filter((p) => p.length > 0);
-    return paths.length ? openSelection(() => window.player.openDropped(paths)) : Promise.resolve(false);
+    return files.length ? openSelection(() => window.player.openDropped(files)) : Promise.resolve(false);
   }, [openSelection]);
   const openRecent = useCallback((p: string) => run(async () => {
     const plan = await window.player.openRecent(p);

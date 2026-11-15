@@ -7,9 +7,13 @@ function listen<T>(channel: string, cb: (v: T) => void): () => void {
   return () => ipcRenderer.removeListener(channel, handler);
 }
 
+// Dropped files are resolved to paths here, in the isolated preload world, from real File objects.
+// The page never passes path strings for drops, so it cannot name arbitrary files.
+const droppedPath = (file: File): string => webUtils.getPathForFile(file);
+
 const bridge: PlayerBridge = {
   openDialog: () => ipcRenderer.invoke("media:open-dialog"),
-  openDropped: (ps) => ipcRenderer.invoke("media:open-dropped", ps),
+  openDropped: (files) => ipcRenderer.invoke("media:open-dropped", files.map(droppedPath).filter(Boolean)),
   openQueued: (p) => ipcRenderer.invoke("media:open-queued", p),
   openRecent: (p) => ipcRenderer.invoke("media:open-recent", p),
   restart: (s, a) => ipcRenderer.invoke("media:restart", s, a),
@@ -17,13 +21,12 @@ const bridge: PlayerBridge = {
   getSubtitle: (o, off) => ipcRenderer.invoke("media:subtitle", o, off),
   findSubtitles: () => ipcRenderer.invoke("subtitle:siblings"),
   pickSubtitle: () => ipcRenderer.invoke("subtitle:pick"),
-  loadDroppedSubtitle: (p) => ipcRenderer.invoke("subtitle:load-dropped", p),
+  loadDroppedSubtitle: (file) => ipcRenderer.invoke("subtitle:load-dropped", droppedPath(file)),
   getExternalSubtitle: (id, off) => ipcRenderer.invoke("subtitle:external", id, off),
   getRecents: () => ipcRenderer.invoke("media:recents"),
   reveal: (p) => ipcRenderer.send("media:reveal", p),
   setPlaying: (on) => ipcRenderer.send("media:playing", on),
   closeMedia: () => ipcRenderer.send("media:close"),
-  pathForFile: (f) => webUtils.getPathForFile(f),
   onPlan: (cb) => listen<PlaybackPlan>("media:plan", cb),
   onQueue: (cb) => listen<QueueItem[]>("media:queue", cb),
   onError: (cb) => listen<string>("media:error", cb),
