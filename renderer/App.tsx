@@ -30,7 +30,7 @@ export function App() {
 
   usePlayerShortcuts({ enabled: !!plan, player, toggleFullscreen: fs.toggle, openFile: openDialog });
 
-  useEffect(() => { window.babu.setPlaying(!!plan && !player.paused); }, [plan, player.paused]);
+  useEffect(() => { window.player.setPlaying(!!plan && !player.paused); }, [plan, player.paused]);
   useEffect(() => { setShowInfo(false); if (plan) push("success", `Playing ${plan.info.name}`); }, [plan?.info.path]);
   useEffect(() => {
     if (plan && player.time > 0) savePosition(plan.info, player.time);

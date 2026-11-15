@@ -33,7 +33,7 @@ async function transcodePlan(startSec: number, audioOrdinal: number): Promise<Pl
     throw new Error(`This file could not be converted (${(e as Error).message})`);
   }
   return {
-    info, mode: "transcode", url: `babu-video-player://stream/${next.id}`,
+    info, mode: "transcode", url: `svp-media://stream/${next.id}`,
     mime: "video/mp4", startOffset: start, audioOrdinal, remuxOnly: isRemuxOnly(info),
   };
 }
@@ -48,7 +48,7 @@ export async function openMedia(path: string): Promise<PlaybackPlan> {
   if (!mime) return transcodePlan(0, 0);
   return {
     info: probed, mode: "native", mime, startOffset: 0, audioOrdinal: 0, remuxOnly: false,
-    url: `babu-video-player://file/${encodeURIComponent(real)}`,
+    url: `svp-media://file/${encodeURIComponent(real)}`,
   };
 }
 

@@ -6,7 +6,7 @@ import { mimeForPath } from "./media/formats";
 import { getStream } from "./playback";
 import type { StreamSession } from "./media/session";
 
-export const SCHEME = "babu-video-player";
+export const SCHEME = "svp-media";
 
 export function registerScheme(): void {
   protocol.registerSchemesAsPrivileged([

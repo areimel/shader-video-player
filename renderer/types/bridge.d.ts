@@ -1,8 +1,8 @@
-import type { BabuBridge } from "../../shared/types";
+import type { PlayerBridge } from "../../shared/types";
 
 declare global {
   interface Window {
-    babu: BabuBridge;
+    player: PlayerBridge;
   }
 }
 

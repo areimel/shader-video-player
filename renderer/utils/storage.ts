@@ -1,6 +1,6 @@
 import type { MediaInfo } from "../types/player";
 
-const KEY = "babu.positions";
+const KEY = "svp.positions";
 const MAX_ENTRIES = 200;
 
 type Positions = Record<string, { t: number; at: number }>;

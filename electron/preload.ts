@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
-import type { BabuBridge, PlaybackPlan } from "../shared/types";
+import type { PlayerBridge, PlaybackPlan } from "../shared/types";
 
 function listen<T>(channel: string, cb: (v: T) => void): () => void {
   const handler = (_e: unknown, v: T) => cb(v);
@@ -7,7 +7,7 @@ function listen<T>(channel: string, cb: (v: T) => void): () => void {
   return () => ipcRenderer.removeListener(channel, handler);
 }
 
-const bridge: BabuBridge = {
+const bridge: PlayerBridge = {
   openDialog: () => ipcRenderer.invoke("media:open-dialog"),
   openDropped: (p) => ipcRenderer.invoke("media:open-dropped", p),
   openRecent: (p) => ipcRenderer.invoke("media:open-recent", p),
@@ -24,4 +24,4 @@ const bridge: BabuBridge = {
   ready: () => ipcRenderer.send("app:ready"),
 };
 
-contextBridge.exposeInMainWorld("babu", bridge);
+contextBridge.exposeInMainWorld("player", bridge);

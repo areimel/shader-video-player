@@ -8,7 +8,7 @@ import { ENCODER_FALLBACKS, buildStreamArgs } from "./ffmpegArgs";
 import { ffmpegPath } from "./binaries";
 import { killProcess, spawnTracked } from "./processes";
 
-export const CACHE_ROOT = join(tmpdir(), "babu-video-player-cache");
+export const CACHE_ROOT = join(tmpdir(), "svp-media-cache");
 
 export class StreamSession {
   readonly id = randomUUID();

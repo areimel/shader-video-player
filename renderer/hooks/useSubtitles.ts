@@ -15,7 +15,7 @@ export function useSubtitles(plan: PlaybackPlan | null, onError: (m: string) => 
     if (selected < 0) { setUrl(null); return; }
     let cancelled = false;
     let made: string | null = null;
-    window.babu.getSubtitle(selected, offset)
+    window.player.getSubtitle(selected, offset)
       .then((vtt) => {
         if (cancelled) return;
         made = URL.createObjectURL(new Blob([vtt], { type: "text/vtt" }));

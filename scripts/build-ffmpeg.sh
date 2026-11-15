@@ -11,7 +11,7 @@ case "$(uname -m)" in
 esac
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-WORK="${TMPDIR:-/tmp}/babu-ffmpeg-build"
+WORK="${TMPDIR:-/tmp}/svp-ffmpeg-build"
 OUT="$ROOT/vendor/ffmpeg/$ARCH"
 mkdir -p "$WORK" "$OUT"
 cd "$WORK"

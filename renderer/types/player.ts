@@ -1,5 +1,5 @@
 export type {
-  AudioTrack, SubtitleTrack, MediaInfo, PlaybackPlan, RecentFile, BabuBridge,
+  AudioTrack, SubtitleTrack, MediaInfo, PlaybackPlan, RecentFile, PlayerBridge,
 } from "../../shared/types";
 
 export type ToastKind = "success" | "error";

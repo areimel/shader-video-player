@@ -30,7 +30,7 @@ export function InfoPanel({ plan, onClose }: Props) {
       <dl>
         {rows.map(([k, v]) => (<div key={k}><dt>{k}</dt><dd>{v}</dd></div>))}
       </dl>
-      <button type="button" className="primary-btn" onClick={() => window.babu.reveal(i.path)}>
+      <button type="button" className="primary-btn" onClick={() => window.player.reveal(i.path)}>
         Show in Finder
       </button>
     </div>

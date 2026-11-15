@@ -49,7 +49,7 @@ export interface RecentFile {
   openedAt: number;
 }
 
-export interface BabuBridge {
+export interface PlayerBridge {
   openDialog(): Promise<PlaybackPlan | null>;
   openDropped(path: string): Promise<PlaybackPlan>;
   openRecent(path: string): Promise<PlaybackPlan>;

@@ -11,14 +11,14 @@ interface Props {
 
 export function EmptyState({ onOpen, onRecent }: Props) {
   const [recents, setRecents] = useState<RecentFile[]>([]);
-  useEffect(() => { void window.babu.getRecents().then(setRecents); }, []);
+  useEffect(() => { void window.player.getRecents().then(setRecents); }, []);
 
   return (
     <div className="empty">
       <div className="empty-glow" />
       <main className="empty-main">
         <Logo />
-        <h1>Babu Video Player</h1>
+        <h1>Shader Video Player</h1>
         <p className="tagline">Plays almost any video. Simple, fast, no fuss.</p>
         <div className="dropzone" onClick={onOpen} role="button" tabIndex={0}
           onKeyDown={(e) => { if (e.key === "Enter") onOpen(); }}>
