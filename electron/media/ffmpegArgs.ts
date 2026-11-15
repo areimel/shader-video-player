@@ -61,3 +61,16 @@ export function buildSubtitleArgs(
     "-map", `0:s:${ordinal}`, "-c:s", "webvtt", "-f", "webvtt", output,
   ];
 }
+
+/** Converts an external subtitle file (srt/ass/ssa/vtt) to WebVTT, shifted back by `startSec`. */
+export function buildExternalSubtitleArgs(
+  input: string, demuxer: string, startSec: number, output: string,
+): string[] {
+  const seek = startSec > 0 ? ["-ss", startSec.toFixed(3)] : [];
+  return [
+    "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+    "-protocol_whitelist", "file",
+    ...seek, "-f", demuxer, "-i", input,
+    "-map", "0:s:0", "-c:s", "webvtt", "-f", "webvtt", output,
+  ];
+}

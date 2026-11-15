@@ -1,18 +1,17 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { buildSubtitleArgs } from "./ffmpegArgs";
+import { buildExternalSubtitleArgs, buildSubtitleArgs } from "./ffmpegArgs";
 import { ffmpegPath } from "./binaries";
 import { spawnTracked } from "./processes";
 import { CACHE_ROOT } from "./session";
 
-export function extractSubtitle(
-  input: string, ordinal: number, startSec: number,
-): Promise<string> {
+/** Runs ffmpeg with the args built for a temp output path and returns the WebVTT text. */
+function runToVtt(buildArgs: (out: string) => string[]): Promise<string> {
   mkdirSync(CACHE_ROOT, { recursive: true });
   const dir = mkdtempSync(join(CACHE_ROOT, "sub-"));
   const out = join(dir, "sub.vtt");
   return new Promise((resolve, reject) => {
-    const child = spawnTracked(ffmpegPath(), buildSubtitleArgs(input, ordinal, startSec, out));
+    const child = spawnTracked(ffmpegPath(), buildArgs(out));
     const cleanup = () => rmSync(dir, { recursive: true, force: true });
     child.on("error", (e) => { cleanup(); reject(e); });
     child.on("exit", (code) => {
@@ -26,4 +25,14 @@ export function extractSubtitle(
       }
     });
   });
+}
+
+export function extractSubtitle(input: string, ordinal: number, startSec: number): Promise<string> {
+  return runToVtt((out) => buildSubtitleArgs(input, ordinal, startSec, out));
+}
+
+export function convertExternalSubtitle(
+  input: string, demuxer: string, startSec: number,
+): Promise<string> {
+  return runToVtt((out) => buildExternalSubtitleArgs(input, demuxer, startSec, out));
 }

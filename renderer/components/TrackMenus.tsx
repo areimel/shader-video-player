@@ -1,15 +1,17 @@
 import { Dropdown } from "./common/Dropdown";
 import type { PlaybackPlan } from "../types/player";
+import { SUB_OFF, embeddedChoice, externalChoice, type SubtitleState } from "../hooks/useSubtitles";
 import { trackLabel } from "../utils/format";
 
 interface Props {
   plan: PlaybackPlan;
-  subtitle: number;
+  subs: SubtitleState;
   onAudio: (ordinal: number) => void;
-  onSubtitle: (ordinal: number) => void;
 }
 
-export function TrackMenus({ plan, subtitle, onAudio, onSubtitle }: Props) {
+const LOAD_FILE = "action:load";
+
+export function TrackMenus({ plan, subs, onAudio }: Props) {
   const { audioTracks, subtitleTracks } = plan.info;
   return (
     <>
@@ -19,15 +21,16 @@ export function TrackMenus({ plan, subtitle, onAudio, onSubtitle }: Props) {
           options={audioTracks.map((t) => ({ value: t.ordinal, label: trackLabel(t, t.ordinal + 1) }))}
         />
       )}
-      {subtitleTracks.length > 0 && (
-        <Dropdown
-          icon="subtitles" label="Subtitles" selected={subtitle} onSelect={onSubtitle}
-          options={[
-            { value: -1, label: "Off" },
-            ...subtitleTracks.map((t) => ({ value: t.ordinal, label: trackLabel(t, t.ordinal + 1) })),
-          ]}
-        />
-      )}
+      <Dropdown
+        icon="subtitles" label="Subtitles" selected={subs.choice}
+        onSelect={(v) => (v === LOAD_FILE ? void subs.pickFile() : subs.setChoice(v))}
+        options={[
+          { value: SUB_OFF, label: "Off" },
+          ...subtitleTracks.map((t) => ({ value: embeddedChoice(t.ordinal), label: trackLabel(t, t.ordinal + 1) })),
+          ...subs.external.map((s) => ({ value: externalChoice(s.id), label: s.name })),
+          { value: LOAD_FILE, label: "Load subtitle file…" },
+        ]}
+      />
     </>
   );
 }
