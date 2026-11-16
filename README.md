@@ -39,13 +39,23 @@ Built on Electron, React and WebGL2. Linux (Wayland/X11) is the supported platfo
 - `ffmpeg` and `ffprobe` on your `PATH` (`sudo apt install ffmpeg`)
 - A GPU with WebGL2 and floating-point render targets (any reasonably recent GPU; without them the effects switch themselves off with a message)
 
-## Getting started
+## Install (beta)
+
+On Debian, Ubuntu or Pop!_OS (x64):
+
+```bash
+curl -fsSL https://areimel.github.io/shader-video-player/install.sh | bash
+```
+
+The script downloads the newest `.deb` from [GitHub Releases](https://github.com/areimel/shader-video-player/releases), checks its SHA-256 and installs it with `apt` (which also installs `ffmpeg`). To do it by hand, download `shader-video-player_<version>_amd64.deb` from the release and run `sudo apt install ./shader-video-player_<version>_amd64.deb`. The app then appears in your application launcher, and `shader-video-player` runs it from a terminal. Remove it with `sudo apt remove shader-video-player`.
+
+## Getting started (from source)
 
 ```bash
 pnpm install
 pnpm dev                 # run in development
 pnpm dist                # build a .deb into release/
-sudo apt install "./release/Shader Video Player-0.2.0-amd64.deb"
+sudo apt install ./release/shader-video-player_0.3.0_amd64.deb
 ```
 
 In development Electron is started with `--no-sandbox`, because the sandbox helper installed by the package manager is not setuid. The packaged `.deb` runs sandboxed.
@@ -165,8 +175,7 @@ See `CLAUDE.md` for the conventions used in this codebase, the security model an
 
 1. Tune the CRT presets against real footage.
 2. Performance measurements and a quality toggle for integrated GPUs.
-3. Publishing: an install method and an app-launcher entry (see [TODO.md](TODO.md)).
-4. Wish list: export a video with the effect applied, ideally from the command line too.
+3. Wish list: export a video with the effect applied, ideally from the command line too.
 
 ## Credits and licence
 

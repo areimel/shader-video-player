@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0 - 2026-11-16
+- First public beta
+- One-command install for Debian, Ubuntu and Pop!_OS
+- Help menu: website, issue reports and About
+
 ## 0.2.0 - 2026-11-16
 - Home screen drawn on the TV, with your effect preset applied live
 - Video library from folders you choose
