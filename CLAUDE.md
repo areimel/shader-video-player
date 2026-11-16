@@ -42,7 +42,9 @@ renderer/
   shader/gl/              context, program, shaderError, target, quad, includes, commonChunks,
                           passTypes, passPlan (pure), passGraph, videoSource, renderPolicy (pure),
                           effectRenderer
-  shader/glsl/common/     color, yiq, noise, gaussian, sampling  (#include "name")
+  shader/glsl/common/     color, yiq, noise, gaussian, sampling, subcarrier, composite-encode,
+                          composite-decode  (#include "name"; pure, no p_/d_ names)
+  shader/effects/shared/  signal.ts (NTSC timing: subcarrier and cutoff cycles per sample)
   shader/effects/         types.ts, params.ts (generic helpers), registry.ts
   shader/effects/crt/     params, presets, derive, pipeline, index, passes/*.frag, glsl/*.glsl
 tests/                    vitest; tests/shaders/compile-entry.ts is the check:shaders entry
@@ -114,7 +116,7 @@ SVP_CAPTURE_KEYS=shift+E SVP_CAPTURE_EVAL='document.querySelector("canvas")?.wid
 2. Add it to `effects/registry.ts`. The panel, persistence and shortcuts pick it up from there.
 3. Add tests for `derive.ts` and preset validity (see `tests/effects/crt.test.ts`, which also checks that shaders only use known `p_`/`d_` names); `pnpm check:shaders` covers compilation.
 
-For VHS, the CRT signal passes (`signal-encode/decode.frag`, `glsl/subcarrier.glsl`) are the natural starting point; move what both effects need into `glsl/common/` rather than copying.
+For VHS, reuse the composite signal code instead of copying it: `glsl/common/subcarrier`, `composite-encode` and `composite-decode` (pure functions; the CRT `signal-encode/decode.frag` passes are thin wrappers that supply the `p_`/`d_` values) and `effects/shared/signal.ts` for the frequencies. An effect chunk with the same name as a common chunk silently shadows it (`tests/effects/chunks.test.ts` guards this).
 
 ## Known gaps
 

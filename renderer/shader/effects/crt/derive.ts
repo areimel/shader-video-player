@@ -1,9 +1,6 @@
 import type { DeriveEnv, ParamValues } from "../types";
+import { cutoffCycles, subcarrierCycles } from "../shared/signal";
 import { FIT, MASK, MASK_WIDTHS, VIRTUAL_LINES } from "./params";
-
-/** NTSC constants used to turn MHz into cycles per raster sample. */
-const ACTIVE_LINE_US = 52.6;
-const SUBCARRIER_MHZ = 3.579545;
 
 /** Scanlines need this many output pixels each to stay free of moiré. */
 const MIN_PX_PER_LINE_AUTO = 3.5;
@@ -77,7 +74,6 @@ export function deriveCrt(v: ParamValues, env: DeriveEnv): ParamValues {
   const width = Math.round(v.virtualWidth);
   const pxPerLine = tubeHeightPx / lines;
   const scanlineFade = clamp01((pxPerLine - FADE_END) / (FADE_START - FADE_END));
-  const mhzToCycles = ACTIVE_LINE_US / width;
 
   return {
     virtualLines: lines,
@@ -91,8 +87,8 @@ export function deriveCrt(v: ParamValues, env: DeriveEnv): ParamValues {
     maskWidth: pickMaskWidth(v.maskWidth, v.maskTVL, tubeWidthPx, tubeAspect),
     exposure: exposureGain(v, scanlineFade),
     // Frequencies in cycles per raster sample (Nyquist = 0.5).
-    subcarrier: SUBCARRIER_MHZ * mhzToCycles,
-    lumaCutoff: Math.min(0.5, v.lumaBandwidth * mhzToCycles),
-    chromaCutoff: Math.min(0.5, v.chromaBandwidth * mhzToCycles),
+    subcarrier: subcarrierCycles(width),
+    lumaCutoff: cutoffCycles(v.lumaBandwidth, width),
+    chromaCutoff: cutoffCycles(v.chromaBandwidth, width),
   };
 }

@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { deriveCrt } from "../../renderer/shader/effects/crt/derive";
@@ -8,16 +8,9 @@ import { CRT_PASSES } from "../../renderer/shader/effects/crt/pipeline";
 import { CRT_PRESETS } from "../../renderer/shader/effects/crt/presets";
 import { presetProblems, resolveValues } from "../../renderer/shader/effects/params";
 import { resolveIncludes } from "../../renderer/shader/gl/includes";
+import { shaderFiles, unknownNames } from "./shaderNames";
 
 const CRT_DIR = join(__dirname, "../../renderer/shader/effects/crt");
-
-function shaderFiles(dir: string): string[] {
-  return readdirSync(dir).flatMap((name) => {
-    const path = join(dir, name);
-    if (statSync(path).isDirectory()) return shaderFiles(path);
-    return /\.(frag|glsl)$/.test(name) ? [path] : [];
-  });
-}
 
 /** Include chunks read from disk (the app loads the same files through import.meta.glob). */
 function chunksIn(dir: string): Record<string, string> {
@@ -58,13 +51,7 @@ describe("CRT shader consistency", () => {
   });
 
   it.each(files.map((f) => [f.slice(CRT_DIR.length + 1), f] as const))("%s uses only real p_/d_ identifiers", (_n, file) => {
-    const src = readFileSync(file, "utf8").replace(/\/\/.*$/gm, "");
-    const bad: string[] = [];
-    for (const m of src.matchAll(/\b([pd])_([A-Za-z0-9_]+)\b/g)) {
-      const known = m[1] === "p" ? paramIds : derivedKeys;
-      if (!known.has(m[2])) bad.push(m[0]);
-    }
-    expect([...new Set(bad)]).toEqual([]);
+    expect(unknownNames(file, paramIds, derivedKeys)).toEqual([]);
   });
 
   it.each(CRT_PASSES.map((p) => [p.id, p] as const))("pass %s declares every sampler in its inputs", (_id, pass) => {
