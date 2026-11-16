@@ -69,6 +69,43 @@ export interface OpenResult {
   index: number;
 }
 
+/** A registered library folder. `path` is for display only; the renderer addresses folders by `id`. */
+export interface LibraryFolder {
+  id: string;
+  name: string;
+  path: string;
+  /** The folder could not be read on the last scan (unplugged drive, deleted). */
+  missing: boolean;
+  /** The scan stopped at the item or depth cap. */
+  truncated: boolean;
+}
+
+/** One video found in a library folder. The renderer only ever holds the opaque `id`. */
+export interface LibraryItem {
+  id: string;
+  folderId: string;
+  name: string;
+  /** Directory relative to the folder root ("" at the root), for display and grouping. */
+  dir: string;
+  sizeBytes: number;
+  modifiedMs: number;
+  durationSec: number | null;
+  width: number | null;
+  height: number | null;
+  probe: "pending" | "ok" | "failed";
+  /** Reserved for thumbnails; always null for now. */
+  thumb: string | null;
+}
+
+export interface LibrarySnapshot {
+  revision: number;
+  scanning: boolean;
+  folders: LibraryFolder[];
+  items: LibraryItem[];
+}
+
+export type LibraryMetaPatch = Pick<LibraryItem, "id" | "durationSec" | "width" | "height" | "probe">;
+
 export interface PlayerBridge {
   openDialog(): Promise<OpenResult | null>;
   openDropped(files: File[]): Promise<OpenResult>;
