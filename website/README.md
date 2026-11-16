@@ -51,7 +51,7 @@ For local origin/base changes, edit `website/.env`. Shell environment values tak
 - Starter manual: `src/content/guide.md`.
 - Screenshot provenance: `public/images/README.md`.
 
-Keep repeated UI in shared components and files under roughly 300 lines. App screenshots use generated test footage, and still show the existing desktop branding. The Download command is intentionally a nonfunctional `example.com` placeholder.
+Keep repeated UI in shared components and files under roughly 300 lines. App screenshots use generated test footage, and still show the existing desktop branding. The Download command installs from `public/install.sh` (served at `<base>/install.sh`), which fetches the newest `.deb` and its `SHA256SUMS` from GitHub Releases.
 
 ## Browser verification
 

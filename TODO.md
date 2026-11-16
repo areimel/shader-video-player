@@ -2,9 +2,9 @@
 
 ## Publishing tasks
 
-- install methods: curl, other - please recommend
-- run methods: app library icon, terminal command
-- 
+- [x] install method: `install.sh` on the website (curl | bash) fetching the `.deb` from GitHub Releases
+- [x] run methods: app launcher entry and `shader-video-player` command (both from the `.deb`)
+- [ ] apt repository or Flatpak, so updates arrive with system updates
 
 ## Extra Features
 

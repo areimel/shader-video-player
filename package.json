@@ -1,7 +1,7 @@
 {
   "name": "shader-video-player",
   "productName": "Shader Video Player",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Desktop video player with real-time shader effects (CRT, VHS)",
   "main": "dist-electron/main.js",
   "license": "MIT",
@@ -35,6 +35,7 @@
     "wait-on": "^9.5.1"
   },
   "author": "Alec Reimel",
+  "homepage": "https://areimel.github.io/shader-video-player/",
   "repository": {
     "type": "git",
     "url": "https://github.com/areimel/shader-video-player.git"
