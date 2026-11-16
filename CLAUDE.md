@@ -1,8 +1,8 @@
 # Shader Video Player
 
-Desktop video player (Electron) that draws the video through multi-pass WebGL2 shader effects. Two effects: CRT television (`crt/`, first in the registry) and VHS tape (`vhs/`), both built on `effects/shared/`. With no file open, the home screen (video library, TV preset picker, latest updates) is painted on a 2D canvas and drawn through the same effects. Personal daily-use player, Linux/Wayland first.
+Desktop video player (Electron) that draws the video through multi-pass WebGL2 shader effects. Two effects: CRT television (`crt/`, first in the registry) and VHS tape (`vhs/`), both built on `effects/shared/`. With no file open, the home screen (video library, TV preset picker, latest updates) is painted on a 2D canvas and drawn through the same effects. Personal daily-use player, Linux/Wayland first. The repo also holds `website/`, a separate Astro product site (see [Website](#website)).
 
-Design spec (read before changing the shader layer): `docs/superpowers/specs/2026-11-15-shader-video-player-design.md`.
+Design specs in `docs/superpowers/specs/`: `2026-11-15-shader-video-player-design.md` (read before changing the shader layer), `2026-11-15-vhs-effect-design.md`, `2026-11-16-home-screen-design.md`.
 
 ## Commands
 
@@ -15,7 +15,16 @@ pnpm build          # typecheck + renderer bundle + main bundle
 pnpm dist           # .deb in release/
 ```
 
-Run `pnpm typecheck && pnpm test && pnpm check:shaders` before every commit, and check the exit status itself: piping a gate through `tail`/`grep` hides a failure.
+Run `pnpm typecheck && pnpm test && pnpm check:shaders` before every commit, and check the exit status itself: piping a gate through `tail`/`grep` hides a failure. CI (`.github/workflows/ci.yml`) runs only `typecheck` and `test` (no GPU), so `check:shaders` is the local gate's job.
+
+Website (its own checks; the root gates never see it: root `tsconfig.json` includes only `renderer`/`shared`/`tests`, vitest only `tests/**/*.test.ts`):
+
+```bash
+pnpm --dir website dev --background   # http://localhost:4321/shader-video-player/; dev status|logs|stop
+pnpm --dir website check              # astro check
+pnpm --dir website build              # website/dist
+pnpm --dir website test:browser       # Playwright, two builds (mocked key, no key), own preview on :4321
+```
 
 Stack: Electron 45, React 19, TypeScript 7 (strict), Vite 8, esbuild for the main process, vitest, pnpm 11. Build-script approval for dependencies lives in `pnpm-workspace.yaml` (`allowBuilds`).
 
@@ -75,6 +84,18 @@ renderer/
 tests/                    vitest; tests/shaders/compile-entry.ts is the check:shaders entry
 scripts/                  dev.mjs, build-electron.mjs, check-shaders.mjs (+ -main.cjs)
 CHANGELOG.md              release notes, bundled into the home screen (`?raw`, parsed by utils/changelog.ts)
+AGENTS.md                 short contributor guide; TODO.md: publishing tasks and wish list
+.github/workflows/        ci.yml (typecheck + test), website-pages.yml (manual Pages deploy)
+website/                  Astro 7 static site (CRT-TV), own package.json, pnpm-workspace.yaml, lockfile
+  src/pages/              index, download, docs, contact, 404
+  src/components/         Header, Footer, TvFrame, SectionHeading, CommandBlock, SignupSection, ContactForm
+  src/layouts/            SiteLayout (head, canonical/social meta)
+  src/lib/                site.ts (name, repo, install command, url(), navigation), features.ts
+  src/scripts/forms.ts    Web3Forms submit and status states (the consent checkbox is in ContactForm)
+  src/styles/             global.css (tokens, type, spacing, @fontsource imports), home.css
+  src/content/guide.md    starter manual rendered on /docs
+  public/images/          app screenshots (webp) + README.md (provenance)
+  tests/site.spec.ts      Playwright; scripts/test-browser.mjs drives the two-build run
 ```
 
 ## How it fits together
@@ -170,6 +191,19 @@ SVP_CAPTURE_KEYS=shift+E SVP_CAPTURE_EVAL='document.querySelector("canvas")?.wid
 
 A new effect can reuse `glsl/common/` (subcarrier, composite encode/decode, blur, resample), `effects/shared/signal.ts` (NTSC timing) and `effects/shared/tube/` (tube params, derive, passes, display). An effect chunk with the same name as a common or tube chunk silently shadows it (`tests/effects/chunks.test.ts` guards this).
 
+## Website
+
+`website/` is the product site. `website/README.md` is its full guide (setup, Pages, Web3Forms); `website/AGENTS.md` is the Astro template's boilerplate.
+
+- **Separate project.** Own pnpm workspace and lockfile: install with `pnpm --dir website …`, never add site dependencies to the root (or app dependencies to the site).
+- **Branding:** CRT-TV is the site's name only. Don't rename the desktop app, its window, package or `.deb`.
+- **Base path:** the site is served under `SITE_BASE` (default `/shader-video-player`). Every internal link and asset goes through `url()` in `src/lib/site.ts`; `SITE_URL` is the origin only. Values come from `website/.env` locally, or Actions variables in CI.
+- **Forms:** Web3Forms with `PUBLIC_WEB3FORMS_ACCESS_KEY`, a public key by design that ends up in the HTML. Env only, never committed (`.env` is gitignored, `.env.example` is the template); never put a private secret there. No key means the forms render as unavailable, and that path is tested. Signup requires explicit consent; a contact inquiry never subscribes the sender.
+- **Styling:** tokens in `src/styles/global.css`, shared pieces in `src/components/`; same DRY and ~300-line rules as the app. Fonts are the same bundled `@fontsource` packages, no CDN.
+- **Screenshots** in `public/images/` come from the devCapture harness on generated fixtures and show the desktop app's own branding; note how each was made in `public/images/README.md`.
+- **Deploy** happens only through the manual `workflow_dispatch` of `website-pages.yml`. `test:browser` needs port 4321 free (stop a dev server first), mocks every submission and leaves `dist` built without the dummy key.
+- The Download page's install command (`site.installCommand`) is a deliberate `example.com` placeholder until an install method exists (`TODO.md`).
+
 ## Known gaps
 
 - CRT preset values were tuned against synthetic test patterns only; they need a pass against real footage.
@@ -187,8 +221,9 @@ A new effect can reuse `glsl/common/` (subcarrier, composite encode/decode, blur
 - Home screen: directory drop and the Add folder dialog are not exercised interactively (`partitionDrop` is unit-tested only).
 - Home screen: non-Latin file names draw in the browser's monospace fallback, squeezed into one cell per code point.
 - Home screen: the VHS "Third-generation dub" label is cut to `THIRD-GENERATION` in the TV column unless the cursor is on it, when it scrolls.
+- Website: real Web3Forms delivery is unverified (needs a live key and inbox), and the Pages workflow has not been run yet.
 - Home screen: context-loss recovery on the GL path is untested. The effect-off path still runs the paint timers (see How it fits together).
 
 ## Commits
 
-Small, descriptive checkpoints: imperative subject line, body listing what changed and why. One workstream per commit, and each commit should pass the gates on its own.
+Small, descriptive checkpoints: imperative subject line, optionally prefixed with the area (`Home:`, `VHS:`, `Library:`, `Site:`, `Docs:`), body listing what changed and why. One workstream per commit, and each commit should pass the gates on its own.

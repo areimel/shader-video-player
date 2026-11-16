@@ -31,6 +31,7 @@ Built on Electron, React and WebGL2. Linux (Wayland/X11) is the supported platfo
 - CRT effect with four presets: Consumer TV (composite), Trinitron (S-Video), Arcade monitor (RGB), Broadcast monitor (PVM), and a settings panel with a control for each of its ~50 parameters. Settings are remembered between runs.
 - VHS tape effect with seven presets, three framing modes and a settings panel. Choose it from the effect dropdown in the effects panel. See [How the VHS effect works](#how-the-vhs-effect-works).
 - Effects can be switched off instantly; with no effect active the video plays through the normal, low-power path.
+- On first run the CRT effect is on with its first preset (Consumer TV). After that your last choice is kept, including off.
 
 ## Requirements
 
@@ -44,7 +45,7 @@ Built on Electron, React and WebGL2. Linux (Wayland/X11) is the supported platfo
 pnpm install
 pnpm dev                 # run in development
 pnpm dist                # build a .deb into release/
-sudo apt install "./release/Shader Video Player-0.1.0-amd64.deb"
+sudo apt install "./release/Shader Video Player-0.2.0-amd64.deb"
 ```
 
 In development Electron is started with `--no-sandbox`, because the sandbox helper installed by the package manager is not setuid. The packaged `.deb` runs sandboxed.
@@ -143,6 +144,10 @@ shared/                    types and helpers shared by both processes
 tests/                     unit tests and the shader compile check
 scripts/                   dev, build and shader-check scripts
 docs/superpowers/specs/    design documents
+website/                   Astro product site (CRT-TV), its own pnpm workspace; see below
+.github/workflows/         CI (typecheck + tests on push/PR) and the manual website deploy
+AGENTS.md                  short contributor guide
+TODO.md                    publishing tasks and wish list
 ```
 
 See `CLAUDE.md` for the conventions used in this codebase, the security model and how to verify rendering from the command line.
@@ -160,13 +165,28 @@ See `CLAUDE.md` for the conventions used in this codebase, the security model an
 
 1. Tune the CRT presets against real footage.
 2. Performance measurements and a quality toggle for integrated GPUs.
+3. Publishing: an install method and an app-launcher entry (see [TODO.md](TODO.md)).
+4. Wish list: export a video with the effect applied, ideally from the command line too.
 
 ## Credits and licence
 
 MIT — see [LICENSE](LICENSE).
 
-The player is based on [babu-video-player](https://github.com/babu-studios/babu-video-player) by Babu Studios (MIT). Shader techniques draw on published work credited in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). ffmpeg is used as an external program and is not bundled. The interface typeface, Archivo (SIL Open Font License 1.1), is bundled so the app works offline.
+The player is based on [babu-video-player](https://github.com/babu-studios/babu-video-player) by Babu Studios (MIT). Shader techniques draw on published work credited in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). ffmpeg is used as an external program and is not bundled. The interface typeface, Archivo, and the home screen's pixel face, Press Start 2P (both SIL Open Font License 1.1), are bundled so the app works offline.
 
 ## Product website
 
-The Astro marketing site lives in [`website/`](website/README.md), with CRT-TV branding, launch signup, starter docs, and a manual GitHub Pages deployment workflow. Desktop branding is unchanged.
+The product site lives in [`website/`](website/README.md): a static [Astro](https://astro.build) site branded **CRT-TV** with Home, Download, Docs and Contact pages, a launch-update signup and a contact form. The CRT-TV name is used on the site only; the desktop app is still Shader Video Player.
+
+The site has its own pnpm workspace and lockfile, separate from the desktop app's:
+
+```bash
+pnpm --dir website install --frozen-lockfile
+cp website/.env.example website/.env      # set PUBLIC_WEB3FORMS_ACCESS_KEY to enable the forms
+pnpm --dir website dev --background       # http://localhost:4321/shader-video-player/
+pnpm --dir website check                  # Astro type check
+pnpm --dir website build                  # static output in website/dist
+pnpm --dir website test:browser           # Playwright: desktop/mobile layouts, links, forms (mocked)
+```
+
+The forms post to [Web3Forms](https://web3forms.com/) with a public access key; without a key they show as unavailable. Deployment to GitHub Pages runs only when you start the **Deploy CRT-TV website** workflow by hand. The install command on the Download page is a placeholder until an install method exists. See [`website/README.md`](website/README.md) for setup, Pages configuration and editing notes.
