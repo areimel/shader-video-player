@@ -5,7 +5,7 @@ const current = Astro.url.pathname.replace(/\/$/, "");
 <header class="container">
   <a class="brand" href={url()} aria-label="CRT-TV home"><span class="brand-icon" aria-hidden="true">▰</span> CRT-TV</a>
   <nav aria-label="Main navigation">
-    {navigation.map((item) => <a href={url(item.path)} aria-current={current === url(item.path).replace(/\/$/, "") ? "page" : undefined}><span class="channel">{item.channel}</span>{item.label}</a>)}
+    {navigation.map((item) => <a href={url(item.path)} aria-current={current === url(item.path).replace(/\/$/, "") ? "page" : undefined}><span class="channel" aria-hidden="true">{item.channel}</span>{item.label}</a>)}
   </nav>
   <span class="header-note">LOCAL FILES. ANALOG SOUL.</span>
 </header>

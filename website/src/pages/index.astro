@@ -1,4 +1,5 @@
 ---
+import SignupSection from "../components/SignupSection.astro";
 import SiteLayout from "../layouts/SiteLayout.astro";
 import TvFrame from "../components/TvFrame.astro";
 import SectionHeading from "../components/SectionHeading.astro";
@@ -41,5 +42,5 @@ import "../styles/home.css";
     <div class="features">{features.map((feature) => <article><span class="feature-number">{feature.number}</span><h3>{feature.title}</h3><p>{feature.copy}</p><span class="eyebrow">{feature.detail}</span></article>)}</div>
     <a class="text-link" href={url("docs/")}>Meet your new remote. Read the guide <span aria-hidden="true">↗</span></a>
   </div></section>
-  <section class="container section stay-tuned" id="stay-tuned"><div><p class="eyebrow">DON’T TOUCH THAT DIAL</p><h2>Good things<br />are on the way.</h2><p class="lede">CRT-TV isn’t on the air just yet. Leave your email and hear when it’s ready to watch.</p></div><div class="signup-placeholder"><span class="badge">Coming soon to Linux</span><p>Get a heads-up when the first release lands.</p><a class="button" href={url("contact/")}>Stay tuned <span aria-hidden="true">↗</span></a></div></section>
+  <SignupSection id="stay-tuned" />
 </SiteLayout>

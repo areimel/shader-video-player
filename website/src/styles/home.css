@@ -32,10 +32,6 @@
 .features h3 { margin-top: 28px; max-width: 260px; font-size: 26px; }
 .features p { color: var(--muted); }
 .features .eyebrow { font-size: 7px; color: var(--muted); }
-.stay-tuned { display: grid; grid-template-columns: 1fr 1fr; gap: 90px; align-items: center; }
-.stay-tuned h2 { font-size: clamp(2.7rem, 5vw, 4.6rem); }
-.signup-placeholder { padding: 32px; border: 1px solid var(--line); background: var(--panel); }
-.signup-placeholder p { margin-top: 20px; }
 @media (max-width: 1000px) {
   .hero { gap: 24px; } .hero h1 { font-size: 5.6vw; } .hero .eyebrow { font-size: 7px; }
   .signal-strip .container { font-size: 7px; gap: 12px; } .features { gap: 24px; }
@@ -46,6 +42,6 @@
   .hero-visual { max-width: 580px; width: 100%; margin-inline: auto; transform: none; }
   .signal-strip .container { display: grid; grid-template-columns: 1fr 1fr; padding-block: 18px; gap: 12px; font-size: 7px; }
   .signal-strip [aria-hidden] { display: none; }
-  .effect-grid, .features, .stay-tuned { grid-template-columns: 1fr; gap: 40px; }
+  .effect-grid, .features { grid-template-columns: 1fr; gap: 40px; }
   .corner-label { display: none; } .features h3 { max-width: none; }
 }

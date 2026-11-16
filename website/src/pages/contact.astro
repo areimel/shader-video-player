@@ -1,0 +1,24 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import ContactForm from "../components/ContactForm.astro";
+import { site } from "../lib/site";
+---
+<SiteLayout title="Contact — Stay tuned" description="Sign up for CRT-TV launch updates or send a question, suggestion, or a little analog appreciation.">
+  <section class="container page-heading"><p class="eyebrow">CH 04 / Open frequencies</p><h1>Stay tuned.<br />Say hello.</h1><p class="lede">Be first to hear when CRT-TV is ready. Or tell us what you’d love to watch on it.</p></section>
+  <section class="container split contact-grid">
+    <div class="signup-card"><div class="tuning-card" aria-hidden="true"><div class="color-bars"></div><span>PLEASE STAND BY</span><small>A NEW SIGNAL IS COMING</small></div><div class="card-body"><p class="eyebrow">THE FIRST BROADCAST</p><h2>Get the launch signal.</h2><p class="muted">Leave your email for release updates.</p><ContactForm id="contact-signup" kind="signup" /></div></div>
+    <div class="inquiry"><p class="eyebrow">TWO-WAY TRANSMISSION</p><h2>What’s on your mind?</h2><p class="muted">Questions, ideas, or feedback? We’re listening.</p><ContactForm id="contact-inquiry" kind="inquiry" /><p class="github-note">Found a bug in the app? You can also <a href={`${site.repository}/issues`}>open an issue on GitHub ↗</a>.</p></div>
+  </section>
+</SiteLayout>
+<style>
+  .contact-grid { padding-bottom: 80px; gap: 70px; }
+  .signup-card { border: 1px solid var(--line); background: var(--panel); }
+  .card-body { padding: 32px; }
+  h2 { font-size: 32px; }
+  .tuning-card { padding: 26px; text-align: center; background: var(--navy); border-bottom: 1px solid var(--line); }
+  .color-bars { height: 48px; margin-bottom: 20px; background: linear-gradient(90deg,#d9d9cd 0 14.28%,#e1cf29 14.28% 28.56%,#35c8c7 28.56% 42.84%,#46bb52 42.84% 57.12%,#b44fad 57.12% 71.4%,#c44842 71.4% 85.68%,#3547ac 85.68%); }
+  .tuning-card span { display: block; font: 12px/1.8 var(--pixel); color: var(--yellow); }
+  .tuning-card small { color: var(--cyan); font: 9px/2.5 monospace; letter-spacing: 2px; }
+  .github-note { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+  @media (max-width: 760px) { .contact-grid { gap: 40px; } .card-body { padding: 24px 20px; } }
+</style>

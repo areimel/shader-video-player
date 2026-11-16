@@ -1,0 +1,15 @@
+---
+import ContactForm from "./ContactForm.astro";
+interface Props { id: string; }
+const { id } = Astro.props;
+---
+<section class="container section signup-section" id={id}>
+  <div><p class="eyebrow">DON’T TOUCH THAT DIAL</p><h2>Good things<br />are on the way.</h2><p class="lede">CRT-TV isn’t on the air just yet. Leave your email and hear when it’s ready to watch.</p><span class="badge">Coming soon to Linux</span></div>
+  <div class="signup-panel"><p class="eyebrow">YOUR FRONT-ROW SEAT</p><ContactForm id={`${id}-form`} kind="signup" /></div>
+</section>
+<style>
+  .signup-section { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+  h2 { font-size: clamp(2.7rem, 5vw, 4.6rem); }
+  .signup-panel { padding: 30px; border: 1px solid var(--line); background: var(--panel); }
+  @media (max-width: 760px) { .signup-section { grid-template-columns: 1fr; gap: 30px; } .signup-panel { padding: 24px 20px; } }
+</style>

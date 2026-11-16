@@ -1,0 +1,98 @@
+---
+interface Props {
+  id: string;
+  kind: "signup" | "inquiry";
+}
+
+const { id, kind } = Astro.props;
+const signup = kind === "signup";
+const accessKey = import.meta.env.PUBLIC_WEB3FORMS_ACCESS_KEY?.trim() ?? "";
+const configured = accessKey.length > 0;
+const buttonLabel = signup ? "Keep me in the loop ↗" : "Send message ↗";
+---
+
+<form
+  id={id}
+  action="https://api.web3forms.com/submit"
+  method="POST"
+  data-contact-form
+  data-form-kind={kind}
+  data-configured={String(configured)}
+  aria-describedby={`${id}-privacy ${id}-status`}
+>
+  <input type="hidden" name="access_key" value={accessKey} />
+  <input type="hidden" name="subject" value={signup ? "CRT-TV launch signup" : "CRT-TV contact inquiry"} />
+  <input type="hidden" name="from_name" value="CRT-TV website" />
+  <input type="checkbox" name="botcheck" class="honeypot" tabindex="-1" aria-hidden="true" />
+  <fieldset disabled={!configured}>
+    <legend class="sr-only">{signup ? "Sign up for launch updates" : "Send an inquiry"}</legend>
+    {!signup && (
+      <label for={`${id}-name`}>
+        Your name
+        <input id={`${id}-name`} name="name" autocomplete="name" maxlength="120" required />
+      </label>
+    )}
+    <label for={`${id}-email`}>
+      Email address
+      <input
+        id={`${id}-email`}
+        name="email"
+        type="email"
+        autocomplete="email"
+        placeholder="you@example.com"
+        maxlength="254"
+        required
+      />
+    </label>
+    {!signup && (
+      <label for={`${id}-message`}>
+        What's on your mind?
+        <textarea id={`${id}-message`} name="message" rows="5" maxlength="5000" required />
+      </label>
+    )}
+    {signup && (
+      <label class="consent" for={`${id}-consent`}>
+        <input id={`${id}-consent`} name="launch_updates_consent" type="checkbox" value="Yes, send me CRT-TV launch updates" required />
+        <span>I'd like to receive CRT-TV launch updates by email.</span>
+      </label>
+    )}
+    <button class="button" type="submit">{buttonLabel}</button>
+  </fieldset>
+  <p id={`${id}-privacy`} class="form-note muted">
+    {signup
+      ? "Your email is sent to the CRT-TV team through Web3Forms for launch updates. Ask us to remove it at any time using the contact form."
+      : "Your details are sent to the CRT-TV team through Web3Forms so we can reply. Sending a message does not subscribe you to updates."}
+  </p>
+  <p id={`${id}-status`} class="form-status" role="status" aria-live="polite" aria-atomic="true" data-form-status>
+    {!configured && "This form is not connected yet. Please check back soon."}
+  </p>
+  {configured && <noscript><p class="form-note">Submitting opens Web3Forms to confirm delivery.</p></noscript>}
+</form>
+
+<script>
+  import "../scripts/forms";
+</script>
+
+<style>
+  form { width: 100%; }
+  fieldset { display: grid; gap: 1.15rem; min-width: 0; padding: 0; margin: 0; border: 0; }
+  label { display: grid; gap: .5rem; font-size: .9rem; font-weight: 600; }
+  input:not([type="checkbox"]), textarea {
+    width: 100%; min-width: 0; padding: .9rem 1rem;
+    border: 1px solid #65655f; border-radius: 2px;
+    background: #101112; color: #ebe5d6; font: inherit;
+  }
+  input::placeholder { color: #a6a69e; }
+  textarea { resize: vertical; }
+  .consent { display: flex; align-items: flex-start; gap: .7rem; font-weight: 400; line-height: 1.5; }
+  .consent input { flex: 0 0 auto; width: 1.1rem; height: 1.1rem; margin: .15rem 0 0; accent-color: #ffd200; }
+  button { justify-self: start; }
+  fieldset:disabled { opacity: .6; }
+  fieldset:disabled button { cursor: not-allowed; }
+  .form-note { font-size: .75rem; line-height: 1.6; margin: 1rem 0 0; }
+  .form-status { min-height: 1.5em; font-size: .85rem; margin: .65rem 0 0; }
+  .form-status[data-state="error"] { color: #ffb1a6; }
+  .form-status[data-state="success"] { color: #a4e5bc; }
+  .honeypot { display: none; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+</style>
