@@ -32,7 +32,7 @@ Stack: Electron 45, React 19, TypeScript 7 (strict), Vite 8, esbuild for the mai
 
 ```
 electron/                 main process
-  main.ts window.ts menu.ts gpuFlags.ts powerSave.ts
+  main.ts window.ts menu.ts links.ts gpuFlags.ts powerSave.ts   links.ts: fixed Help menu URLs + About panel
   recents.ts recentsShape.ts jsonStore.ts  recents and the validated userData JSON store (readJson/writeJson)
   ipc.ts subtitleIpc.ts preload.ts     IPC surface
   protocol.ts allowlist.ts             svp-media:// (file + stream), the one servable file

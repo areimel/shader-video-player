@@ -4,6 +4,7 @@ import { openSelection, pushSelection } from "./selection";
 import { showOpenDialog } from "./ipc";
 import { getRecents, onRecentsChanged } from "./recents";
 import { getWindow } from "./window";
+import { openLink, setAboutPanel } from "./links";
 
 async function openFromMenu(): Promise<void> {
   try {
@@ -57,13 +58,20 @@ function build(): void {
     { role: "editMenu" },
     { label: "View", submenu: view },
     { role: "windowMenu" },
-    { label: "Help", submenu: [{ label: "Keyboard shortcuts", accelerator: "Shift+/", registerAccelerator: false, click: () => send("shortcuts") }] },
+    { label: "Help", submenu: [
+      { label: "Keyboard shortcuts", accelerator: "Shift+/", registerAccelerator: false, click: () => send("shortcuts") },
+      { type: "separator" },
+      { label: "Website", click: () => openLink("website") },
+      { label: "Report an Issue", click: () => openLink("issues") },
+      { type: "separator" },
+      { role: "about", label: "About Shader Video Player" },
+    ] },
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
 let subscribed = false;
 export function buildMenu(): void {
-  if (!subscribed) { subscribed = true; onRecentsChanged(build); }
+  if (!subscribed) { subscribed = true; setAboutPanel(); onRecentsChanged(build); }
   build();
 }
