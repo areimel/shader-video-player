@@ -1,4 +1,4 @@
-// CRT main pass: screen finish (highlight shoulder, vignette, glass reflection, noise, flicker, hum bar),
+// Tube display (main pass): screen finish (highlight shoulder, vignette, glass reflection, noise, flicker, hum bar),
 // display encoding and dither. Every effect is an exact no-op at 0; animated terms use uTime / uFrame only.
 // Needs (declared in main.frag): uFrame. Needs color.glsl, noise.glsl, sampling.glsl (PI), geometry.glsl.
 

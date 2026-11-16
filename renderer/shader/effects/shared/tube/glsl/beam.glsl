@@ -1,7 +1,7 @@
-// CRT main pass: convergence, horizontal reconstruction and the electron beam (scanlines).
+// Tube display (main pass): convergence, horizontal reconstruction and the electron beam (scanlines).
 // Needs (declared in main.frag): uViewportSize, uVideoFrame. Needs geometry.glsl (TubeGeometry, d_tubeW).
 
-uniform sampler2D uSource;   // linear-light virtual raster: d_virtualWidth x d_virtualLines, row r = scanline r
+uniform sampler2D uSource;   // linear-light raster the tube draws (CRT: virtual raster; VHS: tape raster), row r = scanline r
 uniform vec4 uSourceSize;
 uniform float p_sharpness;
 uniform float p_beamMin;
@@ -45,7 +45,7 @@ vec3 bcSpline(vec3 x, float B, float C) {
 
 /**
  * Scale on sigma so a beam exp(-0.5 * (|d| / (sigma * k))^p) has the energy of a Gaussian of sigma,
- * sigma * sqrt(2 pi), for every shape p (this is what derive.ts's beam duty assumes).
+ * sigma * sqrt(2 pi), for every shape p (this is what shared/tube/derive.ts's beam duty assumes).
  * Exact: k = sqrt(2 pi) / (2 * 2^(1/p) * Gamma(1 + 1/p)); quadratic fit, exact at p = 2, 3, 4 and within 0.5% between.
  */
 float beamShapeScale(float p) {

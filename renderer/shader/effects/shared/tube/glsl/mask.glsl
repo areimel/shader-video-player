@@ -1,5 +1,5 @@
-// CRT main pass: phosphor mask, locked to integer device pixels (gl_FragCoord), never to the curved uv.
-// Average transmittance at full strength, white light, every pixel and channel (derive.ts MASK_TRANSMITTANCE):
+// Tube display (main pass): phosphor mask, locked to integer device pixels (gl_FragCoord), never to the curved uv.
+// Average transmittance at full strength, white light, every pixel and channel (shared/tube/derive.ts MASK_TRANSMITTANCE):
 //   aperture 1/3 (all widths, each channel 1/3) | slot (1/3)(1 - 1/slotHeight) = 1/4 at height 4
 //   shadow 1/3 | magenta-green 1/2 | RGBX 1/4.
 

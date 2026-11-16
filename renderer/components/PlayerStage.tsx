@@ -45,7 +45,7 @@ export function PlayerStage(p: Props) {
         onToggle={player.toggle} onFullscreen={fs.toggle} onError={p.onVideoError}
       />
       <ShaderCanvas
-        videoRef={p.videoRef} effect={fx.effect} values={fx.values} sourceKey={plan.url} captureRef={p.captureRef}
+        videoRef={p.videoRef} effect={fx.effect} values={fx.values} sourceKey={plan.url} startOffset={plan.startOffset} captureRef={p.captureRef}
         onToggle={player.toggle} onFullscreen={fs.toggle}
         onError={(e) => { fx.setEffect(null); p.notify("error", e.message.split("\n")[0]); console.error(e); }}
       />

@@ -7,6 +7,7 @@ interface Props {
   effect: EffectDefinition | null;
   values: ParamValues;
   sourceKey: string;
+  startOffset: number;
   onToggle: () => void;
   onFullscreen: () => void;
   onError: (e: Error) => void;
@@ -15,9 +16,9 @@ interface Props {
 }
 
 /** Renders the effect output over the stage; renders nothing (video shown directly) when there is no effect. */
-export function ShaderCanvas({ videoRef, effect, values, sourceKey, onToggle, onFullscreen, onError, captureRef }: Props) {
+export function ShaderCanvas({ videoRef, effect, values, sourceKey, startOffset, onToggle, onFullscreen, onError, captureRef }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  useEffectChain({ canvasRef, videoRef, effect, values, sourceKey, onError, captureRef });
+  useEffectChain({ canvasRef, videoRef, effect, values, sourceKey, startOffset, onError, captureRef });
   if (!effect) return null;
   return <canvas ref={canvasRef} className="shader-canvas" onClick={onToggle} onDoubleClick={onFullscreen} />;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampDelta, hasActiveAnimation, shouldRender } from "../../renderer/shader/gl/renderPolicy";
+import { clampDelta, hasActiveAnimation, mediaPosition, shouldRender } from "../../renderer/shader/gl/renderPolicy";
 import { formatShaderError } from "../../renderer/shader/gl/shaderError";
 
 describe("render policy", () => {
@@ -32,5 +32,15 @@ describe("formatShaderError", () => {
     expect(msg).toContain('Pass "glowH"');
     expect(msg).toContain("> 3 |   foo();");
     expect(msg).toContain("  2 | void main() {");
+  });
+});
+
+describe("mediaPosition", () => {
+  it("leaves native playback unchanged", () => {
+    expect(mediaPosition(0, 12.5)).toBe(12.5);
+  });
+  it("adds the transcode start offset, playing or paused", () => {
+    expect(mediaPosition(1800, 2)).toBe(1802);
+    expect(mediaPosition(1800, 0)).toBe(1800);
   });
 });

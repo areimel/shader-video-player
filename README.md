@@ -1,10 +1,10 @@
 # Shader Video Player
 
-A desktop video player that plays your files through real-time shader effects. The first effect is a physically inspired **CRT television**: scanline beams, phosphor masks, glow, tube curvature and analog composite/S-Video signal artefacts, with presets and a control for every parameter. A VHS effect is planned next.
+A desktop video player that plays your files through real-time shader effects. The first effect is a physically inspired **CRT television**: scanline beams, phosphor masks, glow, tube curvature and analog composite/S-Video signal artefacts, with presets and a control for every parameter. A second effect, a **VHS tape**, models a home video deck: tape bandwidth, head-switching and tracking faults, dropouts and an optional TV stage.
 
 Built on Electron, React and WebGL2. Linux (Wayland/X11) is the supported platform for now.
 
-> Status: early development. Everything below works, but the presets were tuned on test patterns and still need a pass against real footage. See [Known limitations](#known-limitations).
+> Status: early development. Everything below works, but the presets were tuned on test patterns and a few clips and still need a pass against real footage. See [Known limitations](#known-limitations).
 
 ![CRT effect with the settings panel open](docs/images/crt-effect-panel.jpg)
 
@@ -27,13 +27,14 @@ Built on Electron, React and WebGL2. Linux (Wayland/X11) is the supported platfo
 - Shortcut overlay: press `?` for the full list of keys.
 - Keyboard-accessible sliders, menus and panels; `Escape` closes whatever overlay is open.
 - CRT effect with four presets: Consumer TV (composite), Trinitron (S-Video), Arcade monitor (RGB), Broadcast monitor (PVM), and a settings panel with a control for each of its ~50 parameters. Settings are remembered between runs.
+- VHS tape effect with seven presets, three framing modes and a settings panel. Choose it from the effect dropdown in the effects panel. See [How the VHS effect works](#how-the-vhs-effect-works).
 - Effects can be switched off instantly; with no effect active the video plays through the normal, low-power path.
 
 ## Requirements
 
 - Node 24 and pnpm
 - `ffmpeg` and `ffprobe` on your `PATH` (`sudo apt install ffmpeg`)
-- A GPU with WebGL2 and floating-point render targets (any reasonably recent GPU; without them the CRT effect switches itself off with a message)
+- A GPU with WebGL2 and floating-point render targets (any reasonably recent GPU; without them the effects switch themselves off with a message)
 
 ## Getting started
 
@@ -103,7 +104,29 @@ The video is not simply overlaid with lines. Each frame goes through a chain of 
 
 Only the last step runs at screen resolution; the rest work on the small raster, which keeps the effect affordable. Scanlines fade out automatically when the window is too small to show them cleanly (below about 2.5 screen pixels per line), so they are most visible at 1080p and above.
 
-Every parameter is declared once in `renderer/shader/effects/crt/params.ts`; the settings panel, shader uniforms, presets and saved settings are all generated from that table.
+Every parameter is declared once in `renderer/shader/effects/<effect>/params.ts` (tube parameters in `effects/shared/tube/params.ts`); the settings panel, shader uniforms, presets and saved settings are all generated from that table.
+
+## How the VHS effect works
+
+The VHS effect records the picture to a simulated tape and plays it back, adding the tape's faults on the way. Every pass works on a tape raster of 240 or 480 lines:
+
+1. **Frame** — the video is fitted to the tape raster, converted to luma and chroma, and given saturation and tint. The camcorder date stamp is drawn here, so it is recorded too.
+2. **Tape, horizontal** — luma is band-limited to about 3 MHz at SP (less at LP and EP, and in later generations), with edge sharpening that leaves halos. Colour is limited to about 0.4 MHz and delayed to the right, as on a colour-under recording. Luma and chroma noise is added, along with time-base errors: line jitter, slow wobble, a bend at the top of the picture and a shift in the head-switch band.
+3. **Tape, vertical** — chroma is smeared across neighbouring lines by the deck's one-line comb, dropouts are added as white streaks, and the head-switch and tracking bands get extra noise. The VCR on-screen display (play symbol, tape speed, counter) is drawn here.
+4. **Composite** (optional) — with Output set to Composite (the default) the signal is encoded as NTSC composite and decoded again, which produces dot crawl and rainbowing. Y/C (S-Video) skips this step.
+5. **TV** (optional, off by default) — the picture is shown on a simulated tube using the same beam, mask, glow and geometry code as the CRT effect. With the TV off, the picture is drawn flat, as on a capture card.
+
+Presets, in the order they appear in the dropdown:
+
+- Home recording (SP), the default for new users
+- Worn rental
+- Six-hour EP
+- Camcorder (date stamp)
+- VCR on a TV
+- Third-generation dub
+- Bad tracking
+
+The camcorder and VCR-on-a-TV presets turn the on-screen display on; the others leave it off. Framing is one of Keep aspect (the default), 4:3 crop or 4:3 letterbox. The effect changes the picture only; audio is untouched. It models NTSC only, with no PAL or SECAM.
 
 ## Project layout
 
@@ -113,7 +136,7 @@ electron/media/            ffprobe, ffmpeg transcode sessions, subtitle conversi
 renderer/                  React UI (components, hooks, styles)
 renderer/shader/gl/        small WebGL2 multi-pass engine
 renderer/shader/glsl/      shared GLSL chunks
-renderer/shader/effects/   effect definitions (crt/)
+renderer/shader/effects/   effect definitions (crt/, vhs/) and effects/shared/ (tube stage, NTSC timing)
 shared/                    types and helpers shared by both processes
 tests/                     unit tests and the shader compile check
 scripts/                   dev, build and shader-check scripts
@@ -134,8 +157,7 @@ See `CLAUDE.md` for the conventions used in this codebase, the security model an
 ## Roadmap
 
 1. Tune the CRT presets against real footage.
-2. VHS effect, reusing the analog signal passes.
-3. Performance measurements and a quality toggle for integrated GPUs.
+2. Performance measurements and a quality toggle for integrated GPUs.
 
 ## Credits and licence
 

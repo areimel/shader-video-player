@@ -10,6 +10,8 @@ interface Options {
   values: ParamValues;
   /** Changes when the <video> element or its source is replaced. */
   sourceKey: string;
+  /** Plan start offset; changes only together with sourceKey (a restart yields a new stream URL). */
+  startOffset: number;
   onError: (e: Error) => void;
   /** Filled with the renderer's capture function while an effect is active, null otherwise. */
   captureRef?: MutableRefObject<(() => Promise<Blob>) | null>;
@@ -23,11 +25,13 @@ function devicePixels(entry: ResizeObserverEntry): [number, number] {
 }
 
 /** Owns the EffectRenderer lifecycle for the canvas. Everything GL lives in the renderer; this only wires it to React. */
-export function useEffectChain({ canvasRef, videoRef, effect, values, sourceKey, onError, captureRef }: Options): void {
+export function useEffectChain({ canvasRef, videoRef, effect, values, sourceKey, startOffset, onError, captureRef }: Options): void {
   const rendererRef = useRef<EffectRenderer | null>(null);
   const valuesRef = useRef(values);
+  const startOffsetRef = useRef(startOffset);
   const onErrorRef = useRef(onError);
   valuesRef.current = values;
+  startOffsetRef.current = startOffset;
   onErrorRef.current = onError;
 
   useEffect(() => {
@@ -36,7 +40,7 @@ export function useEffectChain({ canvasRef, videoRef, effect, values, sourceKey,
     if (!effect || !canvas || !video) return;
     let renderer: EffectRenderer;
     try {
-      renderer = new EffectRenderer(canvas, video, effect, (e) => onErrorRef.current(e));
+      renderer = new EffectRenderer(canvas, video, effect, (e) => onErrorRef.current(e), startOffsetRef.current);
     } catch (e) {
       onErrorRef.current(e instanceof Error ? e : new Error(String(e)));
       return;

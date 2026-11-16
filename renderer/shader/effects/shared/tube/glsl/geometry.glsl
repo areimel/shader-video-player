@@ -1,4 +1,4 @@
-// CRT main pass: tube placement, screen curvature and the rounded picture edge.
+// Tube display (main pass): tube placement, screen curvature and the rounded picture edge.
 // Spaces: viewport uv (0,0 top-left) -> tube t in [0,1] (undistorted face) -> c = 2t-1 in [-1,1]
 //         -> curved picture coords s = c * f(c) -> tube uv = s/2 + 1/2, used to sample uSource/uGlow/uDiffuse.
 // Needs (declared in main.frag): uViewportSize.

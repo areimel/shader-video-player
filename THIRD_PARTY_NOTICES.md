@@ -12,6 +12,11 @@ Fabrice Bellard.
 
 This project is based on babu-video-player, MIT licensed, Copyright Babu Studios.
 
+## Hash without Sine
+
+`renderer/shader/glsl/common/noise.glsl` contains the `hash12` and `hash32` functions from "Hash without Sine"
+by Dave Hoskins, MIT licensed.
+
 ## Archivo
 
 The interface typeface is Archivo, distributed through `@fontsource-variable/archivo` and bundled with the app.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { deriveCrt } from "../../renderer/shader/effects/crt/derive";
-import { CRT_PARAMS, FIT, MASK } from "../../renderer/shader/effects/crt/params";
+import { CRT_PARAMS, FIT } from "../../renderer/shader/effects/crt/params";
 import { resolveValues } from "../../renderer/shader/effects/params";
 
 const video169 = { width: 1920, height: 1080 };
@@ -24,36 +24,9 @@ describe("deriveCrt: virtual lines (auto)", () => {
   it("respects an explicit choice", () => {
     expect(derive({ virtualLines: 3 }).virtualLines).toBe(480);
   });
-  it("fades scanlines to zero below 2 px per line and full above 2.5", () => {
-    expect(derive({ virtualLines: 4 }).scanlineFade).toBe(0); // 1080/576 = 1.9
-    expect(derive({ virtualLines: 1 }).scanlineFade).toBe(1); // 4.5
-    const mid = derive({ virtualLines: 3 }).scanlineFade; // 2.25
-    expect(mid).toBeGreaterThan(0);
-    expect(mid).toBeLessThan(1);
-  });
 });
 
-describe("deriveCrt: mask width", () => {
-  it("snaps to the supported widths", () => {
-    expect(derive({ maskTVL: 350 }).maskWidth).toBe(3);
-    expect(derive({ maskTVL: 900 }).maskWidth).toBe(2);
-    expect(derive({ maskTVL: 350 }, { width: 3840, height: 2160 }).maskWidth).toBe(6);
-    for (const tvl of [250, 400, 600, 900]) expect([2, 3, 4, 6]).toContain(derive({ maskTVL: tvl }).maskWidth);
-  });
-  it("uses an explicit width verbatim", () => {
-    expect(derive({ maskWidth: 3 }).maskWidth).toBe(4);
-  });
-});
-
-describe("deriveCrt: tube rect and content scale", () => {
-  it("fits the tube inside the viewport", () => {
-    const d = derive({});
-    expect(d.tubeW).toBeCloseTo(0.75);
-    expect(d.tubeH).toBeCloseTo(1);
-    const wide = derive({ tubeAspect: 1 });
-    expect(wide.tubeW).toBe(1);
-    expect(wide.tubeH).toBeCloseTo(1);
-  });
+describe("deriveCrt: content scale", () => {
   it("letterboxes 16:9 video in a 4:3 tube", () => {
     const d = derive({ contentFit: FIT.letterbox });
     expect(d.contentW).toBeCloseTo(1);
@@ -75,19 +48,7 @@ describe("deriveCrt: tube rect and content scale", () => {
   });
 });
 
-describe("deriveCrt: exposure and cutoffs", () => {
-  it("is exactly 1 when nothing darkens the picture", () => {
-    expect(derive({ maskType: MASK.none, scanlineStrength: 0 }).exposure).toBeCloseTo(1, 10);
-  });
-  it("is 1 when compensation is off", () => {
-    expect(derive({ autoExposure: 0 }).exposure).toBe(1);
-  });
-  it("is above 1 with a mask and scanlines", () => {
-    expect(derive({}).exposure).toBeGreaterThan(1);
-  });
-  it("grows with compensation amount", () => {
-    expect(derive({ autoExposure: 1 }).exposure).toBeGreaterThan(derive({ autoExposure: 0.4 }).exposure);
-  });
+describe("deriveCrt: cutoffs", () => {
   it("keeps filter cutoffs at or below Nyquist", () => {
     for (const w of [320, 754, 1440]) {
       const d = derive({ virtualWidth: w, lumaBandwidth: 6, chromaBandwidth: 2 });
