@@ -102,7 +102,7 @@ export function App() {
           />
           <ShaderCanvas
             videoRef={videoRef} effect={fx.effect} values={fx.values}
-            sourceKey={plan.url} onToggle={player.toggle} onFullscreen={fs.toggle}
+            sourceKey={plan.url} startOffset={plan.startOffset} onToggle={player.toggle} onFullscreen={fs.toggle}
             onError={(e) => { fx.setEffect(null); push("error", e.message.split("\n")[0]); console.error(e); }}
           />
           <Controls

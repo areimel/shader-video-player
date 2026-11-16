@@ -3,7 +3,7 @@ import { createGlContext, type GlContext } from "./context";
 import { PassGraph } from "./passGraph";
 import { checkFloatRequirement } from "./passPlan";
 import type { PassSpec, Size } from "./passTypes";
-import { clampDelta, hasActiveAnimation, shouldRender, type AnimatedParam } from "./renderPolicy";
+import { clampDelta, hasActiveAnimation, mediaPosition, shouldRender, type AnimatedParam } from "./renderPolicy";
 import { VideoSource } from "./videoSource";
 
 /** The part of EffectDefinition the renderer needs (structural, so gl/ does not depend on effects/). */
@@ -42,6 +42,8 @@ export class EffectRenderer {
     private readonly video: HTMLVideoElement,
     private readonly effect: RunnableEffect,
     private readonly onError: (e: Error) => void,
+    /** Plan start offset (seconds): a restarted stream gets a new source, hence a new renderer, so it is fixed per instance. */
+    private readonly startOffset = 0,
   ) {
     this.ctx = createGlContext(canvas);
     this.cleanups.push(
@@ -173,7 +175,7 @@ export class EffectRenderer {
     this.dirty = false;
     try {
       graph.render(this.uniformValues, {
-        time: this.playing ? source.mediaTime : this.video.currentTime,
+        time: mediaPosition(this.startOffset, this.playing ? source.mediaTime : this.video.currentTime),
         delta,
         frame: this.frame++,
         videoFrame: source.videoFrame,
