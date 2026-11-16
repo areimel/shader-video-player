@@ -11,7 +11,7 @@ import { VolumeControl } from "./VolumeControl";
 import type { PlayerState } from "../hooks/usePlayerState";
 import { SPEEDS } from "../hooks/usePlayerState";
 import type { PlaybackPlan } from "../types/player";
-import { formatTime } from "../utils/format";
+import { TimeDisplay } from "./TimeDisplay";
 
 interface Props {
   plan: PlaybackPlan;
@@ -26,12 +26,14 @@ interface Props {
   effectsActive: boolean;
   onEffects: () => void;
   queue: PlayQueue;
+  remaining: boolean;
+  onToggleRemaining: () => void;
 }
 
 const mac = IS_MAC;
 const loopLabel = (loop: string) => `Loop: ${loop} (${formatKey(commandById("cycleLoop").keys![0], mac)})`;
 
-export function Controls({ plan, player: p, visible, fullscreen, subs, onAudio, onFullscreen, onPip, onInfo, effectsActive, onEffects, queue }: Props) {
+export function Controls({ plan, player: p, visible, fullscreen, subs, onAudio, onFullscreen, onPip, onInfo, effectsActive, onEffects, queue, remaining, onToggleRemaining }: Props) {
   return (
     <div className={`controls ${visible ? "" : "is-hidden"}`} onDoubleClick={(e) => e.stopPropagation()}>
       <SeekBar time={p.time} duration={p.duration} buffered={p.bufferedEnd} onSeek={p.seek} />
@@ -44,7 +46,7 @@ export function Controls({ plan, player: p, visible, fullscreen, subs, onAudio, 
           <IconButton icon="fwd10" label={hint("seekForward", mac)} onClick={() => p.seek(p.time + SEEK_STEP_SEC)} />
           <IconButton icon={queue.loop === "one" ? "loopOne" : "loop"} label={loopLabel(queue.loop)} active={queue.loop !== "off"} onClick={queue.cycleLoop} />
           <VolumeControl volume={p.volume} muted={p.muted} onVolume={p.setVolume} onToggleMute={p.toggleMute} />
-          <span className="time">{formatTime(p.time)} / {formatTime(p.duration)}</span>
+          <TimeDisplay time={p.time} duration={p.duration} remaining={remaining} onToggle={onToggleRemaining} />
         </div>
         <div className="controls-group">
           {queue.multi && <QueuePanel queue={queue} />}

@@ -16,5 +16,6 @@ import "./styles/effects.css";
 import "./styles/subtitles.css";
 import "./styles/topbar.css";
 import "./styles/endscreen.css";
+import "./styles/help.css";
 
 createRoot(document.getElementById("root")!).render(<App />);

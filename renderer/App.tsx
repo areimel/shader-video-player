@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import { EmptyState } from "./components/EmptyState";
 import { PlayerStage } from "./components/PlayerStage";
+import { ShortcutHelp } from "./components/ShortcutHelp";
 import { ToastHost, useToasts } from "./components/common/Toast";
 import { useAppCommands } from "./hooks/useAppCommands";
 import { useEffectSettings } from "./hooks/useEffectSettings";
@@ -12,6 +13,7 @@ import { useMenuCommands, usePlayerShortcuts } from "./hooks/usePlayerShortcuts"
 import { usePlayerState } from "./hooks/usePlayerState";
 import { useResumePosition } from "./hooks/useResumePosition";
 import { useScreenshot } from "./hooks/useScreenshot";
+import { useShowRemaining } from "./hooks/useShowRemaining";
 import { useSubtitles } from "./hooks/useSubtitles";
 import { isSubtitlePath } from "../shared/subtitleFiles";
 import { togglePip } from "./utils/pip";
@@ -24,6 +26,9 @@ export function App() {
   const [dragging, setDragging] = useState(false);
   const fx = useEffectSettings();
   const panels = usePanels();
+  const [remaining, toggleRemaining] = useShowRemaining();
+  const [helpOpen, setHelpOpen] = useState(false);
+  const toggleShortcuts = useCallback(() => setHelpOpen((v) => !v), []);
 
   const audio = plan?.audioOrdinal ?? 0;
   const restart = useCallback((t: number) => void restartAt(t, audio), [restartAt, audio]);
@@ -35,7 +40,7 @@ export function App() {
   const captureRef = useRef<(() => Promise<Blob>) | null>(null);
   const screenshot = useScreenshot({ videoRef, captureRef, plan, timeSec: player.time, notify: push });
   const { commands, goHome } = useAppCommands({
-    screenshot, videoRef, plan, player, fs, fx, subs, queue, panels, notify: push, closeMedia: close, openDialog: () => void openDialog(),
+    screenshot, toggleRemaining, toggleShortcuts, videoRef, plan, player, fs, fx, subs, queue, panels, notify: push, closeMedia: close, openDialog: () => void openDialog(),
   });
   usePlayerShortcuts(true, commands);
   useMenuCommands(commands);
@@ -67,12 +72,14 @@ export function App() {
           videoRef={videoRef} captureRef={captureRef} plan={plan} initialTime={initialTime} visible={visible} player={player} fullscreen={fs}
           subs={subs} fx={fx} queue={queue} panels={panels} notify={push} onHome={goHome} onVideoError={onVideoError}
           onAudio={(o) => restartAt(player.time, o)} onPip={() => togglePip(videoRef.current, push)}
+          remaining={remaining} onToggleRemaining={toggleRemaining}
         />
       ) : (
         <EmptyState onOpen={openDialog} onRecent={openRecent} />
       )}
       {loading && <div className="loading" role="status" aria-label="Loading"><div className="spinner" /></div>}
       {dragging && <div className="drop-overlay">{plan ? "Drop to play (hold Shift to add to queue)" : "Drop to play"}</div>}
+      {helpOpen && <ShortcutHelp onClose={() => setHelpOpen(false)} />}
       <ToastHost items={items} />
     </div>
   );

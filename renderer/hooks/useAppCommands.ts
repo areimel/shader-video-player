@@ -2,6 +2,7 @@ import { useCallback, type RefObject } from "react";
 import { SEEK_LONG_SEC, SEEK_STEP_SEC } from "../../shared/commands";
 import type { ToastKind } from "../types/player";
 import { exitPip, togglePip } from "../utils/pip";
+import { formatDelay } from "../utils/subtitleTiming";
 import type { EffectSettings } from "./useEffectSettings";
 import type { Panels } from "./usePanels";
 import type { PlayerState } from "./usePlayerState";
@@ -24,6 +25,8 @@ interface Deps {
   closeMedia: () => void;
   /** Saves the current frame (with the active effect) as a PNG. */
   screenshot: () => Promise<void>;
+  toggleRemaining: () => void;
+  toggleShortcuts: () => void;
   notify: (kind: ToastKind, msg: string) => void;
 }
 
@@ -61,14 +64,16 @@ export function useAppCommands(d: Deps): { commands: CommandHandlers; goHome: ()
     loadSubtitle: () => void subs.pickFile(),
     close: goHome,
     screenshot: () => void d.screenshot(),
-    // TODO(coordinator): wire toggleRemaining, subtitleDelayDown, subtitleDelayUp here.
+    toggleRemaining: d.toggleRemaining,
+    subtitleDelayDown: () => notify("success", `Subtitle delay ${formatDelay(subs.stepDelay(-1))}`),
+    subtitleDelayUp: () => notify("success", `Subtitle delay ${formatDelay(subs.stepDelay(1))}`),
   } : {};
   const commands: CommandHandlers = {
     ...media,
     open: d.openDialog,
     addToQueue: () => void queue.addToQueue(),
     cycleLoop: queue.cycleLoop,
-    // TODO(coordinator): wire shortcuts here (it must also work with nothing open).
+    shortcuts: d.toggleShortcuts,
   };
   return { commands, goHome };
 }
