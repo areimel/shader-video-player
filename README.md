@@ -17,10 +17,15 @@ Built on Electron, React and WebGL2. Linux (Wayland/X11) is the supported platfo
 ## Features
 
 - Plays MP4, MKV, WebM, MOV, AVI and more. Formats Chromium cannot decode (HEVC, AC3/DTS audio, AVI…) are converted on the fly with ffmpeg.
-- Open dialog, drag and drop, recent files, resume position, playback speed, audio track selection, fullscreen, picture-in-picture, keyboard shortcuts.
+- Open dialog, drag and drop, an Open Recent menu, resume position, playback speed, audio track selection, fullscreen, picture-in-picture, and a remaining-time toggle.
 - Opens only real video files: images, playlists and network formats are refused.
-- Play queue: open or drop several files, next/previous, auto-advance.
-- Subtitles: embedded tracks plus external `.srt`, `.vtt`, `.ass` files (a file named like the video is picked up automatically). Subtitles are drawn above the effect so they stay sharp.
+- Play queue: open or drop several files (Ctrl+Shift+O, or Shift+drop, adds to the queue), next/previous, auto-advance, and loop off / all / one.
+- Top bar with the file name and queue position. Ctrl+W or the top-bar back button returns to the home screen.
+- End screen when the queue finishes: Replay, Play queue again, or Back to home.
+- Screenshots (`S` or Ctrl+Shift+S) save the current frame, with the active effect applied, as a PNG.
+- Subtitles: embedded tracks plus external `.srt`, `.vtt`, `.ass` files (a file named like the video is picked up automatically). Subtitles are drawn above the effect so they stay sharp, with a text size control and a timing delay.
+- Shortcut overlay: press `?` for the full list of keys.
+- Keyboard-accessible sliders, menus and panels; `Escape` closes whatever overlay is open.
 - CRT effect with four presets: Consumer TV (composite), Trinitron (S-Video), Arcade monitor (RGB), Broadcast monitor (PVM), and a settings panel with a control for each of its ~50 parameters. Settings are remembered between runs.
 - Effects can be switched off instantly; with no effect active the video plays through the normal, low-power path.
 
@@ -41,7 +46,41 @@ sudo apt install "./release/Shader Video Player-0.1.0-amd64.deb"
 
 In development Electron is started with `--no-sandbox`, because the sandbox helper installed by the package manager is not setuid. The packaged `.deb` runs sandboxed.
 
-Keyboard: `Space` play/pause, `←`/`→` seek, `↑`/`↓` volume, `F` fullscreen, `M` mute, `[`/`]` speed, `N`/`P` next/previous in the queue, **`E` toggle the effect, `Shift+E` effect settings**.
+### Keyboard shortcuts
+
+Every shortcut is declared once in [`shared/commands.ts`](shared/commands.ts). Press `?` in the app to see the same list.
+
+| Group | Command | Keys (Linux / Windows) |
+|---|---|---|
+| File | Open… | Ctrl+O |
+| | Add to Queue… | Ctrl+Shift+O |
+| | Close | Ctrl+W |
+| | Screenshot | S, Ctrl+Shift+S |
+| Playback | Play / Pause | Space |
+| | Back 5 seconds | ← |
+| | Forward 5 seconds | → |
+| | Back 30 seconds | Shift+← |
+| | Forward 30 seconds | Shift+→ |
+| | Volume up | ↑ |
+| | Volume down | ↓ |
+| | Mute | M |
+| | Slower | [ |
+| | Faster | ] |
+| | Previous | P |
+| | Next | N |
+| | Cycle loop mode | L |
+| | Show remaining time | T |
+| Subtitles | Subtitles earlier | G |
+| | Subtitles later | H |
+| Effects | Toggle effect | E |
+| | Effects panel | Shift+E |
+| View | Fullscreen | F |
+| | Info | I |
+| | Keyboard shortcuts | ? |
+
+Shift+drop adds dropped files to the queue. Load Subtitle… and Picture in picture have no keyboard shortcut; use the menu or the controls.
+
+On macOS the same shortcuts use ⌘ in place of Ctrl (Ctrl+O is ⌘O) and ⇧ in place of Shift. Linux is the supported platform.
 
 Other commands: `pnpm typecheck`, `pnpm test`, `pnpm build`, and `pnpm check:shaders`, which compiles every shader pass on your GPU in a hidden window.
 
@@ -102,4 +141,4 @@ See `CLAUDE.md` for the conventions used in this codebase, the security model an
 
 MIT — see [LICENSE](LICENSE).
 
-The player is based on [babu-video-player](https://github.com/babu-studios/babu-video-player) by Babu Studios (MIT). Shader techniques draw on published work credited in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). ffmpeg is used as an external program and is not bundled.
+The player is based on [babu-video-player](https://github.com/babu-studios/babu-video-player) by Babu Studios (MIT). Shader techniques draw on published work credited in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). ffmpeg is used as an external program and is not bundled. The interface typeface, Archivo (SIL Open Font License 1.1), is bundled so the app works offline.

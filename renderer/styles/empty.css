@@ -9,12 +9,12 @@
   aspect-ratio: 16 / 10; max-height: 52vh; width: 100%; padding: var(--sp-5); text-align: center; cursor: pointer; overflow: hidden;
   border-radius: 28px / 22px; background: var(--bezel-deep);
   /* inner curvature: dark rim, faint scanlines */
-  box-shadow: inset 0 0 60px 8px #000, inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 60px 8px var(--screen), inset 0 0 0 1px var(--line);
   transition: box-shadow var(--dur) var(--ease); }
 .tube::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.05;
   background: repeating-linear-gradient(to bottom, var(--phosphor) 0 1px, transparent 1px 3px); }
-.tube:hover { box-shadow: inset 0 0 60px 8px #000, inset 0 0 0 1px var(--lamp); }
-.tube:focus-visible { box-shadow: inset 0 0 60px 8px #000, inset 0 0 0 2px var(--lamp); }
+.tube:hover { box-shadow: inset 0 0 60px 8px var(--screen), inset 0 0 0 1px var(--lamp); }
+.tube:focus-visible { box-shadow: inset 0 0 60px 8px var(--screen), inset 0 0 0 2px var(--lamp); }
 .tube > * { position: relative; }
 .tube-title { margin: 0; font-size: 24px; font-weight: 500; }
 .tube-open { display: inline-flex; align-items: center; gap: var(--sp-3); padding: 10px var(--sp-4); }

@@ -1,6 +1,6 @@
 :root {
   /* colour: broadcast monitor hardware */
-  --bezel: #17181a; --bezel-deep: #0f1011; --panel: #222326; --panel-raised: #2b2c30;
+  --screen: #000; --bezel: #17181a; --bezel-deep: #0f1011; --panel: #222326; --panel-raised: #2b2c30;
   --phosphor: #ebe5d6; --dim: #8e8a80;
   --lamp: #f0a53a; --lamp-ink: #1a1206; --tally: #e2493b; --signal: #8fd3a0;
   --line: color-mix(in srgb, var(--phosphor) 12%, transparent);
