@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#121315"/>
+  <rect x="48" y="48" width="1104" height="534" rx="26" fill="#292b29" stroke="#595b50" stroke-width="2"/>
+  <rect x="72" y="72" width="1056" height="440" rx="38" fill="#0b1cb0"/>
+  <path d="M100 150h1000M100 460h1000" stroke="#3fe0e0" opacity=".35"/>
+  <text x="112" y="125" fill="#ffd200" font-family="monospace" font-size="28" font-weight="bold">CRT-TV / CH 01</text>
+  <text x="112" y="265" fill="#ebe5d6" font-family="sans-serif" font-size="84" font-weight="bold">Your videos.</text>
+  <text x="112" y="365" fill="#ffd200" font-family="sans-serif" font-size="84" font-weight="bold">Back on the tube.</text>
+  <text x="112" y="425" fill="#ebe5d6" font-family="monospace" font-size="23">A LINUX PLAYER WITH CRT + VHS EFFECTS</text>
+  <text x="84" y="554" fill="#aeada7" font-family="monospace" font-size="17">LOCAL FILES. ANALOG SOUL.</text>
+  <circle cx="1092" cy="547" r="6" fill="#b3dc6b"/>
+</svg>

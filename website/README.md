@@ -1,63 +1,54 @@
-# Astro Starter Kit: Blog
+# CRT-TV website
+
+Static Astro product site for CRT-TV. Started with `npm create astro@latest -- --template blog`; sample blog content was replaced with Home, Download, Docs, and Contact. Website branding does not change the desktop app.
+
+## Local development
+
+Use Node 24 and pnpm 11.22.0. From the repository root:
 
 ```sh
-npm create astro@latest -- --template blog
+pnpm --dir website install --frozen-lockfile
+cp website/.env.example website/.env
+pnpm --dir website dev --background
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Open **http://localhost:4321/shader-video-player/**. Manage the server with `pnpm --dir website dev status`, `dev logs`, or `dev stop`. Restart after changing environment variables. This folder has its own pnpm workspace and lockfile; desktop dependencies are separate.
 
-Features:
-
-- ✅ Minimal styling (make it your own!)
-- ✅ 100/100 Lighthouse performance
-- ✅ SEO-friendly with canonical URLs and Open Graph data
-- ✅ Sitemap support
-- ✅ RSS Feed support
-- ✅ Markdown & MDX support
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-├── public/
-├── src/
-│   ├── assets/
-│   ├── components/
-│   ├── content/
-│   ├── layouts/
-│   └── pages/
-├── astro.config.mjs
-├── README.md
-├── package.json
-└── tsconfig.json
+```sh
+pnpm --dir website check
+pnpm --dir website build
+pnpm --dir website preview
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+The static output is `website/dist`. No application server is required.
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+## Web3Forms setup
 
-The `src/content/` directory contains "collections" of related Markdown and MDX documents. Use `getCollection()` to retrieve posts from `src/content/blog/`, and type-check your frontmatter using an optional schema. See [Astro's Content Collections docs](https://docs.astro.build/en/guides/content-collections/) to learn more.
+Create an access key at [Web3Forms](https://web3forms.com/) for the inbox that should receive submissions. Set `PUBLIC_WEB3FORMS_ACCESS_KEY` in `website/.env` for local work, or in the build environment. Rebuild after changing it.
 
-Any static assets, like images, can be placed in the `public/` directory.
+This key is deliberately public and is embedded in HTML. Never use a private API secret. Empty configuration disables forms with a visible explanation. No key is checked into this repository.
 
-## 🧞 Commands
+Signup requires explicit launch-update consent. Inquiries do not subscribe the sender. Both are sent to the configured inbox under distinct subjects. This is email capture, not an automatic mailing-list integration; manage launch messages and removal requests separately. A real delivery check still requires your key and inbox. Restrict allowed domains in Web3Forms if supported by your account.
 
-All commands are run from the root of the project, from a terminal:
+## GitHub Pages
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+The workflow `.github/workflows/website-pages.yml` only runs when manually dispatched. Nothing is deployed by local development or pushes alone.
 
-## 👀 Want to learn more?
+1. In repository Settings → Pages, choose **GitHub Actions** as the source.
+2. Add the Actions secret `PUBLIC_WEB3FORMS_ACCESS_KEY` for the receiving inbox.
+3. Defaults are `SITE_URL=https://areimel.github.io` and `SITE_BASE=/shader-video-player`. Override them with repository Actions variables if the destination changes. For a custom domain, use its HTTPS origin and `SITE_BASE=/`, and configure the domain in Pages settings.
+4. Run **Deploy CRT-TV website** in Actions when ready to publish.
 
-Check out [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+The workflow installs only website dependencies, checks Astro types, builds, and deploys `website/dist`. Navigation, screenshots, scripts, fonts, canonical URLs, and social images all respect the configured base. `SITE_URL` is the origin; keep the project path in `SITE_BASE`.
 
-## Credit
+For local origin/base changes, edit `website/.env`. Shell environment values take precedence. Node loads this local file for Astro config; Astro exposes only `PUBLIC_` variables to browser code.
 
-This theme is based off of the lovely [Bear Blog](https://github.com/HermanMartinus/bearblog/).
+## Editing
+
+- Shared layout and components: `src/layouts/` and `src/components/`.
+- Colors, typography and spacing: `src/styles/global.css`.
+- Shared site settings, navigation and features: `src/lib/`.
+- Starter manual: `src/content/guide.md`.
+- Screenshot provenance: `public/images/README.md`.
+
+Keep repeated UI in shared components and files under roughly 300 lines. App screenshots use generated test footage, and still show the existing desktop branding. The Download command is intentionally a nonfunctional `example.com` placeholder.
