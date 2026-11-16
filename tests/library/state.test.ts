@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { folderConflict } from "../../electron/library/folders";
 import { itemIdFor } from "../../electron/library/ids";
-import { applyMeta, buildItems, publicItem } from "../../electron/library/state";
+import { applyMeta, buildItems, metaWork, newFolder, publicItem } from "../../electron/library/state";
 
 const entry = (name: string, dir = "") => ({
   path: `/lib/${dir ? `${dir}/` : ""}${name}`, real: `/lib/${dir ? `${dir}/` : ""}${name}`, name, dir, size: 10, mtimeMs: 5,
@@ -23,7 +23,7 @@ describe("library items", () => {
   it("applies probe results only to the same file version", () => {
     const items = buildItems("f-0000000a", [entry("a.mp4"), entry("b.mp4")], () => null);
     const byId = new Map(items.map((i) => [i.id, i]));
-    const job = (i: number, size = 10) => ({ id: items[i].id, path: items[i].real, size, mtimeMs: 5 });
+    const job = (i: number, size = 10) => ({ id: items[i].id, path: items[i].real, root: "/lib", size, mtimeMs: 5 });
     const patches = applyMeta(byId, [
       { job: job(0), meta: { ok: true, durationSec: 9, width: 640, height: 480 } },
       { job: job(1, 99), meta: { ok: false } },
@@ -31,6 +31,19 @@ describe("library items", () => {
     ]);
     expect(patches).toEqual([{ id: items[0].id, durationSec: 9, width: 640, height: 480, probe: "ok" }]);
     expect(items[1].probe).toBe("pending");
+  });
+});
+
+describe("metaWork", () => {
+  it("queues pending items with their folder root and keeps missing folders' roots", () => {
+    const here = { ...newFolder("f-0000000a", "/lib", "/lib") };
+    here.items = buildItems(here.id, [entry("a.mp4"), entry("b.mp4")], (f) => (f.path === "/lib/a.mp4" ? { ok: false } : null));
+    const gone = { ...newFolder("f-0000000b", "/link-to-usb", null), lastRoot: "/media/usb", missing: true };
+    const noRoot = { ...newFolder("f-0000000c", "/never", null), missing: true };
+    const w = metaWork([here, gone, noRoot], here.items);
+    expect(w.jobs).toEqual([{ id: here.items[1].id, path: "/lib/b.mp4", root: "/lib", size: 10, mtimeMs: 5 }]);
+    expect(w.live).toEqual(["/lib/a.mp4", "/lib/b.mp4"]);
+    expect(w.missingRoots).toEqual(["/media/usb", "/never"]);
   });
 });
 

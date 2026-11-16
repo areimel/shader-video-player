@@ -37,7 +37,7 @@ export function writeJson(name: string, value: unknown): boolean {
     renameSync(tmp, target);
     return true;
   } catch {
-    rmSync(tmp, { force: true });
+    try { rmSync(tmp, { force: true }); } catch { /* leave the temp file; never let cleanup throw */ }
     return false;
   }
 }

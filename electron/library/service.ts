@@ -2,11 +2,11 @@ import { realpath, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { LibraryMetaPatch, LibrarySnapshot } from "../../shared/types";
 import { readJson, writeJson } from "../jsonStore";
-import { folderConflict, folderName } from "./folders";
+import { folderConflict } from "./folders";
 import { isFolderId, newFolderId } from "./ids";
 import { cachedMeta, onMetaResults, scheduleMeta, setLivePaths, startMeta, stopMeta } from "./metaQueue";
 import { MAX_FOLDERS, folderFile, healFolders } from "./shape";
-import { applyMeta, buildItems, publicFolder, publicItem, type Folder, type Item } from "./state";
+import { applyMeta, buildItems, metaWork, newFolder, publicFolder, publicItem, type Folder, type Item } from "./state";
 import { walkFolder, nodeWalkFs } from "./walker";
 import { isWatched, stopWatchers, syncWatchers } from "./watcher";
 
@@ -23,6 +23,8 @@ const byId = new Map<string, Item>();
 let revision = 0;
 /** Bumped by stop; a scan started in an older epoch never touches state again. */
 let epoch = 0;
+/** Set by stopLibrary: focus, library:get or a rescan during a slow quit must not start scans or watchers. */
+let stopped = false;
 /** Per-folder scan generation: a newer scan of the same folder supersedes the older one. */
 const scanGen = new Map<string, number>();
 let inFlight = 0;
@@ -68,9 +70,9 @@ const watchHandlers = {
 
 /** Hands the index's unprobed items to the metadata queue; only a finished index may prune its cache. */
 function requeueMeta(): void {
-  const pending = [...byId.values()].filter((i) => i.probe === "pending");
-  scheduleMeta(pending.map((i) => ({ id: i.id, path: i.real, size: i.sizeBytes, mtimeMs: i.modifiedMs })));
-  setLivePaths(inFlight === 0 ? [...byId.values()].map((i) => i.real) : null);
+  const work = metaWork(folders, byId.values());
+  scheduleMeta(work.jobs);
+  setLivePaths(inFlight === 0 ? work.live : null, work.missingRoots);
 }
 
 function setItems(folder: Folder, items: Item[]): void {
@@ -81,6 +83,7 @@ function setItems(folder: Folder, items: Item[]): void {
 }
 
 async function scanFolder(folder: Folder): Promise<void> {
+  if (stopped) return;
   const gen = (scanGen.get(folder.id) ?? 0) + 1;
   scanGen.set(folder.id, gen);
   const ep = epoch;
@@ -95,13 +98,13 @@ async function scanFolder(folder: Folder): Promise<void> {
       Object.assign(folder, { real: null, missing: true, truncated: false });
       setItems(folder, []);
     } else {
-      Object.assign(folder, { real: res.root, missing: false, truncated: res.truncated });
+      Object.assign(folder, { real: res.root, lastRoot: res.root, missing: false, truncated: res.truncated });
       setItems(folder, buildItems(folder.id, res.entries, cachedMeta));
     }
   } finally {
     inFlight--;
     setBusy(folder.id, -1);
-    if (ep === epoch) {
+    if (ep === epoch && !stopped) {
       changed();
       requeueMeta();
       syncWatchers(folders.map((f) => ({ id: f.id, root: f.real })), watchHandlers);
@@ -110,11 +113,13 @@ async function scanFolder(folder: Folder): Promise<void> {
 }
 
 function rescanAll(): void {
+  if (stopped) return;
   for (const f of folders) void scanFolder(f);
 }
 
 export function startLibrary(): void {
-  folders = readJson(STORE, healFolders).map((p) => ({ ...p, name: folderName(p.path), real: null, missing: false, truncated: false, items: [] }));
+  if (stopped) return;
+  folders = readJson(STORE, healFolders).map((p) => newFolder(p.id, p.path, null));
   startMeta();
   onMetaResults((results) => {
     const patches = applyMeta(byId, results);
@@ -124,6 +129,7 @@ export function startLibrary(): void {
 }
 
 export function stopLibrary(): void {
+  stopped = true;
   epoch++;
   if (emitTimer) clearTimeout(emitTimer);
   emitTimer = null;
@@ -133,13 +139,14 @@ export function stopLibrary(): void {
 
 /** Manual rescan from the renderer (rate-limited). */
 export function requestRescan(): void {
-  if (Date.now() - lastRescan < RESCAN_MIN_MS) return;
+  if (stopped || Date.now() - lastRescan < RESCAN_MIN_MS) return;
   lastRescan = Date.now();
   rescanAll();
 }
 
 /** Window focus and `library:get`: rescans the folders no watcher covers (fallback after a watch error). */
 export function refreshIfStale(): void {
+  if (stopped) return;
   // At startup no folder is watched until its first scan ends; those scans must not be restarted.
   const stale = folders.filter((f) => !isWatched(f.id) && !busy.has(f.id));
   if (!stale.length || Date.now() - lastFallback < FALLBACK_MIN_MS) return;
@@ -152,6 +159,7 @@ export function refreshIfStale(): void {
  * duplicate, contain or sit inside a registered folder. Throws the first reason when none could be added.
  */
 export async function addFolders(paths: readonly string[]): Promise<LibrarySnapshot> {
+  if (stopped) throw new Error("The library is closing");
   const added: Folder[] = [];
   let reason: string | null = null;
   for (const p of paths) {
@@ -164,11 +172,12 @@ export async function addFolders(paths: readonly string[]): Promise<LibrarySnaps
       continue;
     }
     // Checked synchronously against the live list after the awaits, so two racing adds cannot both pass.
+    if (stopped) throw new Error("The library is closing");
     if (folders.length >= MAX_FOLDERS) { reason ??= `The library holds at most ${MAX_FOLDERS} folders`; break; }
     const conflict = folderConflict(folders.map((f) => ({ real: f.real ?? f.path, name: f.name })), real);
     if (conflict) { reason ??= conflict; continue; }
     const path = resolve(p);
-    const folder: Folder = { id: newFolderId(), path, name: folderName(path), real, missing: false, truncated: false, items: [] };
+    const folder = newFolder(newFolderId(), path, real);
     folders.push(folder);
     added.push(folder);
   }
@@ -182,6 +191,7 @@ export async function addFolders(paths: readonly string[]): Promise<LibrarySnaps
 export function removeFolder(id: unknown): LibrarySnapshot {
   const folder = isFolderId(id) ? folders.find((f) => f.id === id) : undefined;
   if (!folder) throw new Error("That folder is not in the library");
+  if (stopped) throw new Error("The library is closing");
   folders = folders.filter((f) => f !== folder); // an in-flight scan of it sees folders.includes() fail
   setItems(folder, []);
   scanGen.delete(folder.id);

@@ -112,6 +112,30 @@ describe("walkFolder", () => {
     expect(calls).toBeLessThanOrEqual(1);
   });
 
+  it("does not descend a directory swapped for a symlink after it was listed", async () => {
+    const dirent = (name: string, kind: "f" | "d") => ({
+      name, isFile: () => kind === "f", isDirectory: () => kind === "d", isSymbolicLink: () => false,
+    });
+    const listings: Record<string, ReturnType<typeof dirent>[]> = {
+      "/r": [dirent("out", "d"), dirent("in", "d"), dirent("ok", "d")],
+      "/r/ok": [dirent("a.mp4", "f")],
+      "/etc": [dirent("secret.mp4", "f")],
+      "/r/ok2": [dirent("b.mp4", "f")],
+    };
+    // By descent time "out" points outside the root and "in" at another directory inside it.
+    const links: Record<string, string> = { "/r/out": "/etc", "/r/in": "/r/ok2" };
+    const read: string[] = [];
+    const fake: WalkFs = {
+      realpath: async (p) => links[p] ?? p,
+      readdir: async (d) => { read.push(d); return listings[links[d] ?? d] ?? []; },
+      stat: async () => ({ isFile: () => true, size: 1, mtimeMs: 1 }),
+    };
+    const res = await walkFolder("/r", fake, always);
+    if (res.status !== "ok") throw new Error(res.status);
+    expect(res.entries.map((e) => e.path)).toEqual(["/r/ok/a.mp4"]);
+    expect(read).toEqual(["/r", "/r/ok"]);
+  });
+
   it("works on an injected fake filesystem", async () => {
     const dirent = (name: string, kind: "f" | "d") => ({
       name, isFile: () => kind === "f", isDirectory: () => kind === "d", isSymbolicLink: () => false,

@@ -1,9 +1,11 @@
 import type { ChildProcess } from "node:child_process";
+import { realpath } from "node:fs/promises";
 import { readJson, writeJson } from "../jsonStore";
 import { ffprobePath } from "../media/binaries";
 import { INPUT_PROTOCOLS } from "../media/ffmpegArgs";
 import { killProcess, spawnTracked } from "../media/processes";
 import { currentVideoPath, onOpenStateChanged } from "../playback";
+import { isInside } from "./ids";
 import { parseLightProbe, type LightMeta } from "./metaParse";
 import { healMetaCache, metaFile, type MetaEntry } from "./shape";
 
@@ -11,7 +13,8 @@ import { healMetaCache, metaFile, type MetaEntry } from "./shape";
 const CONCURRENCY = 2;
 const TIMEOUT_MS = 15_000;
 const BATCH_MS = 500;
-const SAVE_MS = 3000;
+/** The cache is written synchronously, so not too often while a large first scan is being probed. */
+const SAVE_MS = 30_000;
 /** The light probe prints a few hundred bytes; anything far bigger is not worth buffering. */
 const MAX_STDOUT = 1024 * 1024;
 const CACHE_FILE = "library-meta.json";
@@ -20,6 +23,8 @@ export interface MetaJob {
   id: string;
   /** Real path: the cache key, and what ffprobe reads. */
   path: string;
+  /** Realpath of the item's folder: re-checked right before probing, since a job can wait for hours. */
+  root: string;
   size: number;
   mtimeMs: number;
 }
@@ -41,9 +46,16 @@ let batchTimer: NodeJS.Timeout | null = null;
 let saveTimer: NodeJS.Timeout | null = null;
 /** Paths in a complete index; null while a scan is running, so a half-built index never prunes the cache. */
 let livePaths: Set<string> | null = null;
+/** Roots of folders currently missing (unplugged drive): their entries are kept for when they return. */
+let keepUnder: string[] = [];
+/** Set when ffprobe cannot be spawned at all (not installed): nothing more is spawned this session. */
+let noProber = false;
 let listener: (results: MetaResult[]) => void = () => undefined;
 
-const keyOf = (j: MetaJob) => `${j.path}\0${j.size}\0${j.mtimeMs}`;
+/** What identifies one version of a file; enough to look it up in the cache. */
+export type FileVersion = Pick<MetaJob, "path" | "size" | "mtimeMs">;
+
+const keyOf = (j: FileVersion) => `${j.path}\0${j.size}\0${j.mtimeMs}`;
 
 function loadCache(): Map<string, MetaEntry> {
   cache ??= new Map(readJson(CACHE_FILE, healMetaCache).map((e) => [e.path, e]));
@@ -51,7 +63,7 @@ function loadCache(): Map<string, MetaEntry> {
 }
 
 /** The cached result for this exact file version, or null when it still has to be probed. */
-export function cachedMeta(job: MetaJob): LightMeta | null {
+export function cachedMeta(job: FileVersion): LightMeta | null {
   const e = loadCache().get(job.path);
   if (e && e.size === job.size && e.mtimeMs === job.mtimeMs) {
     return e.ok ? { ok: true, durationSec: e.durationSec, width: e.width, height: e.height } : { ok: false };
@@ -70,9 +82,13 @@ export function scheduleMeta(jobs: readonly MetaJob[]): void {
   pump();
 }
 
-/** Call with the full set of indexed paths once no scan is running; the persisted cache keeps only those. */
-export function setLivePaths(paths: Iterable<string> | null): void {
+/**
+ * Call with the full set of indexed paths once no scan is running (null while one is); the persisted cache
+ * keeps only those, plus anything under `missingRoots`.
+ */
+export function setLivePaths(paths: Iterable<string> | null, missingRoots: readonly string[] = []): void {
   livePaths = paths ? new Set(paths) : null;
+  keepUnder = [...missingRoots];
 }
 
 export function startMeta(): void {
@@ -99,12 +115,26 @@ function pump(): void {
     const key = keyOf(job);
     if (inFlight.has(key) || cachedMeta(job)) continue;
     inFlight.set(key, null);
-    void probe(job, key).then((r) => {
+    void run(job, key).then((r) => {
       inFlight.delete(key);
       if (!stopped) record(job, r.meta, r.persist);
       pump();
+      if (!pending.length && !inFlight.size && saveTimer) { clearTimeout(saveTimer); saveTimer = null; saveCache(); }
     });
   }
+}
+
+/** Probes a job only if the file still resolves to the same path inside its folder, and ffprobe exists. */
+async function run(job: MetaJob, key: string): Promise<{ meta: LightMeta; persist: boolean }> {
+  if (noProber) return { meta: { ok: false }, persist: false };
+  let real: string;
+  try {
+    real = await realpath(job.path);
+  } catch {
+    return { meta: { ok: false }, persist: false }; // gone: the watcher's rescan will drop the item
+  }
+  if (real !== job.path || !isInside(job.root, real) || stopped || noProber) return { meta: { ok: false }, persist: false };
+  return probe(job, key);
 }
 
 function probe(job: MetaJob, key: string): Promise<{ meta: LightMeta; persist: boolean }> {
@@ -135,7 +165,10 @@ function probe(job: MetaJob, key: string): Promise<{ meta: LightMeta; persist: b
     child.stdout?.setEncoding("utf8");
     child.stdout?.on("data", (d: string) => { out += d; if (out.length > MAX_STDOUT) kill(); });
     child.stderr?.resume(); // drained so a chatty file cannot block the probe on a full pipe
-    child.on("error", () => finish({ ok: false }, false));
+    child.on("error", (e: NodeJS.ErrnoException) => {
+      if (e.code === "ENOENT") noProber = true;
+      finish({ ok: false }, false);
+    });
     child.on("close", (code) => {
       // A killed or timed-out probe says nothing about the file, so it is retried on a later run.
       if (killed || code === null) finish({ ok: false }, false);
@@ -168,6 +201,8 @@ function flush(): void {
 function saveCache(): void {
   if (!cache) return;
   const live = livePaths;
-  const entries = live ? [...cache.values()].filter((e) => live.has(e.path)) : cache.values();
+  const entries = live
+    ? [...cache.values()].filter((e) => live.has(e.path) || keepUnder.some((root) => isInside(root, e.path)))
+    : cache.values();
   writeJson(CACHE_FILE, metaFile(entries));
 }

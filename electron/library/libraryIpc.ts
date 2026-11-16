@@ -2,9 +2,12 @@ import { dialog, ipcMain } from "electron";
 import { realpath, stat } from "node:fs/promises";
 import type { LibrarySnapshot, OpenResult } from "../../shared/types";
 import { isSupportedExtension } from "../media/formats";
+import { isSuperseded, supersededError } from "../../shared/superseded";
+import { MAX_QUEUE } from "../queue";
 import { openSelectionAt } from "../selection";
 import { getWindow } from "../window";
 import { isInside, isItemId, itemIdFor } from "./ids";
+import { windowAround } from "./queueWindow";
 import {
   addFolders, lookupItem, onLibraryChanged, onLibraryMeta, refreshIfStale, removeFolder, requestRescan, snapshot,
 } from "./service";
@@ -35,42 +38,67 @@ async function addDropped(paths: unknown): Promise<LibrarySnapshot> {
   return addFolders(dirs);
 }
 
-/** True when `path` still resolves inside `rootReal` (siblings are re-checked too, not just the clicked item). */
-async function resolvesInside(rootReal: string, path: string): Promise<boolean> {
+/** Sibling realpaths are resolved a few at a time, checking for a newer click between batches. */
+const RESOLVE_BATCH = 16;
+/** Latest click wins: bumped by every openItem; an older one throws superseded after any await. */
+let openRequest = 0;
+
+/** The realpath of `path` if it still resolves inside `rootReal` to a video file, else null. */
+async function resolveInside(rootReal: string, path: string): Promise<string | null> {
   try {
-    return isInside(rootReal, await realpath(path));
+    const real = await realpath(path);
+    return isInside(rootReal, real) && isSupportedExtension(real) ? real : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
 /**
  * Opens a library item by its opaque id. The id must be indexed, the file must still resolve (realpath now,
  * not at scan time) to the same id, inside its folder's realpath, with a video extension. The queue is its
- * siblings in the same directory, in natural name order, through openSelectionAt so the usual generation,
- * queue allow-set and serving rules apply.
+ * siblings in the same directory, in natural name order, windowed to MAX_QUEUE around the item, each one
+ * re-resolved the same way and queued by its realpath (the queue later opens paths without a containment
+ * check). It goes through openSelectionAt so the generation, allow-set and serving rules apply.
  */
 async function openItem(id: unknown): Promise<OpenResult> {
+  const req = ++openRequest;
+  const stillCurrent = () => { if (req !== openRequest) throw supersededError(); };
   if (!isItemId(id)) throw notFound();
   const found = lookupItem(id);
   if (!found) throw notFound();
   const { folder, item } = found;
   let rootReal: string;
-  let real: string;
+  let real: string | null;
   try {
     rootReal = await realpath(folder.path);
-    real = await realpath(item.path);
-  } catch {
-    throw notFound();
+    stillCurrent();
+    real = await resolveInside(rootReal, item.path);
+  } catch (e) {
+    throw isSuperseded(e) ? e : notFound();
   }
-  if (!isInside(rootReal, real) || !isSupportedExtension(real) || itemIdFor(real) !== id) throw notFound();
-  // Re-read the index after the awaits: the folder may have been rescanned or removed meanwhile.
+  stillCurrent();
+  if (!real || itemIdFor(real) !== id) throw notFound();
+  const siblings = folder.items.filter((i) => i.dir === item.dir).sort((a, b) => byName.compare(a.name, b.name));
+  const win = windowAround(siblings, siblings.indexOf(item), MAX_QUEUE);
+  if (win.index < 0) throw notFound(); // the folder was rescanned meanwhile and `item` is no longer in it
+  const paths: string[] = [];
+  let index = -1;
+  for (let b = 0; b < win.items.length; b += RESOLVE_BATCH) {
+    const batch = win.items.slice(b, b + RESOLVE_BATCH);
+    const resolved = await Promise.all(batch.map((s) => (s === item ? real : resolveInside(rootReal, s.path))));
+    stillCurrent();
+    batch.forEach((s, i) => {
+      const p = resolved[i];
+      if (!p) return;
+      if (s === item) index = paths.length;
+      paths.push(p);
+    });
+  }
+  // Last look before handing over: the folder may have been removed (or the file dropped by a rescan)
+  // during the awaits. A rescan that kept the file is fine; its paths were just re-verified above.
   const now = lookupItem(id);
-  if (!now) throw notFound();
-  const siblings = now.folder.items.filter((i) => i.dir === now.item.dir).sort((a, b) => byName.compare(a.name, b.name));
-  const ok = await Promise.all(siblings.map((s) => (s.id === id ? true : resolvesInside(rootReal, s.path))));
-  const paths = siblings.filter((_s, i) => ok[i]).map((s) => (s.id === id ? real : s.path));
-  return openSelectionAt(paths, paths.indexOf(real));
+  if (!now || now.folder !== folder) throw notFound();
+  return openSelectionAt(paths, index);
 }
 
 export function registerLibraryIpc(): void {

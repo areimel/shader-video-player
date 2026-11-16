@@ -1,7 +1,8 @@
 import type { LibraryFolder, LibraryItem, LibraryMetaPatch } from "../../shared/types";
 import { itemIdFor } from "./ids";
 import type { LightMeta } from "./metaParse";
-import type { MetaJob, MetaResult } from "./metaQueue";
+import { folderName } from "./folders";
+import type { FileVersion, MetaJob, MetaResult } from "./metaQueue";
 import type { WalkEntry } from "./walker";
 
 /** A registered folder with its scan state. `real` is the root's realpath from the last scan (null if missing). */
@@ -10,6 +11,8 @@ export interface Folder {
   path: string;
   name: string;
   real: string | null;
+  /** The last realpath a scan saw, kept while the folder is missing so its cached metadata is not pruned. */
+  lastRoot: string | null;
   missing: boolean;
   truncated: boolean;
   items: Item[];
@@ -21,6 +24,26 @@ export interface Item extends LibraryItem {
   real: string;
 }
 
+export function newFolder(id: string, path: string, real: string | null): Folder {
+  return { id, path, name: folderName(path), real, lastRoot: real, missing: false, truncated: false, items: [] };
+}
+
+/**
+ * What the metadata queue needs from the index: jobs for unprobed items (with their folder's realpath, re-checked
+ * before probing), every indexed real path, and the roots of missing folders whose cache entries must survive.
+ */
+export function metaWork(folders: readonly Folder[], items: Iterable<Item>): { jobs: MetaJob[]; live: string[]; missingRoots: string[] } {
+  const roots = new Map(folders.map((f) => [f.id, f.real]));
+  const jobs: MetaJob[] = [];
+  const live: string[] = [];
+  for (const i of items) {
+    live.push(i.real);
+    const root = roots.get(i.folderId);
+    if (i.probe === "pending" && root) jobs.push({ id: i.id, path: i.real, root, size: i.sizeBytes, mtimeMs: i.modifiedMs });
+  }
+  return { jobs, live, missingRoots: folders.filter((f) => f.missing).map((f) => f.lastRoot ?? f.path) };
+}
+
 function withMeta(item: Item, meta: LightMeta | null): void {
   if (!meta) return;
   item.probe = meta.ok ? "ok" : "failed";
@@ -30,14 +53,14 @@ function withMeta(item: Item, meta: LightMeta | null): void {
 }
 
 /** Turns walk entries into items, filling metadata from the cache where this exact file version is known. */
-export function buildItems(folderId: string, entries: readonly WalkEntry[], cached: (job: MetaJob) => LightMeta | null): Item[] {
+export function buildItems(folderId: string, entries: readonly WalkEntry[], cached: (file: FileVersion) => LightMeta | null): Item[] {
   return entries.map((e) => {
     const id = itemIdFor(e.real);
     const item: Item = {
       id, folderId, name: e.name, dir: e.dir, sizeBytes: e.size, modifiedMs: e.mtimeMs,
       durationSec: null, width: null, height: null, probe: "pending", thumb: null, path: e.path, real: e.real,
     };
-    withMeta(item, cached({ id, path: e.real, size: e.size, mtimeMs: e.mtimeMs }));
+    withMeta(item, cached({ path: e.real, size: e.size, mtimeMs: e.mtimeMs }));
     return item;
   });
 }

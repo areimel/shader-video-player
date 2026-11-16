@@ -80,8 +80,12 @@ export async function walkFolder(
     const { dir, depth, listing } = stack.pop()!;
     let list = listing;
     if (!list) {
+      // The listing said "directory, not a link", but it may have been swapped for a symlink since:
+      // resolve it at descent time and skip it unless it is still exactly the path we built (no link
+      // anywhere in it), which also keeps it inside the root.
       try {
-        list = await fs.readdir(dir);
+        const real = await fs.realpath(dir);
+        list = real === dir && isInside(rootReal, real) ? await fs.readdir(dir) : [];
       } catch {
         list = [];
       }

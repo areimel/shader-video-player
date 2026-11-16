@@ -3,7 +3,7 @@ import { basename, resolve } from "node:path";
 import type { QueueItem } from "../shared/types";
 import { isSupportedExtension } from "./media/formats";
 
-const MAX_QUEUE = 2000;
+export const MAX_QUEUE = 2000;
 
 /** Paths the user selected (dialog, drop, CLI) for the current queue; only these may be opened by `openQueued`. */
 let handedOut = new Set<string>();
