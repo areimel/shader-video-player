@@ -6,6 +6,9 @@
 // Needs (declared in the including main.frag, once): uViewportSize, uFrame, uVideoFrame.
 // Declares the rest of the tube's inputs: uSource (beam.glsl), uGlow, uDiffuse, p_glow, p_diffusion, p_halation,
 // p_brightness, d_exposure. Call `tubeDisplay` from uniform control flow (it takes screen derivatives).
+// Shared with vhs/pipeline.ts: the texture reads below are guarded by the same conditions as the VHS passes' `enabled`
+// predicates (uGlow: p_glow > 0; uDiffuse: p_halation > 0 || p_diffusion > 0), because a disabled pass's texture is
+// not the blur. Change a guard here and the predicate there together.
 
 uniform sampler2D uGlow;    // tight blur of the raster (bloom)
 uniform sampler2D uDiffuse; // wide blur of the raster, 1/8 viewport resolution

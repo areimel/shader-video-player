@@ -1,5 +1,6 @@
 #version 300 es
 precision highp float;
+precision highp int;   // int / and % below (mediump int hit a Mesa ACO 16-bit div bug; uVideoFrame passes 16 bits)
 
 // signalEncode (VHS composite out): the deck's composite output, one tape sample per texel.
 //   in : uSource = tapeV output, rgb = R', G', B' (gamma-encoded, unclamped)
@@ -17,17 +18,19 @@ uniform int uVideoFrame;
 
 uniform float p_crawl;       // 1 = subcarrier phase advances every frame
 uniform float d_subcarrier;  // cycles per tape sample
+uniform float d_fieldStride; // tape rows per field line (tape-phase.glsl)
 
 #include "sampling"
 #include "yiq"
 #include "subcarrier"
 #include "composite-encode"
+#include "tape-phase"
 
 void main() {
   int x = int(floor(vUv.x * uSourceSize.x));
   int line = int(floor(vUv.y * uSourceSize.y));  // row 0 = top
 
   vec3 yiq = rgb2yiq(texelFetch(uSource, ivec2(x, line), 0).rgb);
-  float phi = subcarrierPhase(float(x), line, d_subcarrier, crawlFrame(uVideoFrame, p_crawl > 0.5), false);
+  float phi = subcarrierPhase(float(x), tapePhaseLine(line, int(d_fieldStride + 0.5)), d_subcarrier, crawlFrame(uVideoFrame, p_crawl > 0.5), false);
   fragColor = compositeEncode(yiq.x, yiq.yz, phi, 0.0);
 }

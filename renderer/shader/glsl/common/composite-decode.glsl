@@ -24,11 +24,9 @@
 #include "sampling"
 #include "gaussian"
 #include "subcarrier"
+#include "filter-radius"
 
-const int COMPOSITE_DECODE_RADIUS = 16; // 33 taps
-
-// Hann radius ~2/fc keeps the luma sinc to its first couple of lobes (little inherent ringing).
-float lumaRadius(float fc) { return clamp(2.0 / max(fc, 1e-3), 3.0, float(COMPOSITE_DECODE_RADIUS)); }
+const int COMPOSITE_DECODE_RADIUS = FILTER_RADIUS; // 33 taps
 
 // Composite texel (S, Y, C) -> components (Y, C, noise). Linear, so it applies to sums too.
 vec3 components(vec3 v) { return vec3(v.y, v.z, v.x - v.y - v.z); }
@@ -42,9 +40,10 @@ struct CompositeSums {
 };
 
 // Runs the 33-tap loop at texel (x, line) of `tex` (`width` texels wide). lumaCutoff in cycles/sample (<= 0.5);
-// sigmaC = chromaSigma(chromaCutoff); subcarrier arguments as in subcarrierPhase.
-CompositeSums compositeAccumulate(sampler2D tex, int x, int line, int width, float lumaCutoff, float sigmaC,
-                                  float cyclesPerSample, int frame, bool threePhase) {
+// sigmaC = chromaSigma(chromaCutoff); subcarrier arguments as in subcarrierPhase. `phaseLine` is the line index the
+// encoder used for the subcarrier phase: the raster row for CRT (pass `line`), the field line for VHS (tape-phase.glsl).
+CompositeSums compositeAccumulate(sampler2D tex, int x, int line, int phaseLine, int width, float lumaCutoff,
+                                  float sigmaC, float cyclesPerSample, int frame, bool threePhase) {
   float fcY = lumaCutoff, rY = lumaRadius(fcY);
   float fcW = 0.5 * lumaCutoff, rW = lumaRadius(fcW);
 
@@ -62,7 +61,7 @@ CompositeSums compositeAccumulate(sampler2D tex, int x, int line, int width, flo
     float hw = lowpassTap(k, fcW, rW);
     float hc = gaussian(k, sigmaC);
     // Phase of the sample actually read (clamped), so it matches what the encoder modulated.
-    float phi = subcarrierPhase(float(xi), line, cyclesPerSample, frame, threePhase);
+    float phi = subcarrierPhase(float(xi), phaseLine, cyclesPerSample, frame, threePhase);
     float c = cos(phi), s = sin(phi);
 
     lum += hy * v;  sy += hy;

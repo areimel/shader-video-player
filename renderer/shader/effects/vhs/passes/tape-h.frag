@@ -24,6 +24,7 @@ uniform float uTime;
 
 #include "sampling"
 #include "gaussian"
+#include "filter-radius"
 #include "noise"
 #include "tape-noise"
 #include "timebase"
@@ -40,7 +41,7 @@ uniform float d_chromaDelay;
 uniform float d_lumaNoise;
 uniform float d_chromaNoise;
 
-const int RADIUS = 16;            // 33 taps
+const int RADIUS = FILTER_RADIUS;   // 33 taps
 const float SHARPEN_GAIN = 2.0;   // as CRT's RING_GAIN
 const float NOISE_WHITE = 0.85;   // share of the luma noise that is white (the rest is the streak component)
 const float STREAK_GAIN = 0.5;
@@ -56,11 +57,11 @@ void main() {
   float q = x - D;   // source position of this output sample
 
   float fcY = d_lumaCutoff;
-  float rY = clamp(2.0 / fcY, 3.0, 16.0);
+  float rY = lumaRadius(fcY);
   float fcW = fcY * 0.5;
-  float rW = clamp(2.0 / fcW, 3.0, 16.0);
+  float rW = lumaRadius(fcW);
   bool noisy = d_lumaNoise > 0.0 || d_chromaNoise > 0.0;
-  vec2 seed = vec2(17.0, 31.0) * float(uFrame % 1024);
+  vec2 seed = renderSeed(uFrame);
   float v = (float(row) + 0.5) / H;
 
   float Ly = 0.0, Sy = 0.0, Lw = 0.0, Sw = 0.0, Ny = 0.0, Nw = 0.0, Qy = 0.0;
@@ -88,7 +89,7 @@ void main() {
   if (noisy) {
     // White noise through the same filters; its std after the luma filter is exactly d_lumaNoise.
     float a = d_lumaNoise / sqrt(Qy);
-    float st = d_lumaNoise * valueNoise1(x / 24.0, float(row) * 7.13 + float(uFrame % 1024) * 1.618);
+    float st = d_lumaNoise * valueNoise1(x / 24.0, float(row) * 7.13 + renderSeed1(uFrame));
     y += NOISE_WHITE * a * Ny + STREAK_GAIN * st;
     // Same normalised-kernel scale as the signal, so peaking sharpens noise too.
     w += NOISE_WHITE * a * Nw * Sy / Sw + STREAK_GAIN * st;

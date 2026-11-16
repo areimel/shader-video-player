@@ -3,7 +3,8 @@
 // Needs sampling.glsl (PI), noise.glsl, tape-noise.glsl (valueNoise1). The pass must declare `uniform int uFrame` and
 // `uniform float uTime` BEFORE including this chunk (the functions below read them).
 // All shifts are in tape samples, positive = the picture moves right (tapeH samples at x - shift).
-// Shared assumptions with derive.ts: FIELD_LINES = TAPE_FIELD_LINES (240); d_fieldStride = tapeSize().stride;
+// Needs `precision highp int` in the including pass.
+// Shared with derive.ts: FIELD_LINES = TAPE_FIELD_LINES (240; keep in step); d_fieldStride = tapeSize().stride;
 // d_headSwitchShift / d_trackingShift are already in samples; d_headSwitchLines is a whole number of field lines;
 // every strength is 0 when its parameter is 0 (so each term below is then exactly 0).
 // Written from the signal maths; no code adapted from other implementations.
@@ -42,7 +43,7 @@ TapeLine tapeLine(int row) {
     t.parity = uFrame & 1;
   }
   t.fieldPos = (float(t.fieldLine) + 0.5) / FIELD_LINES;
-  t.seed = float((uFrame % 1024) * 2 + t.parity);
+  t.seed = renderSeed1(uFrame * 2 + t.parity);   // one seed per render and field, hashed (no short loop)
   return t;
 }
 

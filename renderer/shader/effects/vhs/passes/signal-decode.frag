@@ -1,5 +1,6 @@
 #version 300 es
 precision highp float;
+precision highp int;   // int / and % below (mediump int hit a Mesa ACO 16-bit div bug; uVideoFrame passes 16 bits)
 
 // signalDecode (VHS composite in): the television's input stage for the deck's composite output.
 //   in : uSource = signalEncode output, r = S = Y + C, g = Y, b = C
@@ -19,6 +20,7 @@ uniform float p_crawl;
 uniform float p_artifacting;         // 0..2, luma leaking into chroma
 uniform float p_fringing;            // 0..2, chroma leaking into luma
 uniform float d_subcarrier;          // cycles per tape sample
+uniform float d_fieldStride;         // tape rows per field line (tape-phase.glsl)
 uniform float d_decodeLumaCutoff;    // cycles per sample, <= 0.5
 uniform float d_decodeChromaSigma;   // samples: the decoder's whole chroma filter
 
@@ -27,13 +29,14 @@ uniform float d_decodeChromaSigma;   // samples: the decoder's whole chroma filt
 #include "yiq"
 #include "subcarrier"
 #include "composite-decode"
+#include "tape-phase"
 
 void main() {
   int w = int(uSourceSize.x);
   int x = int(floor(vUv.x * uSourceSize.x));
   int line = int(floor(vUv.y * uSourceSize.y));  // row 0 = top
 
-  CompositeSums s = compositeAccumulate(uSource, x, line, w, d_decodeLumaCutoff, d_decodeChromaSigma,
+  CompositeSums s = compositeAccumulate(uSource, x, line, tapePhaseLine(line, int(d_fieldStride + 0.5)), w, d_decodeLumaCutoff, d_decodeChromaSigma,
                                         d_subcarrier, crawlFrame(uVideoFrame, p_crawl > 0.5), false);
   vec3 lumaPath = compositeLumaPath(s, 0.0);
   fragColor = vec4(max(yiq2rgb(compositeDecodeYiq(s, lumaPath, 0.0, p_fringing, p_artifacting)), 0.0), 1.0);

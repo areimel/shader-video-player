@@ -2,9 +2,6 @@ import { range, select, toggle } from "../params";
 import type { ParamSpec } from "../types";
 import { tubeGroupNames, tubeParams, type TubeGroups } from "../shared/tube/params";
 
-// Tube option constants live in ../shared/tube/params.ts; re-exported so existing imports keep working.
-export { BEAM_SIGMA_MAX, MASK, MASK_WIDTHS } from "../shared/tube/params";
-
 const TUBE_GROUPS: TubeGroups = { beam: "Beam", mask: "Mask", glow: "Glow", geometry: "Geometry", screen: "Screen" };
 
 export const CRT_GROUPS = ["Picture", "Signal", ...tubeGroupNames(TUBE_GROUPS)];

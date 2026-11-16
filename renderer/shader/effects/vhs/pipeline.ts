@@ -1,5 +1,5 @@
 import type { PassSpec, SizeEnv } from "../../gl/passGraph";
-import { tubePasses } from "../shared/tube/pipeline";
+import { TUBE_MAIN_INPUTS, tubePasses } from "../shared/tube/pipeline";
 import frame from "./passes/frame.frag?raw";
 import tapeH from "./passes/tape-h.frag?raw";
 import tapeV from "./passes/tape-v.frag?raw";
@@ -10,7 +10,7 @@ import main from "./passes/main.frag?raw";
 type Values = Record<string, number>;
 
 /** The tape raster: `d_tapeWidth` samples by `d_tapeLines` rows (derive.ts). */
-const tapeSize = ({ values }: SizeEnv) => ({ width: values.d_tapeWidth, height: values.d_tapeLines });
+const tapeRaster = ({ values }: SizeEnv) => ({ width: values.d_tapeWidth, height: values.d_tapeLines });
 const composite = (v: Values) => v.p_connection > 0.5;
 const tvOn = (v: Values) => v.p_tv > 0.5;
 const glowOn = (v: Values) => tvOn(v) && v.p_glow > 0;
@@ -24,14 +24,14 @@ const diffuseOn = (v: Values) => tvOn(v) && (v.p_halation > 0 || v.p_diffusion >
  * above (glow: `p_glow > 0`; diffuse: `p_halation > 0 || p_diffusion > 0`).
  */
 export const VHS_PASSES: PassSpec[] = [
-  { id: "frame", frag: frame, inputs: { uSource: "video" }, size: tapeSize, mipmapInputs: true },
-  { id: "tapeH", frag: tapeH, inputs: { uSource: "frame" }, size: tapeSize },
-  { id: "tapeV", frag: tapeV, inputs: { uSource: "tapeH" }, size: tapeSize },
-  { id: "signalEncode", frag: signalEncode, inputs: { uSource: "tapeV" }, size: tapeSize, enabled: composite },
-  { id: "signalDecode", frag: signalDecode, inputs: { uSource: "signalEncode" }, size: tapeSize, enabled: composite },
+  { id: "frame", frag: frame, inputs: { uSource: "video" }, size: tapeRaster, mipmapInputs: true },
+  { id: "tapeH", frag: tapeH, inputs: { uSource: "frame" }, size: tapeRaster },
+  { id: "tapeV", frag: tapeV, inputs: { uSource: "tapeH" }, size: tapeRaster },
+  { id: "signalEncode", frag: signalEncode, inputs: { uSource: "tapeV" }, size: tapeRaster, enabled: composite },
+  { id: "signalDecode", frag: signalDecode, inputs: { uSource: "signalEncode" }, size: tapeRaster, enabled: composite },
   ...tubePasses("signalDecode", {
-    rasterSize: tapeSize,
+    rasterSize: tapeRaster,
     enabled: { linearize: tvOn, glowH: glowOn, glowV: glowOn, diffuseDown: diffuseOn, diffuseUp: diffuseOn },
   }),
-  { id: "main", frag: main, inputs: { uSource: "linearize", uGlow: "glowV", uDiffuse: "diffuseUp" }, size: "viewport" },
+  { id: "main", frag: main, inputs: { ...TUBE_MAIN_INPUTS }, size: "viewport" },
 ];

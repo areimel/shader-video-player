@@ -1,24 +1,27 @@
 import { range, select, toggle } from "../params";
 import type { ParamSpec } from "../types";
-import { tubeParams } from "../shared/tube/params";
+import { tubeGroupNames, tubeParams, type TubeGroups } from "../shared/tube/params";
 
-export const VHS_GROUPS = [
-  "Picture", "Tape", "Tracking", "Output", "OSD", "TV",
-  "TV: Beam", "TV: Mask", "TV: Glow", "TV: Geometry", "TV: Screen",
-];
+const TUBE_GROUPS: TubeGroups = { beam: "TV: Beam", mask: "TV: Mask", glow: "TV: Glow", geometry: "TV: Geometry", screen: "TV: Screen" };
+
+export const VHS_GROUPS = ["Picture", "Tape", "Tracking", "Output", "OSD", "TV", ...tubeGroupNames(TUBE_GROUPS)];
 
 /** Option orders are part of the shader contract. */
 export const FRAME_FIT = { keep: 0, crop: 1, letterbox: 2 } as const;
 export const TAPE_LINES = [240, 480]; // index -> rows
+export const TAPE_LINES_CHOICE = { rows240: 0, rows480: 1 } as const;
 export const TAPE_SPEED = { sp: 0, lp: 1, ep: 2 } as const;
 export const CONNECTION = { yc: 0, composite: 1 } as const;
 export const OSD_MODE = { off: 0, vcr: 1, camcorder: 2 } as const;
+// Month names in osd.glsl OSD_MONTH_GLYPHS order (glsl/osd.glsl indexes its glyph table by this index): keep in step.
 export const OSD_MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+const OSD_MONTH_NOV = OSD_MONTHS.indexOf("NOV");
 
 export const VHS_PARAMS: ParamSpec[] = [
   // Picture
   select("frameFit", "Frame", "Picture", ["Keep aspect", "4:3 crop", "4:3 letterbox"], FRAME_FIT.keep),
-  select("tapeLines", "Tape lines", "Picture", TAPE_LINES.map(String), 1, { hint: "240 = one field per render." }),
+  select("tapeLines", "Tape lines", "Picture", TAPE_LINES.map(String), TAPE_LINES_CHOICE.rows480,
+    { hint: "240: one tape row per field line (softer, half the rows). 480: two rows per field line, one per field." }),
   range("saturation", "Saturation", "Picture", 0, 2, 0.01, 1),
   range("tint", "Tint", "Picture", -30, 30, 1, 0, { unit: "°" }),
 
@@ -55,7 +58,7 @@ export const VHS_PARAMS: ParamSpec[] = [
 
   // OSD
   select("osdMode", "On-screen display", "OSD", ["Off", "VCR", "Camcorder"], OSD_MODE.off),
-  select("osdMonth", "Month", "OSD", OSD_MONTHS, 10),
+  select("osdMonth", "Month", "OSD", OSD_MONTHS, OSD_MONTH_NOV),
   range("osdDay", "Day", "OSD", 1, 31, 1, 15),
   range("osdYear", "Year", "OSD", 1976, 2009, 1, 1994),
   range("osdHour", "Clock start", "OSD", 0, 23, 1, 14, { unit: "h" }),

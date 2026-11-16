@@ -1,11 +1,23 @@
 // VHS tape noise helpers: unit-variance Gaussian-like noise, low-frequency value noise and FM-threshold "snow".
-// Pure: no uniforms, no p_/d_ names. Needs noise.glsl (hash12, hash32).
+// Pure: no uniforms, no p_/d_ names. Needs noise.glsl (hash12, hash32). Int division: the including pass needs
+// `precision highp int` (the render counter outgrows 16 bits).
 // Written from the signal maths; no code adapted from other implementations.
 
 const vec2 NOISE_OFFSET = vec2(57.3, 91.1); // decorrelates the two hashes whose sum is triangular
 const float TRI_UNIT = 2.449489743;         // sqrt(6): a sum of two U(0,1) minus 1 has variance 1/6
 
-// Zero mean, unit variance (triangular, as CRT's noise).
+// Per-render seeds. The render counter `n` is hashed, so no pattern recurs on a short loop (a `n % 1024` offset repeats
+// every 17 s at 60 Hz). n is split into two small floats (exact in float for any int) and the result stays below
+// SEED_RANGE, so the float hashes that add it to pixel coordinates stay well conditioned.
+const float SEED_RANGE = 1024.0;
+vec3 renderSeed3(int n) {
+  return hash32(vec2(float(n % 4096) + 0.5, float(n / 4096) + 0.5)) * SEED_RANGE;
+}
+vec2 renderSeed(int n) { return renderSeed3(n).xy; }
+float renderSeed1(int n) { return renderSeed3(n).z; }
+
+// Zero mean, unit variance (triangular). The same generator as CRT's noise3 (crt/passes/signal-encode.frag), which
+// keeps its own copy: it uses the constant 2.449 where TRI_UNIT is exact (a 0.02% difference CRT must not take).
 float gaussNoise(vec2 p) {
   return (hash12(p) + hash12(p + NOISE_OFFSET) - 1.0) * TRI_UNIT;
 }

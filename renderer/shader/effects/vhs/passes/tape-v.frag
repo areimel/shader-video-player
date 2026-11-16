@@ -56,7 +56,7 @@ void main() {
   float fr = float(row);
   TapeLine t = tapeLine(row);
   // Per-render noise seed; each call adds its own constant offset so the draws are independent.
-  vec2 seed = vec2(fx, fr) + vec2(23.0, 41.0) * float(uFrame % 1024);
+  vec2 seed = vec2(fx, fr) + renderSeed(uFrame);
 
   // Previous lines of the same field (clamped to the field's first line).
   int stride = int(d_fieldStride + 0.5);

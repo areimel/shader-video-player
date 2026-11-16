@@ -20,4 +20,6 @@ float subcarrierPhase(float x, int line, float cyclesPerSample, int frame, bool 
 // Gaussian sigma for each half (encoder / decoder) of the chroma chain: two cascaded Gaussians of
 // sigma s/sqrt(2) give one of sigma s, whose -3 dB point is at `chromaCutoff` (cycles per sample) when
 // s = 0.1325/fc. Floor of 0.8 samples so the decoder's least-squares demodulation always sees several phases.
+// Shared with vhs/derive.ts: 0.0937 = GAUSS_3DB / sqrt(2) (GAUSS_3DB = 0.1325) and the 0.8 floor = CHROMA_SIGMA_FLOOR;
+// VHS derives decodeChromaSigma itself (the decoder's whole filter), so keep the three in step.
 float chromaSigma(float chromaCutoff) { return max(0.0937 / max(chromaCutoff, 1e-3), 0.8); }

@@ -1,6 +1,6 @@
 import type { Preset } from "../types";
 import { MASK } from "../shared/tube/params";
-import { OSD_MODE, TAPE_SPEED } from "./params";
+import { OSD_MODE, TAPE_LINES_CHOICE, TAPE_SPEED } from "./params";
 
 /** Starting points; each lists only what differs from the defaults. `home-sp` is first: new users get it. */
 export const VHS_PRESETS: Preset[] = [
@@ -30,7 +30,7 @@ export const VHS_PRESETS: Preset[] = [
   {
     id: "vcr-tv", label: "VCR on a TV",
     values: {
-      tv: 1, osdMode: OSD_MODE.vcr, tapeLines: 0, headSwitch: 0, // the TV's overscan hides the head switch
+      tv: 1, osdMode: OSD_MODE.vcr, tapeLines: TAPE_LINES_CHOICE.rows240, headSwitch: 0, // the TV's overscan hides the head switch
       topSkew: 1,
       maskType: MASK.shadow, maskTVL: 300, maskStrength: 0.35,
       beamMin: 0.22, beamMax: 0.42, beamShape: 2,

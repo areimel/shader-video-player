@@ -5,7 +5,7 @@ precision highp int;   // the osd chunk does integer division/modulo (mediump in
 // frame: video -> tape raster (d_tapeWidth x d_tapeLines), as the signal a VCR records.
 //   in : uSource = the video (mipmapped, gamma-encoded RGB)
 //   out: rgb = Y, I, Q (gamma-encoded; I/Q signed). Alpha 1.
-// Maps tape uv to picture uv (frame fit; the bars outside the picture are black = YIQ 0), area-filters the
+// Maps tape uv to picture uv (frame fit; the bars outside the picture are black = YIQ 0, the OSD still draws there), area-filters the
 // downsample, converts to YIQ, then applies saturation and tint to the chroma plane. No colour temperature, no
 // clamp. Camcorder-mode on-screen display is blended in after the YIQ conversion (it is recorded on tape).
 // Written from the signal maths; no code adapted from other implementations.
@@ -35,13 +35,12 @@ void main() {
   vec2 pic = vec2(d_pictureW, d_pictureH);
   vec2 uv = (vUv - 0.5) / pic + 0.5;
 
-  if (any(lessThan(uv, vec2(0.0))) || any(greaterThan(uv, vec2(1.0)))) {
-    fragColor = vec4(0.0, 0.0, 0.0, 1.0);
-    return;
-  }
-
+  // Bars outside the picture are YIQ 0 (black), not an early return: the OSD below is recorded on the whole frame, so
+  // it must also reach the bars (4:3 letterbox of a 16:9 source). areaSample only uses textureLod, so the ternary's
+  // non-uniform control flow needs no implicit derivatives.
+  bool inside = !(any(lessThan(uv, vec2(0.0))) || any(greaterThan(uv, vec2(1.0))));
   vec2 footUv = uOutputSize.zw / pic;   // one tape texel in source uv
-  vec3 yiq = rgb2yiq(areaSample(uSource, uv, footUv, uSourceSize.xy));
+  vec3 yiq = inside ? rgb2yiq(areaSample(uSource, uv, footUv, uSourceSize.xy)) : vec3(0.0);
   if (p_osdMode > 1.5) {
     // Camcorder date stamp: recorded on tape, so everything after degrades it.
     yiq = osdBlend(yiq, osdCamcorder(vUv * uOutputSize.xy), OSD_CAM_RGB);

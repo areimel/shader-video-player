@@ -1,5 +1,6 @@
 #version 300 es
 precision highp float;
+precision highp int;   // int / and % below (mediump int hit a Mesa ACO 16-bit div bug; uVideoFrame passes 16 bits)
 // signalEncode: what the source device puts on the cable, one raster sample per texel (H x V).
 // Everything stays gamma-encoded: analog video carries gamma-corrected voltages.
 //
@@ -39,6 +40,8 @@ uniform float d_chromaCutoff;// cycles per raster sample (-3 dB point of the who
 int frameSeed() { return uFrame % 1024; }
 
 // Zero-mean noise with standard deviation 1 (sum of two uniforms = triangular, var 1/6).
+// VHS has the same generator as gaussNoise3 (vhs/glsl/tape-noise.glsl) with an exact sqrt(6) and its own seed; this copy
+// keeps 2.449 and its seed offset so CRT output stays bit-identical. Keep the two in step otherwise.
 vec3 noise3(vec2 p) {
   vec2 q = p + vec2(float(frameSeed())) * vec2(13.37, 7.31);
   return (hash32(q) + hash32(q + vec2(57.3, 91.1)) - 1.0) * 2.449;

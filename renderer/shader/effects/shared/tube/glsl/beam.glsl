@@ -1,4 +1,4 @@
-// CRT main pass: convergence, horizontal reconstruction and the electron beam (scanlines).
+// Tube display (main pass): convergence, horizontal reconstruction and the electron beam (scanlines).
 // Needs (declared in main.frag): uViewportSize, uVideoFrame. Needs geometry.glsl (TubeGeometry, d_tubeW).
 
 uniform sampler2D uSource;   // linear-light raster the tube draws (CRT: virtual raster; VHS: tape raster), row r = scanline r
