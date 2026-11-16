@@ -1,0 +1,32 @@
+---
+interface Props { command: string; }
+const { command } = Astro.props;
+---
+<div class="command-block" data-command-block>
+  <div class="command-heading"><span>TERMINAL / PLACEHOLDER</span><button type="button" data-copy>Copy command</button></div>
+  <pre><code>{command}</code></pre>
+  <p class="copy-status" role="status" aria-live="polite" data-copy-status></p>
+</div>
+<script>
+  for (const block of document.querySelectorAll<HTMLElement>("[data-command-block]")) {
+    const button = block.querySelector<HTMLButtonElement>("[data-copy]")!;
+    const status = block.querySelector<HTMLElement>("[data-copy-status]")!;
+    const command = block.querySelector("code")!.textContent!;
+    button.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(command);
+        status.textContent = "Copied. This is a placeholder, not an available installer.";
+      } catch {
+        status.textContent = "Could not copy automatically. Select the command above to copy it.";
+      }
+    });
+  }
+</script>
+<style>
+  .command-block { border: 1px solid #595b50; background: #0b0d0c; margin-block: 28px; }
+  .command-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line); color: var(--muted); font: 10px/1.5 monospace; }
+  button { background: transparent; color: var(--yellow); border: 1px solid #6e6840; border-radius: 2px; padding: 8px 10px; font: 12px/1.4 var(--body); }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 20px; margin: 0; color: var(--cyan); font-size: 14px; }
+  .copy-status { padding: 0 20px; font-size: 12px; color: var(--muted); }
+  .copy-status:empty { display: none; }
+</style>

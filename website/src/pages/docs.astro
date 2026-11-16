@@ -1,0 +1,32 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { Content, getHeadings } from "../content/guide.md";
+import { url } from "../lib/site";
+const headings = getHeadings();
+---
+<SiteLayout title="Docs — The owner's manual" description="Get started with CRT-TV: Linux requirements, playback, CRT and VHS effects, subtitles, keyboard shortcuts, and troubleshooting.">
+  <section class="container page-heading"><p class="eyebrow">CH 03 / The owner's manual</p><h1>Meet your<br />new remote.</h1><p class="lede">A few minutes from your first video to your favorite picture.</p></section>
+  <div class="container docs-layout">
+    <aside><nav aria-label="On this page"><p class="eyebrow">PROGRAM GUIDE</p>{headings.map((heading, index) => <a href={`#${heading.slug}`}><span>{String(index + 1).padStart(2, "0")}</span>{heading.text}</a>)}</nav><a class="help-link" href={url("contact/")}>Still need a hand? Get in touch ↗</a></aside>
+    <article class="prose"><Content /></article>
+  </div>
+</SiteLayout>
+<style>
+  .docs-layout { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 70px; padding-bottom: 80px; }
+  aside { align-self: start; position: sticky; top: 24px; }
+  nav { border: 1px solid var(--line); background: var(--panel); padding: 24px; }
+  nav a { display: flex; gap: 12px; margin-block: 18px; font-size: 13px; line-height: 1.5; text-decoration: none; }
+  nav a span { color: var(--yellow); font: 11px/1.8 monospace; }
+  .help-link { display: block; font-size: 13px; margin: 24px 8px; }
+  .prose { min-width: 0; max-width: 800px; }
+  .prose :global(h2) { font-size: 30px; margin-block: 52px 24px; padding-top: 24px; border-top: 1px solid var(--line); }
+  .prose :global(h2:first-child) { margin-top: 0; }
+  .prose :global(p) { color: #c2c0b8; line-height: 1.85; }
+  .prose :global(strong) { color: var(--text); font-weight: 650; }
+  .prose :global(code) { color: var(--cyan); overflow-wrap: anywhere; font-size: .9em; }
+  .prose :global(table) { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .prose :global(th), .prose :global(td) { text-align: left; padding: 12px; border-bottom: 1px solid var(--line); }
+  .prose :global(th) { color: var(--yellow); background: var(--panel); }
+  .prose :global(td:last-child) { font-family: monospace; }
+  @media (max-width: 900px) { .docs-layout { grid-template-columns: 1fr; gap: 30px; } aside { position: static; } }
+</style>
