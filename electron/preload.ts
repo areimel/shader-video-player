@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
+import { isCommandId } from "../shared/commands";
 import type { PlayerBridge, PlaybackPlan, QueueItem } from "../shared/types";
 
 function listen<T>(channel: string, cb: (v: T) => void): () => void {
@@ -41,6 +42,8 @@ const bridge: PlayerBridge = {
   onPlan: (cb) => listen<PlaybackPlan>("media:plan", cb),
   onQueue: (cb) => listen<{ queue: QueueItem[]; index: number }>("media:queue", (v) => cb(v.queue, v.index)),
   onError: (cb) => listen<string>("media:error", cb),
+  onCommand: (cb) => listen<unknown>("menu:command", (id) => { if (isCommandId(id)) cb(id); }),
+  platform: process.platform,
   ready: () => ipcRenderer.send("app:ready"),
 };
 

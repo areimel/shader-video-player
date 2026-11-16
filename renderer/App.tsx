@@ -10,7 +10,8 @@ import { useEffectSettings } from "./hooks/useEffectSettings";
 import { useFullscreen } from "./hooks/useFullscreen";
 import { useIdleControls } from "./hooks/useIdleControls";
 import { usePlayQueue } from "./hooks/usePlayQueue";
-import { usePlayerShortcuts } from "./hooks/usePlayerShortcuts";
+import { useMenuCommands, usePlayerShortcuts, type CommandHandlers } from "./hooks/usePlayerShortcuts";
+import { SEEK_LONG_SEC, SEEK_STEP_SEC } from "../shared/commands";
 import { usePlayerState } from "./hooks/usePlayerState";
 import { useSubtitles } from "./hooks/useSubtitles";
 import { isSubtitlePath } from "../shared/subtitleFiles";
@@ -19,7 +20,7 @@ import { savePosition } from "./utils/storage";
 export function App() {
   const { items, push } = useToasts();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const { plan, initialTime, loading, openDialog, openRecent, openDropped, restartAt, onVideoError, queue } = usePlayQueue(videoRef, push);
+  const { plan, initialTime, loading, openDialog, openRecent, openDropped, restartAt, onVideoError, close, queue } = usePlayQueue(videoRef, push);
   const stageRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef(0);
   const [showInfo, setShowInfo] = useState(false);
@@ -36,7 +37,35 @@ export function App() {
   const visible = useIdleControls(!!plan && !player.paused && !showEffects);
   const subs = useSubtitles(plan, useCallback((m: string) => push("error", m), [push]));
 
-  usePlayerShortcuts({ enabled: !!plan, player, toggleFullscreen: fs.toggle, toggleEffect: fx.toggle, toggleEffectsPanel: toggleEffects, onNext: queue.multi ? queue.next : undefined, onPrevious: queue.multi ? queue.previous : undefined });
+  const togglePip = () => {
+    const job = document.pictureInPictureElement
+      ? document.exitPictureInPicture()
+      : videoRef.current?.requestPictureInPicture();
+    job?.catch(() => push("error", "Picture in picture isn't available."));
+  };
+  const media: CommandHandlers = plan ? {
+    togglePlay: player.toggle,
+    seekBack: () => player.seek(player.time - SEEK_STEP_SEC),
+    seekForward: () => player.seek(player.time + SEEK_STEP_SEC),
+    seekBackLong: () => player.seek(player.time - SEEK_LONG_SEC),
+    seekForwardLong: () => player.seek(player.time + SEEK_LONG_SEC),
+    volumeUp: () => player.setVolume(player.volume + 0.05),
+    volumeDown: () => player.setVolume(player.volume - 0.05),
+    mute: player.toggleMute,
+    speedDown: () => player.stepRate(-1),
+    speedUp: () => player.stepRate(1),
+    ...(queue.multi && { next: queue.next, previous: queue.previous }),
+    toggleEffect: fx.toggle,
+    toggleEffectsPanel: toggleEffects,
+    fullscreen: fs.toggle,
+    info: () => { setShowInfo((v) => !v); closeEffects(); },
+    pip: togglePip,
+    loadSubtitle: () => void subs.pickFile(),
+    close,
+  } : {};
+  const commands: CommandHandlers = { ...media, open: () => void openDialog() };
+  usePlayerShortcuts(true, commands);
+  useMenuCommands(commands);
 
   useEffect(() => { window.player.setPlaying(!!plan && !player.paused); }, [plan, player.paused]);
   useEffect(() => { setShowInfo(false); if (plan) push("success", `Playing ${plan.info.name}`); }, [plan?.info.path]);
@@ -47,13 +76,6 @@ export function App() {
     if (base.plan !== plan) { timeBase.current = { plan, stale: player.time }; return; }
     if (plan && player.time > 0 && player.time !== base.stale) savePosition(plan.info, player.time);
   }, [plan, Math.floor(player.time / 3)]);
-
-  const togglePip = () => {
-    const job = document.pictureInPictureElement
-      ? document.exitPictureInPicture()
-      : videoRef.current?.requestPictureInPicture();
-    job?.catch(() => push("error", "Picture in picture isn't available."));
-  };
 
   const onDrop = (e: DragEvent) => {
     e.preventDefault();

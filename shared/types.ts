@@ -1,3 +1,4 @@
+import type { CommandId } from "./commands";
 export interface AudioTrack {
   ordinal: number;
   codec: string;
@@ -87,5 +88,9 @@ export interface PlayerBridge {
   onPlan(cb: (plan: PlaybackPlan) => void): () => void;
   onQueue(cb: (queue: QueueItem[], index: number) => void): () => void;
   onError(cb: (message: string) => void): () => void;
+  /** Native menu commands. Unknown ids are ignored by the renderer helper. */
+  onCommand(cb: (id: CommandId) => void): () => void;
+  /** process.platform of the host. */
+  platform: string;
   ready(): void;
 }

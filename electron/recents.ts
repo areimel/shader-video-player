@@ -7,6 +7,9 @@ import type { RecentFile } from "../shared/types";
 const MAX = 12;
 const file = () => join(app.getPath("userData"), "recents.json");
 
+const listeners: Array<() => void> = [];
+export function onRecentsChanged(cb: () => void): void { listeners.push(cb); }
+
 export function getRecents(): RecentFile[] {
   try {
     const list = JSON.parse(readFileSync(file(), "utf8")) as RecentFile[];
@@ -20,6 +23,7 @@ export function addRecent(path: string): void {
   const rest = getRecents().filter((r) => r.path !== path);
   const next = [{ path, name: basename(path), openedAt: Date.now() }, ...rest].slice(0, MAX);
   try { writeFileSync(file(), JSON.stringify(next)); } catch { /* non-fatal */ }
+  for (const l of listeners) l();
 }
 
 export function isRecent(path: string): boolean {
