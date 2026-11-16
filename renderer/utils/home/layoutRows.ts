@@ -73,9 +73,10 @@ export function drawRows(
     const main = row.cols[0] ?? "";
     const scrolls = onCursor && !clock.reducedMotion && Array.from(main).length > mainCols;
     animated ||= scrolls;
-    const shown = scrolls ? marquee(main, mainCols, clock.elapsed).trimEnd() : clipWords(main, mainCols);
+    const shown = scrolls ? marquee(main, mainCols, clock.elapsed - clock.cursorSince).trimEnd() : clipWords(main, mainCols);
     const color = rowColor(row, onCursor);
     text(ops, box.col, y, (markerCols ? (row.current ? ">" : " ") : "") + shown, color);
+    if (markerCols && row.standby) text(ops, box.col, y, ">", onCursor ? "accentInk" : "dim");
     if (secW > 0) text(ops, box.col + box.cols, y, secondary, onCursor ? "accentInk" : row.alert ? "alert" : "dim", "right");
     if (row.action) hits.push({ x: px(box.col), y: px(y), w: px(box.cols), h: CELL, target: { zone: box.zone, index } });
   }

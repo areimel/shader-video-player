@@ -29,17 +29,20 @@ function tvRows(input: HomeModelInput): HomeRow[] {
   }];
   for (const fx of effects) {
     const active = tv.activeEffectId === fx.id;
+    // With the effect off, the preset that comes back on (the `e` key, the panel) is marked as standby.
+    const standby = tv.activeEffectId === null && tv.selectedEffectId === fx.id;
+    const mark = (on: boolean) => (active && on ? { current: true } : standby && on ? { standby: true } : {});
     rows.push({ id: `tv:h:${fx.id}`, kind: "header", cols: [fx.label] });
     for (const p of fx.presets) {
       rows.push({
         id: `tv:${fx.id}:${p.id}`, kind: "item", cols: [presetLabel(p.label)],
-        action: { type: "setTv", effectId: fx.id, presetId: p.id }, current: active && tv.presetId === p.id,
+        action: { type: "setTv", effectId: fx.id, presetId: p.id }, ...mark(tv.presetId === p.id),
       });
     }
-    if (active && tv.presetId === CUSTOM_PRESET) {
+    if ((active || standby) && tv.presetId === CUSTOM_PRESET) {
       rows.push({
         id: `tv:${fx.id}:edited`, kind: "item", cols: ["EDITED"],
-        action: { type: "setTv", effectId: fx.id, presetId: null }, current: true,
+        action: { type: "setTv", effectId: fx.id, presetId: null }, ...mark(true),
       });
     }
   }

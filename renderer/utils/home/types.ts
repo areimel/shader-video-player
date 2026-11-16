@@ -35,6 +35,8 @@ export interface HomeRow {
   action?: RowAction;
   /** The entry that is in effect now (the active TV preset). */
   current?: boolean;
+  /** With the effect off: the TV preset that comes back when it is turned on (a dim marker). */
+  standby?: boolean;
   alert?: boolean;
 }
 
@@ -87,8 +89,10 @@ export interface HomeFrame {
 export interface HomeClock {
   /** e.g. "12:41AM" */
   timeText: string;
-  /** Seconds since the screen opened: drives the long-title scroll and the updates paging. */
+  /** Seconds since the screen opened: drives the updates paging. */
   elapsed: number;
+  /** `elapsed` when the cursor last landed on a row: a long title scrolls from its start, after the pause. */
+  cursorSince: number;
   reducedMotion: boolean;
 }
 

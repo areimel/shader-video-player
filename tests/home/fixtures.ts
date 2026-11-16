@@ -2,7 +2,7 @@ import type { LibraryItem, LibrarySnapshot } from "../../shared/types";
 import type { ChangelogEntry, DrawOp, HomeClock, HomeFrame } from "../../renderer/utils/home/types";
 import { buildModel, type HomeModelInput } from "../../renderer/utils/home/model";
 
-export const clock: HomeClock = { timeText: "12:41AM", elapsed: 0, reducedMotion: false };
+export const clock: HomeClock = { timeText: "12:41AM", elapsed: 0, cursorSince: 0, reducedMotion: false };
 
 export function item(id: string, name: string, over: Partial<LibraryItem> = {}): LibraryItem {
   return {

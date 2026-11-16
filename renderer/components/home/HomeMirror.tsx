@@ -17,7 +17,7 @@ export function HomeMirror({ model }: { model: HomeModel }) {
           <ul>
             {model.zones[zone].map((row) => (
               <li key={row.id} id={mirrorId(zone, row.id)} aria-current={row.current ? "true" : undefined}>
-                {row.cols.filter(Boolean).join(", ")}
+                {row.cols.filter(Boolean).join(", ")}{row.standby ? " (comes back when the effect is turned on)" : ""}
               </li>
             ))}
           </ul>

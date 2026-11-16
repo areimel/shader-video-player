@@ -108,15 +108,36 @@ describe("point and wheel", () => {
     expect(homeReducer(p, { type: "point", target: { zone: "tv", index: 3 } }, m)).toBe(p);
   });
 
-  it("wheel scrolls a zone within bounds and leaves the cursor", () => {
+  it("wheel scrolls a zone within bounds, focuses it and keeps the cursor in view", () => {
     const m = bigModel();
     const s = initialState(m);
     const w = run(s, m, { type: "wheel", zone: "library", by: 3 });
     expect(w.scroll.library).toBe(3);
-    expect(w.cursor.library).toBe(s.cursor.library);
+    expect(w.cursor.library).toBe(3); // was 1 (scrolled out of view): the nearest focusable row in view
     expect(run(w, m, { type: "wheel", zone: "library", by: -99 }).scroll.library).toBe(0);
     expect(run(w, m, { type: "wheel", zone: "library", by: 999 }).scroll.library).toBe(m.zones.library.length - 10);
-    expect(homeReducer(model() && initialState(model()), { type: "wheel", zone: "tv", by: 5 }, model())).toEqual(initialState(model()));
+    const small = model();
+    const tv = homeReducer(initialState(small), { type: "wheel", zone: "tv", by: 5 }, small);
+    expect(tv).toEqual({ ...initialState(small), zone: "tv" }); // nothing to scroll, but the zone takes focus
+  });
+
+  it("wheel over the unfocused updates zone focuses it, so the scroll takes effect", () => {
+    const m = bigModel();
+    const w = run(initialState(m), m, { type: "wheel", zone: "updates", by: 2 });
+    expect(w.zone).toBe("updates");
+    expect(w.scroll.updates).toBe(2);
+  });
+
+  it("pointing at the first focusable row does not scroll the list (keyboard only)", () => {
+    const m = bigModel();
+    let s = run(initialState(m), m, { type: "wheel", zone: "library", by: 1 }, down, down, down);
+    expect(s.scroll.library).toBe(1);
+    const first = m.zones.library.findIndex((r) => r.action);
+    expect(first).toBe(1);
+    s = run(s, m, { type: "point", target: { zone: "library", index: first } });
+    expect(s.cursor.library).toBe(first);
+    expect(s.scroll.library).toBe(1);
+    expect(run(s, m, down, up).scroll.library).toBe(0); // the keyboard still reveals the top
   });
 });
 

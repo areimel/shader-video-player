@@ -50,15 +50,20 @@ export function useHomePaint({ canvasRef, model, state }: Options): HomePaint {
     let fontReady = false;
     let disposed = false;
     let painted: DrawOp[] | null = null;
+    let cursorKey = "";
+    let cursorSince = 0;
     let tick: ReturnType<typeof setTimeout> | undefined;
     let minute: ReturnType<typeof setTimeout> | undefined;
 
     const repaint = () => {
       clearTimeout(tick);
       if (!fontReady || disposed) return;
-      const now = new Date();
-      const clock = { timeText: formatClock(now), elapsed: (performance.now() - started) / 1000, reducedMotion: motion.matches };
-      const frame = layout(latest.current.model, latest.current.state, clock);
+      const { model, state } = latest.current;
+      const elapsed = (performance.now() - started) / 1000;
+      const key = `${state.zone}:${model.zones[state.zone][state.cursor[state.zone]]?.id ?? ""}`;
+      if (key !== cursorKey) { cursorKey = key; cursorSince = elapsed; }
+      const clock = { timeText: formatClock(new Date()), elapsed, cursorSince, reducedMotion: motion.matches };
+      const frame = layout(model, state, clock);
       frameRef.current = frame;
       if (!sameOps(painted, frame.ops)) {
         paint(ctx, frame, colors);

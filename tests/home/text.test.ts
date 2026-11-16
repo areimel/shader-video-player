@@ -63,5 +63,23 @@ describe("clipWords", () => {
     expect(clipWords("ab cdefghijklmnop", 10)).toBe("AB CDEFGHI");
     expect(clipWords("one two", 4)).toBe("ONE");
     expect(clipWords("anything", 0)).toBe("");
+    expect(clipWords("Tome of the Unknown | Over the Garden Wall", 22)).toBe("TOME OF THE UNKNOWN");
+  });
+});
+
+describe("review fixes", () => {
+  it("has a 1440P tier", () => {
+    expect(formatResolution(2560, 1440)).toBe("1440P");
+    expect(formatResolution(2560, 1080)).toBe("1440P");
+    expect(formatResolution(1920, 1080)).toBe("1080P");
+    expect(formatResolution(3840, 2160)).toBe("4K");
+  });
+  it("treats a non-finite elapsed as 0", () => {
+    const start = marquee("a long title that scrolls", 8, 0);
+    expect(marquee("a long title that scrolls", 8, NaN)).toBe(start);
+    expect(marquee("a long title that scrolls", 8, Infinity)).toBe(start);
+  });
+  it("draws full-width punctuation as ASCII", () => {
+    expect(clip("King Ramses Curse： Full ｜ Episode", 40)).toBe("KING RAMSES CURSE: FULL | EPISODE");
   });
 });

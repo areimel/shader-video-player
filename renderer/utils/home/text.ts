@@ -1,6 +1,10 @@
 /** Cell-text helpers. Everything counts code points, so non-Latin names occupy one cell per character. */
 
-const cells = (text: string): string[] => Array.from(text.toUpperCase());
+/**
+ * Display cells: NFKC first, so full-width punctuation in file names ("：", "｜", common in downloaded titles)
+ * becomes the ASCII the pixel font draws instead of a squeezed fallback glyph.
+ */
+const cells = (text: string): string[] => Array.from(text.normalize("NFKC").toUpperCase());
 
 /** Upper-case and truncate to `cols` code points, without padding. */
 export function clip(text: string, cols: number): string {
@@ -15,9 +19,11 @@ export function clipWords(text: string, cols: number): string {
   const all = cells(text);
   if (all.length <= cols) return all.join("");
   const cut = Math.max(0, cols);
-  if (all[cut] === " ") return all.slice(0, cut).join("").trimEnd();
+  // A separator left alone at the end ("TOME OF THE UNKNOWN |") goes too.
+  const tidy = (s: string) => s.trimEnd().replace(/\s+[|:;,/\-–—]+$/u, "");
+  if (all[cut] === " ") return tidy(all.slice(0, cut).join(""));
   for (let i = cut - 1; i >= Math.ceil(cut / 2); i--) {
-    if (all[i] === " ") return all.slice(0, i).join("").trimEnd();
+    if (all[i] === " ") return tidy(all.slice(0, i).join(""));
     if (all[i] === "-") return all.slice(0, i + 1).join("");
   }
   return all.slice(0, cut).join("");
@@ -43,7 +49,8 @@ export function marquee(text: string, cols: number, elapsed: number): string {
   const travel = overflow / MARQUEE_CELLS_PER_SECOND;
   const pause = MARQUEE_PAUSE_SECONDS;
   const period = 2 * (pause + travel);
-  const t = ((Math.max(0, elapsed) % period) + period) % period;
+  const e = Number.isFinite(elapsed) ? Math.max(0, elapsed) : 0;
+  const t = ((e % period) + period) % period;
   let offset: number;
   if (t < pause) offset = 0;
   else if (t < pause + travel) offset = Math.floor((t - pause) * MARQUEE_CELLS_PER_SECOND);
@@ -67,6 +74,7 @@ export function formatDuration(sec: number | null): string {
 export function formatResolution(w: number | null, h: number | null): string {
   if (!w || !h || w <= 0 || h <= 0) return "";
   if (w >= 3200 || h >= 2160) return "4K";
+  if (w >= 2500 || h >= 1440) return "1440P";
   if (w >= 1900 || h >= 1080) return "1080P";
   if (w >= 1260 || h >= 720) return "720P";
   return `${h}P`;

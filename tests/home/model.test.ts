@@ -17,6 +17,16 @@ describe("buildModel", () => {
     expect(rows.filter((r) => r.current).map((r) => r.id)).toEqual(["tv:off"]);
   });
 
+  it("marks the preset that comes back on as standby while the effect is off", () => {
+    const rows = model({ tv: { activeEffectId: null, selectedEffectId: "crt", presetId: "pvm" } }).zones.tv;
+    expect(rows.filter((r) => r.standby).map((r) => r.id)).toEqual(["tv:crt:pvm"]);
+    expect(rows.filter((r) => r.current).map((r) => r.id)).toEqual(["tv:off"]);
+    const edited = model({ tv: { activeEffectId: null, selectedEffectId: "vhs", presetId: "custom" } }).zones.tv;
+    expect(edited.filter((r) => r.standby).map((r) => r.id)).toEqual(["tv:vhs:edited"]);
+    const on = model().zones.tv;
+    expect(on.some((r) => r.standby)).toBe(false);
+  });
+
   it("adds an EDITED row for custom values", () => {
     const rows = model({ tv: { activeEffectId: "vhs", selectedEffectId: "vhs", presetId: "custom" } }).zones.tv;
     const edited = rows.find((r) => r.cols[0] === "EDITED")!;

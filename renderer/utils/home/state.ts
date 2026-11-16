@@ -19,15 +19,18 @@ function nearest(rows: HomeRow[], from: number, dir: 1 | -1): number {
   return -1;
 }
 
-/** Scroll that keeps `cursor` in the window; the first/last focusable row reveals the list's end. */
-function followCursor(zone: ZoneId, rows: HomeRow[], scroll: number, cursor: number): number {
+/**
+ * Scroll that keeps `cursor` in the window. With `reveal` (keyboard moves), landing on the first/last focusable
+ * row also shows the list's end (headers above, trailing rows below); a pointer never scrolls a visible row away.
+ */
+function followCursor(zone: ZoneId, rows: HomeRow[], scroll: number, cursor: number, reveal = true): number {
   const visible = VISIBLE[zone];
   const max = maxScroll(zone, rows);
   let s = clamp(scroll, 0, max);
   if (cursor < s) s = cursor;
   else if (cursor >= s + visible) s = cursor - visible + 1;
-  if (cursor === firstFocusable(rows) && cursor < visible) s = 0;
-  if (cursor === lastFocusable(rows) && cursor >= max) s = max;
+  if (reveal && cursor === firstFocusable(rows) && cursor < visible) s = 0;
+  if (reveal && cursor === lastFocusable(rows) && cursor >= max) s = max;
   return clamp(s, 0, max);
 }
 
@@ -43,8 +46,8 @@ function put(state: HomeState, zone: ZoneId, patch: { cursor?: number; scroll?: 
   };
 }
 
-function placeCursor(state: HomeState, zone: ZoneId, rows: HomeRow[], cursor: number, focus?: ZoneId): HomeState {
-  return put(state, zone, { cursor, scroll: followCursor(zone, rows, state.scroll[zone], cursor), focus });
+function placeCursor(state: HomeState, zone: ZoneId, rows: HomeRow[], cursor: number, focus?: ZoneId, reveal = true): HomeState {
+  return put(state, zone, { cursor, scroll: followCursor(zone, rows, state.scroll[zone], cursor, reveal), focus });
 }
 
 export function initialState(model: HomeModel): HomeState {
@@ -99,6 +102,22 @@ function sync(state: HomeState, prev: HomeModel, next: HomeModel): HomeState {
   return out;
 }
 
+/**
+ * The wheel scrolls the zone under the pointer and focuses it (otherwise the unfocused updates zone, which pages
+ * on its own, would ignore it). A cursor scrolled out of view moves to the nearest focusable row inside the window.
+ */
+function wheel(state: HomeState, model: HomeModel, zone: ZoneId, by: number): HomeState {
+  const rows = model.zones[zone];
+  const scroll = clamp(state.scroll[zone] + by, 0, maxScroll(zone, rows));
+  const last = Math.min(rows.length, scroll + VISIBLE[zone]) - 1;
+  let cursor = state.cursor[zone];
+  if (focusable(rows[cursor]) && (cursor < scroll || cursor > last)) {
+    const inView = cursor < scroll ? nearest(rows, scroll, 1) : nearest(rows, last, -1);
+    if (inView >= scroll && inView <= last) cursor = inView;
+  }
+  return put(state, zone, { scroll, cursor, focus: zone });
+}
+
 export function homeReducer(state: HomeState, action: HomeAction, model: HomeModel): HomeState {
   switch (action.type) {
     case "move": return move(state, model, action.by);
@@ -108,12 +127,9 @@ export function homeReducer(state: HomeState, action: HomeAction, model: HomeMod
       const { zone, index } = action.target;
       const rows = model.zones[zone];
       if (!focusable(rows[index])) return state;
-      return placeCursor(state, zone, rows, index, zone);
+      return placeCursor(state, zone, rows, index, zone, false);
     }
-    case "wheel": {
-      const rows = model.zones[action.zone];
-      return put(state, action.zone, { scroll: clamp(state.scroll[action.zone] + action.by, 0, maxScroll(action.zone, rows)) });
-    }
+    case "wheel": return wheel(state, model, action.zone, action.by);
     case "sync": return sync(state, action.prev, action.next);
   }
 }

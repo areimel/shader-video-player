@@ -67,6 +67,13 @@ describe("drawing rules", () => {
     expect(tv!.color).toBe("text");
   });
 
+  it("draws a dim > on the standby preset", () => {
+    const m = model({ tv: { activeEffectId: null, selectedEffectId: "crt", presetId: "pvm" } });
+    const f = layout(m, initialState(m), clock);
+    const y = (BOXES.tv.row + m.zones.tv.findIndex((r) => r.standby)) * 8;
+    expect(textOps(f).filter((o) => o.y === y && o.x === 16).map((o) => [o.text.trim(), o.color])).toContainEqual([">", "dim"]);
+  });
+
   it("marks the current row with > and a space on others", () => {
     const m = model();
     const f = layout(m, initialState(m), clock);
@@ -83,6 +90,15 @@ describe("drawing rules", () => {
     const b = row({ ...clock, elapsed: 3 });
     expect(b).not.toBe(a);
     expect(row({ ...clock, elapsed: 3, reducedMotion: true })).toBe(a);
+  });
+
+  it("starts a long cursor title from its beginning whenever the cursor lands on it", () => {
+    const m = model({ recents: [{ path: "/x", name: "A really very long recent file name here.mkv", openedAt: 1 }] });
+    const s = initialState(m);
+    const row = (c: HomeClock) => textOps(layout(m, s, c)).find((o) => o.y === 7 * 8 && o.x === 16)!.text;
+    const start = row({ ...clock, elapsed: 0, cursorSince: 0 });
+    expect(row({ ...clock, elapsed: 37.3, cursorSince: 37.3 })).toBe(start);
+    expect(row({ ...clock, elapsed: 37.3 + 0.9, cursorSince: 37.3 })).toBe(start); // still in the opening pause
   });
 
   it("shows scroll hints", () => {

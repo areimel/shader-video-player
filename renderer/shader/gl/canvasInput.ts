@@ -80,20 +80,23 @@ export function canvasInput(canvas: HTMLCanvasElement, opts: { fps?: number } = 
       return () => { eventSubs.delete(handlers); updateAttachment(); };
     },
 
-    // While nobody listens there is no event to learn about a flip from, so answer from the window directly.
-    playing: () => (attached ? playing : windowActive()),
+    // Unattached (nobody listening, or disposed): not playing, so nothing keeps a render loop alive.
+    playing: () => attached && playing,
     time: () => clock.elapsed(performance.now()),
 
     painted() {
       if (disposed) return;
       everPainted = true;
       const s = size();
-      // A new size (or the first paint) needs fresh derived values before the upload that the tick asks for.
+      // A new size (or the first paint) needs fresh derived values: onResized uploads and refreshes them, so the
+      // tick that follows only advances the frame counter. One upload per paint either way.
+      let uploaded = false;
       if (s?.width !== paintedSize?.width || s?.height !== paintedSize?.height) {
         paintedSize = s;
+        uploaded = eventSubs.size > 0;
         for (const h of [...eventSubs]) h.onResized();
       }
-      emit({ image: true });
+      emit({ image: !uploaded });
     },
 
     dispose() {
