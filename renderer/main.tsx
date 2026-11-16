@@ -3,6 +3,8 @@ import { App } from "./App";
 import "@fontsource-variable/archivo/wdth.css";
 import "./styles/tokens.css";
 import "./styles/base.css";
+import "./styles/panel.css";
+import "./styles/widgets.css";
 import "./styles/controls.css";
 import "./styles/slider.css";
 import "./styles/menu.css";

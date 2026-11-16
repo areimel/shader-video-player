@@ -20,9 +20,7 @@ kbd { font: inherit; font-size: var(--fs-xs); padding: 1px 6px; border-radius: v
 .recents h2 { font-size: var(--fs-xs); color: var(--dim); text-transform: uppercase; letter-spacing: 0.09em; margin: 0 0 var(--sp-2) var(--sp-1);
   font-weight: 600; font-stretch: calc(var(--wdth-expanded) * 1%); font-variation-settings: "wdth" var(--wdth-expanded); }
 .recents ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
-.recent-item { width: 100%; display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) 10px; background: none;
-  border: 0; border-radius: var(--r-panel); color: var(--phosphor); cursor: pointer; font-size: var(--fs-md); text-align: left; }
-.recent-item:hover { background: var(--hover); }
+.recent-item { gap: var(--sp-3); padding: var(--sp-2) 10px; border-radius: var(--r-panel); font-size: var(--fs-md); }
 .recent-badge { flex: none; min-width: 40px; text-align: center; padding: var(--sp-1) 0; border-radius: var(--r-ctl); font-size: 10px;
   font-weight: 700; letter-spacing: 0.04em; color: var(--lamp); background: var(--selected); }
 .recent-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -12,7 +12,7 @@ export function SeekBar({ time, duration, buffered, onSeek }: Props) {
   return (
     <Slider
       className="seekbar" label="Seek" value={time} max={duration} buffered={buffered}
-      onChange={onSeek} tooltip={formatTime}
+      keyStep={5} onChange={onSeek} tooltip={formatTime} valueText={formatTime}
     />
   );
 }

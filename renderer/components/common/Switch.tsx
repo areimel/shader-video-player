@@ -7,8 +7,8 @@ interface Props {
 export function Switch({ checked, label, onChange }: Props) {
   return (
     <button type="button" role="switch" aria-checked={checked} aria-label={label} title={label}
-      className={`fx-switch ${checked ? "is-on" : ""}`} onClick={() => onChange(!checked)}>
-      <span className="fx-switch-knob" />
+      className={`switch ${checked ? "is-on" : ""}`} onClick={() => onChange(!checked)}>
+      <span className="switch-knob" />
     </button>
   );
 }

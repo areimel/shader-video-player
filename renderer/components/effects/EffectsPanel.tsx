@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { Button } from "../common/Button";
 import { Dropdown } from "../common/Dropdown";
+import { Panel, PanelHeader } from "../common/Panel";
 import { ParamGroup } from "./ParamGroup";
 import { PresetPicker } from "./PresetPicker";
-import { Switch } from "./Switch";
+import { Switch } from "../common/Switch";
 import type { EffectSettings } from "../../hooks/useEffectSettings";
 import { EFFECTS } from "../../shader/effects/registry";
 
@@ -14,18 +15,12 @@ interface Props {
 export function EffectsPanel({ fx, onClose }: Props) {
   const { selected } = fx;
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   return (
-    <aside className="fx-panel" aria-label="Effects" onDoubleClick={(e) => e.stopPropagation()}>
-      <div className="info-head">
-        <strong>Effects</strong>
-        <button type="button" className="link-btn" onClick={onClose}>Close</button>
-      </div>
+    <Panel className="fx-panel" role="complementary" aria-label="Effects" onDismiss={onClose}
+      onDoubleClick={(e) => e.stopPropagation()}>
+      <PanelHeader title="Effects">
+        <Button variant="link" onClick={onClose}>Close</Button>
+      </PanelHeader>
       {selected && (
         <>
           <div className="fx-row">
@@ -40,9 +35,9 @@ export function EffectsPanel({ fx, onClose }: Props) {
             <ParamGroup key={`${selected.id}:${g}`} name={g} params={selected.params.filter((p) => p.group === g)}
               values={fx.values} defaultOpen={i === 0} onChange={fx.setValue} onReset={fx.resetParam} />
           ))}
-          <button type="button" className="link-btn fx-reset" onClick={fx.reset}>Reset all to defaults</button>
+          <Button variant="link" className="fx-reset" onClick={fx.reset}>Reset all to defaults</Button>
         </>
       )}
-    </aside>
+    </Panel>
   );
 }

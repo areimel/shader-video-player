@@ -1,0 +1,14 @@
+/* Floating panel shell shared by info, effects and queue; position/size come from the specific class. */
+.panel { position: absolute; z-index: var(--z-panel); color-scheme: dark; background: var(--panel-glass);
+  border-radius: var(--r-panel); padding: 14px;
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--bezel-deep) 80%, transparent); }
+.panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-2); }
+.panel-head strong { font-weight: 600; font-stretch: calc(var(--wdth-expanded) * 1%);
+  font-variation-settings: "wdth" var(--wdth-expanded); }
+
+/* Shared row for lists: recents, queue, dropdown options. */
+.list-row { display: flex; align-items: center; gap: var(--sp-2); width: 100%; padding: 6px 10px; background: none; border: 0;
+  border-radius: var(--r-ctl); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.list-row:hover { background: var(--hover); }
+.list-row.is-selected { background: var(--selected); }
+.list-row.is-current { color: var(--lamp); }

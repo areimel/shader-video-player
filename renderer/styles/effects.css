@@ -1,5 +1,4 @@
-.fx-panel { position: absolute; top: 48px; right: var(--sp-4); bottom: calc(var(--controls-h) + var(--sp-2)); width: 320px; overflow-y: auto;
-  color-scheme: dark; z-index: var(--z-panel); background: var(--panel-glass); border-radius: var(--r-panel); padding: 14px; }
+.fx-panel { position: absolute; top: 48px; right: var(--sp-4); bottom: calc(var(--controls-h) + var(--sp-2)); width: 320px; overflow-y: auto; }
 .fx-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .fx-row-label { color: var(--dim); }
 .fx-badge { font-size: var(--fs-xs); color: var(--lamp); }
@@ -16,12 +15,3 @@
 .fx-param .fx-select { width: 100%; }
 .fx-select .dropdown-btn { width: 100%; justify-content: flex-start; background: var(--hover); height: 30px; }
 .fx-select .dropdown-menu { top: 34px; bottom: auto; left: 0; right: 0; z-index: 2; }
-.fx-segmented { display: flex; gap: 2px; background: var(--hover); border-radius: var(--r-ctl); padding: 2px; }
-.fx-segmented button { flex: 1; background: none; border: 0; color: var(--phosphor); font: inherit; padding: 5px var(--sp-1);
-  border-radius: var(--r-ctl); cursor: pointer; }
-.fx-segmented button.is-selected { background: var(--lamp); color: var(--lamp-ink); }
-.fx-switch { flex: none; width: 34px; height: 20px; border-radius: 10px; border: 0; padding: 2px; cursor: pointer;
-  background: var(--line); transition: background var(--dur) var(--ease); }
-.fx-switch.is-on { background: var(--lamp); }
-.fx-switch-knob { display: block; width: 16px; height: 16px; border-radius: 50%; background: var(--phosphor); transition: transform var(--dur) var(--ease); }
-.fx-switch.is-on .fx-switch-knob { transform: translateX(14px); }

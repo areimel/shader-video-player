@@ -1,7 +1,4 @@
-.info-panel { position: absolute; top: 48px; right: var(--sp-4); width: 300px; background: var(--panel-glass);
-  border-radius: var(--r-panel); padding: 14px; z-index: var(--z-panel); user-select: text; }
-.info-head { display: flex; justify-content: space-between; margin-bottom: var(--sp-2);
-  font-stretch: calc(var(--wdth-expanded) * 1%); font-variation-settings: "wdth" var(--wdth-expanded); }
+.info-panel { top: 48px; right: var(--sp-4); width: 300px; user-select: text; }
 .info-panel dl { margin: 0 0 var(--sp-3); }
 .info-panel dl > div { display: flex; justify-content: space-between; gap: var(--sp-3); padding: 3px 0; }
 .info-panel dt { color: var(--dim); }
