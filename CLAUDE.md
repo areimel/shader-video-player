@@ -12,7 +12,7 @@ pnpm typecheck      # renderer/tests and electron tsconfigs
 pnpm test           # vitest (pure logic only, no GL)
 pnpm check:shaders  # compiles every effect pass on the real GPU in a hidden Electron window
 pnpm build          # typecheck + renderer bundle + main bundle
-pnpm dist           # .deb in release/
+pnpm dist           # .deb in release/ (launcher icons: build/icons/<N>x<N>.png, hicolor sizes up to 512)
 ```
 
 Run `pnpm typecheck && pnpm test && pnpm check:shaders` before every commit, and check the exit status itself: piping a gate through `tail`/`grep` hides a failure. CI (`.github/workflows/ci.yml`) runs only `typecheck` and `test` (no GPU), so `check:shaders` is the local gate's job.
@@ -223,7 +223,7 @@ A new effect can reuse `glsl/common/` (subcarrier, composite encode/decode, blur
 - Home screen: directory drop and the Add folder dialog are not exercised interactively (`partitionDrop` is unit-tested only).
 - Home screen: non-Latin file names draw in the browser's monospace fallback, squeezed into one cell per code point.
 - Home screen: the VHS "Third-generation dub" label is cut to `THIRD-GENERATION` in the TV column unless the cursor is on it, when it scrolls.
-- Website: real Web3Forms delivery is unverified (needs a live key and inbox), and the Pages workflow has not been run yet.
+- Website: real Web3Forms delivery is unverified (needs a live key and inbox).
 - Home screen: context-loss recovery on the GL path is untested. The effect-off path still runs the paint timers (see How it fits together).
 
 ## Commits
