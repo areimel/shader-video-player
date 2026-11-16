@@ -1,0 +1,37 @@
+:root {
+  /* colour: broadcast monitor hardware */
+  --bezel: #17181a; --bezel-deep: #0f1011; --panel: #222326; --panel-raised: #2b2c30;
+  --phosphor: #ebe5d6; --dim: #8e8a80;
+  --lamp: #f0a53a; --lamp-ink: #1a1206; --tally: #e2493b; --signal: #8fd3a0;
+  --line: color-mix(in srgb, var(--phosphor) 12%, transparent);
+  --hover: color-mix(in srgb, var(--phosphor) 8%, transparent);
+  --selected: color-mix(in srgb, var(--lamp) 16%, transparent);
+  --scrim: color-mix(in srgb, var(--bezel-deep) 60%, transparent);
+  --panel-glass: color-mix(in srgb, var(--panel) 94%, transparent);
+
+  /* type */
+  --font: "Archivo Variable", system-ui, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --fs-xs: 11px; --fs-sm: 12px; --fs-md: 13px; --fs-lg: 15px; --fs-xl: 20px; --fs-2xl: 28px;
+  --wdth-expanded: 118;
+
+  /* space */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px;
+
+  /* radius */
+  --r-ctl: 6px; --r-panel: 10px; --r-pill: 999px;
+
+  /* layers */
+  --z-video: 0; --z-chrome: 10; --z-panel: 20; --z-overlay: 30; --z-toast: 40;
+
+  /* misc */
+  --focus-ring: 0 0 0 2px var(--lamp);
+  --controls-h: 88px;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --dur: 160ms;
+}
+
+:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}

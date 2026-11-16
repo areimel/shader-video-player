@@ -1,7 +1,8 @@
-.info-panel { position: absolute; top: 48px; right: 16px; width: 300px; background: rgba(26, 28, 33, 0.95);
-  border-radius: 10px; padding: 14px; z-index: 15; user-select: text; }
-.info-head { display: flex; justify-content: space-between; margin-bottom: 8px; }
-.info-panel dl { margin: 0 0 12px; }
-.info-panel dl > div { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
-.info-panel dt { color: var(--muted); }
+.info-panel { position: absolute; top: 48px; right: var(--sp-4); width: 300px; background: var(--panel-glass);
+  border-radius: var(--r-panel); padding: 14px; z-index: var(--z-panel); user-select: text; }
+.info-head { display: flex; justify-content: space-between; margin-bottom: var(--sp-2);
+  font-stretch: calc(var(--wdth-expanded) * 1%); font-variation-settings: "wdth" var(--wdth-expanded); }
+.info-panel dl { margin: 0 0 var(--sp-3); }
+.info-panel dl > div { display: flex; justify-content: space-between; gap: var(--sp-3); padding: 3px 0; }
+.info-panel dt { color: var(--dim); }
 .info-panel dd { margin: 0; text-align: right; word-break: break-all; }

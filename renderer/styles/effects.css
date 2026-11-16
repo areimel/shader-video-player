@@ -1,28 +1,27 @@
-.fx-panel { position: absolute; top: 48px; right: 16px; bottom: 96px; width: 320px; overflow-y: auto; color-scheme: dark; z-index: 16;
-  background: rgba(26, 28, 33, 0.95); border-radius: 10px; padding: 14px; }
+.fx-panel { position: absolute; top: 48px; right: var(--sp-4); bottom: calc(var(--controls-h) + var(--sp-2)); width: 320px; overflow-y: auto;
+  color-scheme: dark; z-index: var(--z-panel); background: var(--panel-glass); border-radius: var(--r-panel); padding: 14px; }
 .fx-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.fx-row-label { color: var(--muted); }
-.fx-badge { font-size: 11px; color: var(--accent); }
-.fx-group { border-top: 1px solid rgba(255, 255, 255, 0.08); padding: 4px 0; }
+.fx-row-label { color: var(--dim); }
+.fx-badge { font-size: var(--fs-xs); color: var(--lamp); }
+.fx-group { border-top: 1px solid var(--line); padding: var(--sp-1) 0; }
 .fx-group-head { display: flex; align-items: center; gap: 6px; width: 100%; padding: 6px 0; background: none; border: 0;
-  color: var(--text); font: inherit; font-weight: 600; cursor: pointer; text-align: left; }
-.fx-chevron { width: 10px; color: var(--muted); }
-.fx-param { padding: 6px 0 8px; }
-.fx-param-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; min-height: 20px; }
-.fx-param-label.is-modified { color: var(--accent); }
-.fx-value { color: var(--muted); font-variant-numeric: tabular-nums; }
+  color: var(--phosphor); font: inherit; font-weight: 600; cursor: pointer; text-align: left; }
+.fx-chevron { width: 10px; color: var(--dim); }
+.fx-param { padding: 6px 0 var(--sp-2); }
+.fx-param-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-1); min-height: 20px; }
+.fx-param-label.is-modified { color: var(--lamp); }
+.fx-value { color: var(--dim); font-variant-numeric: tabular-nums; }
 .fx-reset { margin-top: 10px; }
 .fx-select { flex: 1; min-width: 0; }
 .fx-param .fx-select { width: 100%; }
-.fx-select .dropdown-btn { width: 100%; justify-content: flex-start; background: rgba(255, 255, 255, 0.08); height: 30px; }
+.fx-select .dropdown-btn { width: 100%; justify-content: flex-start; background: var(--hover); height: 30px; }
 .fx-select .dropdown-menu { top: 34px; bottom: auto; left: 0; right: 0; z-index: 2; }
-.fx-segmented { display: flex; gap: 2px; background: rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 2px; }
-.fx-segmented button { flex: 1; background: none; border: 0; color: var(--text); font: inherit; padding: 5px 4px;
-  border-radius: 6px; cursor: pointer; }
-.fx-segmented button.is-selected { background: var(--accent); color: #fff; }
+.fx-segmented { display: flex; gap: 2px; background: var(--hover); border-radius: var(--r-ctl); padding: 2px; }
+.fx-segmented button { flex: 1; background: none; border: 0; color: var(--phosphor); font: inherit; padding: 5px var(--sp-1);
+  border-radius: var(--r-ctl); cursor: pointer; }
+.fx-segmented button.is-selected { background: var(--lamp); color: var(--lamp-ink); }
 .fx-switch { flex: none; width: 34px; height: 20px; border-radius: 10px; border: 0; padding: 2px; cursor: pointer;
-  background: rgba(255, 255, 255, 0.2); transition: background 0.15s; }
-.fx-switch.is-on { background: var(--accent); }
-.fx-switch-knob { display: block; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform 0.15s; }
+  background: var(--line); transition: background var(--dur) var(--ease); }
+.fx-switch.is-on { background: var(--lamp); }
+.fx-switch-knob { display: block; width: 16px; height: 16px; border-radius: 50%; background: var(--phosphor); transition: transform var(--dur) var(--ease); }
 .fx-switch.is-on .fx-switch-knob { transform: translateX(14px); }
-.fx-switch:focus-visible, .fx-segmented button:focus-visible, .fx-group-head:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

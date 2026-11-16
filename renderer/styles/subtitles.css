@@ -1,9 +1,9 @@
-.subtitle-overlay { position: absolute; inset: 0; z-index: 6; pointer-events: none; container-type: size;
+.subtitle-overlay { position: absolute; inset: 0; z-index: var(--z-chrome); pointer-events: none; container-type: size;
   display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
-  padding: 0 5% 5cqh; transition: padding-bottom 0.2s; }
-.subtitle-overlay.controls-up { padding-bottom: calc(5cqh + 78px); }
+  padding: 0 5% 5cqh; transition: padding-bottom var(--dur) var(--ease); }
+.subtitle-overlay.controls-up { padding-bottom: calc(5cqh + var(--controls-h) - var(--sp-2) - 2px); }
 .subtitle-box { max-width: 100%; text-align: center; font-size: clamp(14px, 4.4cqh, 72px); line-height: 1.25;
-  color: #fff; font-weight: 500; white-space: pre-wrap; overflow-wrap: anywhere;
-  text-shadow: 0 0 0.12em #000, 0 0 0.12em #000, 0.04em 0.04em 0.08em #000, -0.04em -0.04em 0.08em #000,
-    0.04em -0.04em 0.08em #000, -0.04em 0.04em 0.08em #000; }
+  color: var(--phosphor); font-weight: 500; white-space: pre-wrap; overflow-wrap: anywhere;
+  text-shadow: 0 0 0.12em black, 0 0 0.12em black, 0.04em 0.04em 0.08em black, -0.04em -0.04em 0.08em black,
+    0.04em -0.04em 0.08em black, -0.04em 0.04em 0.08em black; }
 .subtitle-cue + .subtitle-cue { margin-top: 0.15em; }
