@@ -47,7 +47,23 @@ describe("effect settings", () => {
 
   it("heals the stored selection", () => {
     expect(healSelection(effects, { active: "zzz", last: "b" })).toEqual({ active: null, last: "b" });
-    expect(healSelection(effects, null)).toEqual({ active: null, last: null });
+    expect(healSelection(effects, { active: "zzz", last: "zzz" })).toEqual({ active: null, last: null });
+  });
+
+  it("first run (nothing stored) turns the first registered effect on", () => {
+    expect(healSelection(effects, null)).toEqual({ active: "a", last: "a" });
+    expect(healSelection(effects, undefined)).toEqual({ active: "a", last: "a" });
+    expect(healSelection([], null)).toEqual({ active: null, last: null });
+  });
+
+  it("keeps a stored off: active null stays off and last is kept", () => {
+    expect(healSelection(effects, { active: null, last: "b" })).toEqual({ active: null, last: "b" });
+    expect(healSelection(effects, { active: null, last: null })).toEqual({ active: null, last: null });
+  });
+
+  it("treats a present but non-record stored value as corrupt and stays off", () => {
+    expect(healSelection(effects, "garbage")).toEqual({ active: null, last: null });
+    expect(healSelection(effects, 0)).toEqual({ active: null, last: null });
   });
 
   it("toggle remembers the last effect and defaults to the first", () => {
