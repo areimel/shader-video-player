@@ -2,18 +2,19 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, typ
 import type { LibrarySnapshot } from "../../../shared/types";
 import { useEffectChain } from "../../hooks/useEffectChain";
 import type { EffectSettings } from "../../hooks/useEffectSettings";
-import { useHomeMenu, type HomeHandlers } from "../../hooks/useHomeMenu";
+import { useHomeMenu } from "../../hooks/useHomeMenu";
+import type { HomeHandlers } from "../../utils/home/actions";
 import { useHomePaint } from "../../hooks/useHomePaint";
 import type { ToastKind } from "../../types/player";
 import { homeValues } from "../../utils/home/effectValues";
-import { mirrorId } from "../../utils/home/frame";
+import { mirrorId, mirrorStart } from "../../utils/home/frame";
+import { wheelStep } from "../../utils/home/wheel";
 import { hitTest, zoneAt } from "../../utils/home/hit";
-import { clientToUv, containUv, LOGICAL, uvToLogical, type Point } from "../../utils/home/pointer";
+import { clientToUv, containUv, isRealMove, LOGICAL, uvToLogical, type Point } from "../../utils/home/pointer";
 import { HomeMirror } from "./HomeMirror";
 import { SCALE } from "./painter";
 
 const CANVAS = { width: LOGICAL.width * SCALE, height: LOGICAL.height * SCALE };
-const WHEEL_ROWS = 3;
 
 interface Props {
   fx: EffectSettings;
@@ -68,26 +69,27 @@ export function HomeScreen({ fx, library, handlers, active, notify }: Props) {
   };
 
   const [pointing, setPointing] = useState(false);
-  // Chromium sends a pointermove without movement whenever the content under a resting pointer changes (every
-  // repaint here, or the window resizing under it); only a real move may take the cursor, or the keyboard cursor
-  // would snap back to the mouse. Screen coordinates, because a resize changes the client ones.
+  // Only a real move takes the cursor (see isRealMove), or the keyboard cursor would snap back to a resting mouse.
   const lastMove = useRef<{ x: number; y: number } | null>(null);
   const onPointerMove = (e: MouseEvent) => {
     const target = targetAt(e);
     setPointing(!!target);
-    const last = lastMove.current;
+    const real = isRealMove(lastMove.current, e);
     lastMove.current = { x: e.screenX, y: e.screenY };
-    if (!last || (last.x === e.screenX && last.y === e.screenY)) return;
-    if (target) menu.dispatch({ type: "point", target });
+    if (real && target) menu.dispatch({ type: "point", target });
   };
   const onClick = (e: MouseEvent) => {
     const target = targetAt(e);
     if (target) menu.activateAt(target);
   };
+  const wheelAcc = useRef(0);
   const onWheel = (e: WheelEvent) => {
     const p = toLogical(e);
     const zone = p && zoneAt(p.x, p.y);
-    if (zone && e.deltaY !== 0) menu.dispatch({ type: "wheel", zone, by: Math.sign(e.deltaY) * WHEEL_ROWS });
+    if (!zone) return;
+    const step = wheelStep(wheelAcc.current, e.deltaY, e.deltaMode);
+    wheelAcc.current = step.acc;
+    if (step.rows !== 0) menu.dispatch({ type: "wheel", zone, by: step.rows });
   };
 
   const zone = menu.state.zone;
@@ -95,12 +97,15 @@ export function HomeScreen({ fx, library, handlers, active, notify }: Props) {
   return (
     <div
       ref={rootRef} className={pointing ? "home-screen is-pointing" : "home-screen"} tabIndex={0}
-      role="group" aria-label="Home screen" aria-activedescendant={row?.action ? mirrorId(zone, row.id) : undefined}
+      role="application" aria-roledescription="home screen" aria-label="Home screen" aria-activedescendant={row?.action ? mirrorId(zone, row.id) : undefined}
       onKeyDown={menu.onKeyDown} onPointerMove={onPointerMove} onPointerLeave={() => setPointing(false)} onClick={onClick} onWheel={onWheel}
     >
       <canvas ref={paintRef} width={CANVAS.width} height={CANVAS.height} className={effect ? "home-canvas is-source" : "home-canvas"} aria-hidden="true" />
       {effect && <canvas ref={glRef} className="shader-canvas" aria-hidden="true" />}
-      <HomeMirror model={menu.model} />
+      <HomeMirror
+        model={menu.model} libraryStart={mirrorStart(menu.model.zones.library.length, menu.state.cursor.library)}
+        tvStart={mirrorStart(menu.model.zones.tv.length, menu.state.cursor.tv)} updatesStart={mirrorStart(menu.model.zones.updates.length, menu.state.cursor.updates)}
+      />
     </div>
   );
 }

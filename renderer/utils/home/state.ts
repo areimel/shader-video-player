@@ -134,8 +134,16 @@ export function homeReducer(state: HomeState, action: HomeAction, model: HomeMod
   }
 }
 
-/** Keys the home screen reacts to. `l` and `?` are reserved by the player and never mapped. */
-export function keyToAction(key: string, shiftKey: boolean): HomeAction | "activate" | "remove" | null {
+/**
+ * Keys the home screen reacts to. `l` and `?` are reserved by the player and never mapped. A held key repeats
+ * navigation but never activate/remove: a held Enter must not queue several dialogs or re-apply a preset.
+ */
+export function keyToAction(key: string, shiftKey: boolean, repeat = false): HomeAction | "activate" | "remove" | null {
+  const a = keyAction(key, shiftKey);
+  return repeat && (a === "activate" || a === "remove") ? null : a;
+}
+
+function keyAction(key: string, shiftKey: boolean): HomeAction | "activate" | "remove" | null {
   switch (key) {
     case "ArrowUp": return { type: "move", by: -1 };
     case "ArrowDown": return { type: "move", by: 1 };

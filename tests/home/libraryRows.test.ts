@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addedFolderNames, applyMetaPatches, libraryRows, newerSnapshot } from "../../renderer/utils/home/libraryRows";
+import { addedFolderNames, applyMetaPatches, folderNamesLabel, libraryOrder, libraryRows, newerSnapshot } from "../../renderer/utils/home/libraryRows";
 import { item, snapshot } from "./fixtures";
 
 const recent = (n: number) => ({ path: `/r/${n}.mkv`, name: `r${n}.mkv`, openedAt: n });
@@ -65,5 +65,19 @@ describe("snapshot helpers", () => {
     const next = { ...base, folders: [...base.folders, { id: "f-2", name: "Shows", path: "/s", missing: false, truncated: false }] };
     expect(addedFolderNames(base, next)).toEqual(["Shows"]);
     expect(addedFolderNames(next, base)).toEqual([]);
+  });
+});
+
+describe("library order and labels", () => {
+  it("gives the same rows from a reused order after metadata patches", () => {
+    const snap = snapshot([item("1", "e10.mkv", { dir: "S1" }), item("2", "e2.mkv", { dir: "S1" }), item("3", "z.mkv")]);
+    const order = libraryOrder(snap);
+    const patched = applyMetaPatches(snap, [{ id: "2", durationSec: 60, width: 640, height: 480, probe: "ok" }]);
+    expect(libraryRows(patched, [], order)).toEqual(libraryRows(patched, []));
+  });
+  it("names one, two or many folders", () => {
+    expect(folderNamesLabel(["Movies"])).toBe("Movies");
+    expect(folderNamesLabel(["Movies", "Shows"])).toBe("Movies and Shows");
+    expect(folderNamesLabel(["A", "B", "C"])).toBe("3 folders");
   });
 });

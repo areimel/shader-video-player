@@ -81,8 +81,11 @@ export interface HitRegion { x: number; y: number; w: number; h: number; target:
 export interface HomeFrame {
   ops: DrawOp[];
   hits: HitRegion[];
-  /** Something drawn depends on `HomeClock.elapsed` (a marquee or the updates paging): repaint on a tick. */
-  animated: boolean;
+  /**
+   * Seconds until something drawn changes with time alone (the next marquee step or updates page), or null when
+   * the frame is static: the painter sleeps until then instead of polling.
+   */
+  nextChange: number | null;
 }
 
 /** Things that change without user input; kept out of HomeState so the reducer stays replayable. */

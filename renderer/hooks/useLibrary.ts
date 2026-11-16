@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { isSuperseded } from "../../shared/superseded";
 import type { LibrarySnapshot } from "../../shared/types";
 import type { ToastKind } from "../types/player";
 import { friendlyError } from "../utils/format";
-import { addedFolderNames, applyMetaPatches, EMPTY_LIBRARY, newerSnapshot } from "../utils/home/libraryRows";
+import { addedFolderNames, applyMetaPatches, EMPTY_LIBRARY, folderNamesLabel, newerSnapshot } from "../utils/home/libraryRows";
+import { useLatest } from "./useLatest";
 
 export interface Library {
   snapshot: LibrarySnapshot;
@@ -15,13 +16,10 @@ export interface Library {
   rescan: () => void;
 }
 
-const joinNames = (names: string[]) => names.length > 2 ? `${names.length} folders` : names.join(" and ");
-
 /** The library index from the main process: loaded on mount, replaced on pushes, patched as metadata arrives. */
 export function useLibrary(notify: (kind: ToastKind, msg: string) => void): Library {
   const [snapshot, setSnapshot] = useState<LibrarySnapshot>(EMPTY_LIBRARY);
-  const ref = useRef(snapshot);
-  ref.current = snapshot;
+  const ref = useLatest(snapshot);
   const accept = useCallback((next: LibrarySnapshot) => setSnapshot((held) => newerSnapshot(held, next)), []);
 
   useEffect(() => {
@@ -37,8 +35,8 @@ export function useLibrary(notify: (kind: ToastKind, msg: string) => void): Libr
     if (!next) return;
     const names = addedFolderNames(ref.current, next);
     accept(next);
-    if (names.length) notify("success", `Added ${joinNames(names)} to the library`);
-  }, [accept, notify]);
+    if (names.length) notify("success", `Added ${folderNamesLabel(names)} to the library`);
+  }, [accept, notify, ref]);
 
   return useMemo(() => ({
     snapshot,
@@ -52,5 +50,5 @@ export function useLibrary(notify: (kind: ToastKind, msg: string) => void): Libr
       }, fail);
     },
     rescan: () => window.player.rescanLibrary(),
-  }), [snapshot, added, fail, accept, notify]);
+  }), [snapshot, added, fail, accept, notify, ref]);
 }

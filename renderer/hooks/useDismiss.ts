@@ -1,4 +1,5 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, type RefObject } from "react";
+import { useLatest } from "./useLatest";
 
 export type DismissReason = "escape" | "outside";
 
@@ -37,8 +38,7 @@ export function useDismiss(
   onDismiss: (reason: DismissReason) => void,
   { enabled = true, outside = true }: Options = {},
 ) {
-  const cb = useRef(onDismiss);
-  cb.current = onDismiss;
+  const cb = useLatest(onDismiss);
 
   useEffect(() => {
     if (!enabled) return;

@@ -32,3 +32,15 @@ export function uvToLogical(uv: Point | null): Point | null {
   if (!uv || !(uv.x >= 0 && uv.x < 1 && uv.y >= 0 && uv.y < 1)) return null;
   return { x: uv.x * LOGICAL.width, y: uv.y * LOGICAL.height };
 }
+
+export interface MoveSample { screenX: number; screenY: number; movementX: number; movementY: number }
+
+/**
+ * A pointermove the user actually made. Chromium also sends moves without movement when the content under a
+ * resting pointer changes (every repaint here) or the window is resized under it; those have zero movementX/Y,
+ * and on some compositors window-relative screen coordinates. Both must say "moved".
+ */
+export function isRealMove(prev: { x: number; y: number } | null, e: MoveSample): boolean {
+  if (e.movementX === 0 && e.movementY === 0) return false;
+  return !prev || prev.x !== e.screenX || prev.y !== e.screenY;
+}

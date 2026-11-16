@@ -6,6 +6,7 @@ import {
 } from "../utils/queue";
 import { loadLoop, saveLoop } from "../utils/storage";
 import { single, usePlaybackSource } from "./usePlaybackSource";
+import { useLatest } from "./useLatest";
 
 /** Owns the play queue and the playback source it drives; every item plays via the single-file open path. */
 export function usePlayQueue(
@@ -13,19 +14,16 @@ export function usePlayQueue(
   notify: (kind: ToastKind, msg: string) => void,
 ) {
   const [state, dispatch] = useReducer(queueReducer, EMPTY_QUEUE);
-  const stateRef = useRef(state);
-  stateRef.current = state;
+  const stateRef = useLatest(state);
   const [loop, setLoop] = useState(loadLoop);
-  const loopRef = useRef(loop);
-  loopRef.current = loop;
+  const loopRef = useLatest(loop);
   /** True once the media really ended with nothing left to play; drives the end screen. */
   const [ended, setEnded] = useState(false);
 
   const replace = useCallback((items: QueueItem[], index = 0) => dispatch({ type: "replace", items, index }), []);
   const source = usePlaybackSource(notify, replace);
   const { plan, loading, openQueued, restartAt, openDialog, openDropped, close: closeSource } = source;
-  const loadingRef = useRef(false);
-  loadingRef.current = loading;
+  const loadingRef = useLatest(loading);
 
   /** The path being opened; navigation is ignored meanwhile so "next" twice cannot chase the same item. */
   const pending = useRef<string | null>(null);

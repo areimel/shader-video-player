@@ -32,3 +32,13 @@ export function mirrorId(zone: ZoneId, rowId: string): string {
   const safe = Array.from(rowId, (ch) => (/[A-Za-z0-9-]/.test(ch) ? ch : `_${ch.codePointAt(0)!.toString(16)}_`)).join("");
   return `home-${zone}-${safe}`;
 }
+
+/** Rows mirrored per zone around the cursor; the window moves in steps so most cursor moves keep it. */
+export const MIRROR_ROWS = 48;
+const MIRROR_STEP = 16;
+
+/** First mirrored row index for a zone: a bounded window that always contains `cursor`. */
+export function mirrorStart(length: number, cursor: number): number {
+  const aligned = Math.floor(Math.max(0, cursor) / MIRROR_STEP) * MIRROR_STEP - MIRROR_STEP;
+  return Math.max(0, Math.min(aligned, length - MIRROR_ROWS));
+}

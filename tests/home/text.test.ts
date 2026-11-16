@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clip, clipWords, fit, formatDate, formatDuration, formatResolution, marquee, wrap } from "../../renderer/utils/home/text";
+import { clip, clipWords, fit, marqueeNextChange, formatDate, formatDuration, formatResolution, marquee, wrap } from "../../renderer/utils/home/text";
 
 describe("fit and clip", () => {
   it("upper-cases, pads and truncates", () => {
@@ -81,5 +81,21 @@ describe("review fixes", () => {
   });
   it("draws full-width punctuation as ASCII", () => {
     expect(clip("King Ramses Curse： Full ｜ Episode", 40)).toBe("KING RAMSES CURSE: FULL | EPISODE");
+  });
+});
+
+describe("marqueeNextChange", () => {
+  const title = "a title long enough to scroll a while";
+  it("is null when the text fits", () => {
+    expect(marqueeNextChange("short", 10, 3)).toBeNull();
+  });
+  it("lands exactly on the next change, and nothing changes before it", () => {
+    for (let t = 0; t < 30; t += 0.07) {
+      const next = marqueeNextChange(title, 12, t)!;
+      expect(next).toBeGreaterThan(0);
+      const now = marquee(title, 12, t);
+      expect(marquee(title, 12, t + next - 1e-6)).toBe(now);
+      expect(marquee(title, 12, t + next + 1e-6)).not.toBe(now);
+    }
   });
 });

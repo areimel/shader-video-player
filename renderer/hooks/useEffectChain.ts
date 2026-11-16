@@ -2,6 +2,7 @@ import { useEffect, useRef, type MutableRefObject, type RefObject } from "react"
 import { EffectRenderer } from "../shader/gl/effectRenderer";
 import type { FrameInput } from "../shader/gl/frameInput";
 import type { EffectDefinition, ParamValues } from "../shader/effects/types";
+import { useLatest } from "./useLatest";
 
 interface Options {
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -32,12 +33,9 @@ function devicePixels(entry: ResizeObserverEntry): [number, number] {
 /** Owns the EffectRenderer lifecycle for the canvas. Everything GL lives in the renderer; this only wires it to React. */
 export function useEffectChain({ canvasRef, makeInput, effect, values, sourceKey, startOffset, onError, captureRef }: Options): void {
   const rendererRef = useRef<EffectRenderer | null>(null);
-  const valuesRef = useRef(values);
-  const startOffsetRef = useRef(startOffset);
-  const onErrorRef = useRef(onError);
-  valuesRef.current = values;
-  startOffsetRef.current = startOffset;
-  onErrorRef.current = onError;
+  const valuesRef = useLatest(values);
+  const startOffsetRef = useLatest(startOffset);
+  const onErrorRef = useLatest(onError);
 
   useEffect(() => {
     const canvas = canvasRef.current;

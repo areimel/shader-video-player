@@ -1,22 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import type { LibrarySnapshot, RecentFile } from "../../shared/types";
 import { EFFECTS } from "../shader/effects/registry";
 import { CHANGELOG } from "../utils/changelog";
 import { CREDITS } from "../utils/credits";
 import { buildModel } from "../utils/home/model";
 import { activate, homeReducer, initialState, keyToAction } from "../utils/home/state";
+import { clickAction, runRowAction, type HomeHandlers } from "../utils/home/actions";
+import { libraryOrder, libraryRows } from "../utils/home/libraryRows";
+import { useLatest } from "./useLatest";
 import type { HitTarget, HomeAction, HomeModel, HomeState, RowAction } from "../utils/home/types";
 import type { EffectSettings } from "./useEffectSettings";
 
-/** What the home rows can do outside the screen itself. The library callbacks are optional until the library is wired. */
-export interface HomeHandlers {
-  openRecent: (path: string) => void;
-  openDialog: () => void;
-  openItem?: (itemId: string) => void;
-  addFolder?: () => void;
-  removeFolder?: (folderId: string) => void;
-  rescan?: () => void;
-}
+export type { HomeHandlers };
 
 export interface HomeMenu {
   model: HomeModel;
@@ -38,10 +33,14 @@ export function useHomeMenu(fx: EffectSettings, library: LibrarySnapshot, handle
 
   const activeId = fx.effect?.id ?? null;
   const selectedId = fx.selected?.id ?? null;
+  // Metadata patches keep the revision, the folder list and the item order: reuse the sort across them.
+  const order = useMemo(() => libraryOrder(library), [library.revision, library.folders, library.items.length]);
+  const shownRecents = recents ?? NO_RECENTS;
+  const libRows = useMemo(() => libraryRows(library, shownRecents, order), [library, shownRecents, order]);
   const model = useMemo(() => buildModel({
-    library, recents: recents ?? NO_RECENTS, effects: EFFECT_ENTRIES, changelog: CHANGELOG, credits: CREDITS,
+    library, recents: shownRecents, effects: EFFECT_ENTRIES, changelog: CHANGELOG, credits: CREDITS,
     tv: { activeEffectId: activeId, selectedEffectId: selectedId, presetId: fx.presetId },
-  }), [library, recents, activeId, selectedId, fx.presetId]);
+  }, libRows), [library, shownRecents, libRows, activeId, selectedId, fx.presetId]);
 
   // The state remembers the model it was computed for; a new model is synced during render, so no frame
   // is ever laid out with a cursor that belongs to the previous rows.
@@ -61,34 +60,18 @@ export function useHomeMenu(fx: EffectSettings, library: LibrarySnapshot, handle
     });
   }, []);
 
-  const ref = useRef({ fx, handlers, model, state });
-  ref.current = { fx, handlers, model, state };
-
-  const run = useCallback((a: RowAction) => {
-    const { fx: f, handlers: h } = ref.current;
-    switch (a.type) {
-      case "setTv":
-        f.setEffect(a.effectId);
-        if (a.effectId !== null && a.presetId !== null) f.applyPreset(a.presetId);
-        return;
-      case "openRecent": return h.openRecent(a.path);
-      case "openDialog": return h.openDialog();
-      case "openItem": return h.openItem?.(a.itemId);
-      case "addFolder": return h.addFolder?.();
-      case "removeFolder": return h.removeFolder?.(a.folderId);
-      case "rescan": return h.rescan?.();
-    }
-  }, []);
+  const ref = useLatest({ fx, handlers, model, state });
+  const run = useCallback((a: RowAction) => runRowAction(a, ref.current.handlers, ref.current.fx), [ref]);
 
   const activateAt = useCallback((target: HitTarget) => {
     dispatch({ type: "point", target });
-    const action = ref.current.model.zones[target.zone][target.index]?.action;
-    if (action && action.type !== "removeFolder") run(action);
-  }, [dispatch, run]);
+    const action = clickAction(ref.current.model, target);
+    if (action) run(action);
+  }, [dispatch, run, ref]);
 
   const onKeyDown = useCallback((e: KeyboardEvent<HTMLElement>) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    const a = keyToAction(e.key, e.shiftKey);
+    const a = keyToAction(e.key, e.shiftKey, e.repeat);
     if (!a) return;
     const { model: m, state: s } = ref.current;
     const action = a === "activate" || a === "remove" ? activate(m, s, a) : null;
@@ -98,7 +81,7 @@ export function useHomeMenu(fx: EffectSettings, library: LibrarySnapshot, handle
     e.stopPropagation();
     if (action) run(action);
     else dispatch(a as HomeAction);
-  }, [dispatch, run]);
+  }, [dispatch, run, ref]);
 
   return { model, state, dispatch, activateAt, onKeyDown };
 }

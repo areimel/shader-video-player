@@ -1,5 +1,6 @@
 import type { CanvasInput, FrameInputEvents, FrameTick } from "./frameInput";
 import { InputClock } from "./inputClock";
+import { onWindowActivity, windowActive } from "../../utils/windowActivity";
 import type { Size } from "./passTypes";
 
 /**
@@ -19,8 +20,8 @@ export function canvasInput(canvas: HTMLCanvasElement, opts: { fps?: number } = 
   let timer: ReturnType<typeof setInterval> | null = null;
   let lastTickFrame = -1;
   let disposed = false;
+  let detach: (() => void) | null = null;
 
-  const windowActive = () => document.visibilityState === "visible" && document.hasFocus();
   const size = (): Size | null => (canvas.width > 0 && canvas.height > 0 ? { width: canvas.width, height: canvas.height } : null);
   const emit = (tick: FrameTick) => { for (const fn of [...frameSubs]) fn(tick); };
 
@@ -54,10 +55,8 @@ export function canvasInput(canvas: HTMLCanvasElement, opts: { fps?: number } = 
     const wanted = !disposed && (frameSubs.size > 0 || eventSubs.size > 0);
     if (wanted === attached) return updateTimer();
     attached = wanted;
-    const method = wanted ? "addEventListener" : "removeEventListener";
-    document[method]("visibilitychange", sync);
-    window[method]("focus", sync);
-    window[method]("blur", sync);
+    detach?.();
+    detach = wanted ? onWindowActivity(sync) : null;
     sync();
   };
 

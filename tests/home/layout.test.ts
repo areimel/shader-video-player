@@ -135,17 +135,17 @@ describe("drawing rules", () => {
     expect(at({ ...clock, elapsed: 3 })).toEqual(at(clock));
   });
 
-  it("reports motion only for a scrolling cursor title or the updates paging", () => {
+  it("reports when time alone next changes the frame: a scrolling cursor title or the updates page", () => {
     const still = model({ changelog: [], credits: { version: "1", author: "A", thirdParty: [] } });
-    expect(layout(still, initialState(still), clock).animated).toBe(false);
+    expect(layout(still, initialState(still), clock).nextChange).toBeNull();
     const long = model({ changelog: [], credits: still.credits, recents: [{ path: "/x", name: "A really very long recent file name here, longer than the row.mkv", openedAt: 1 }] });
     const s = initialState(long);
     expect(long.zones.library[s.cursor.library]!.id).toBe("recent:/x");
-    expect(layout(long, s, clock).animated).toBe(true);
-    expect(layout(long, s, { ...clock, reducedMotion: true }).animated).toBe(false);
+    expect(layout(long, s, clock).nextChange).toBeCloseTo(1.25); // the opening pause, then one step
+    expect(layout(long, s, { ...clock, reducedMotion: true }).nextChange).toBeNull();
     const paging = bigModel();
-    expect(layout(paging, initialState(paging), clock).animated).toBe(true);
-    expect(layout(paging, initialState(paging), { ...clock, reducedMotion: true }).animated).toBe(false);
+    expect(layout(paging, initialState(paging), { ...clock, elapsed: 2 }).nextChange).toBeCloseTo(UPDATES_PAGE_SECONDS - 2);
+    expect(layout(paging, initialState(paging), { ...clock, reducedMotion: true }).nextChange).toBeNull();
   });
 });
 

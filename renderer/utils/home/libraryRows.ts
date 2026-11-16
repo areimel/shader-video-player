@@ -24,10 +24,24 @@ const byDirThenName = (a: LibraryItem, b: LibraryItem) =>
 
 export const countLabel = (n: number) => `${n} ${n === 1 ? "TAPE" : "TAPES"}`;
 
-function folderRows(snapshot: LibrarySnapshot): HomeRow[] {
+/** Per folder, indices into `snapshot.items` in display order (directory, then natural name). */
+export type LibraryOrder = Map<string, number[]>;
+
+/**
+ * The sort, separate from the rows: metadata patches keep `items` in place and never change names, so the
+ * caller can reuse one order across patches (keyed on the revision and folder list) and skip re-sorting.
+ */
+export function libraryOrder(snapshot: LibrarySnapshot): LibraryOrder {
+  const order: LibraryOrder = new Map(snapshot.folders.map((f) => [f.id, []]));
+  snapshot.items.forEach((it, i) => order.get(it.folderId)?.push(i));
+  for (const list of order.values()) list.sort((a, b) => byDirThenName(snapshot.items[a]!, snapshot.items[b]!));
+  return order;
+}
+
+function folderRows(snapshot: LibrarySnapshot, order: LibraryOrder): HomeRow[] {
   const rows: HomeRow[] = [];
   for (const folder of snapshot.folders) {
-    const items = snapshot.items.filter((i) => i.folderId === folder.id).sort(byDirThenName);
+    const items = (order.get(folder.id) ?? []).map((i) => snapshot.items[i]).filter((it): it is LibraryItem => it?.folderId === folder.id);
     rows.push({
       id: `folder:${folder.id}`,
       kind: "header",
@@ -52,7 +66,7 @@ function folderRows(snapshot: LibrarySnapshot): HomeRow[] {
   return rows;
 }
 
-export function libraryRows(snapshot: LibrarySnapshot, recents: RecentFile[]): HomeRow[] {
+export function libraryRows(snapshot: LibrarySnapshot, recents: RecentFile[], order: LibraryOrder = libraryOrder(snapshot)): HomeRow[] {
   const rows: HomeRow[] = [];
   const shown = recents.slice(0, MAX_RECENTS);
   if (shown.length > 0) {
@@ -64,7 +78,7 @@ export function libraryRows(snapshot: LibrarySnapshot, recents: RecentFile[]): H
   if (snapshot.folders.length === 0 && shown.length === 0) {
     rows.push({ id: "empty", kind: "text", cols: ["ADD A FOLDER TO LIST YOUR VIDEOS"] });
   }
-  rows.push(...folderRows(snapshot));
+  rows.push(...folderRows(snapshot, order));
   rows.push(
     { id: "act:add", kind: "action", cols: ["+ ADD FOLDER"], action: { type: "addFolder" } },
     { id: "act:rescan", kind: "action", cols: ["RESCAN"], action: { type: "rescan" } },
@@ -85,3 +99,6 @@ export function addedFolderNames(prev: LibrarySnapshot, next: LibrarySnapshot): 
   const had = new Set(prev.folders.map((f) => f.id));
   return next.folders.filter((f) => !had.has(f.id)).map((f) => f.name);
 }
+
+/** "Movies", "Movies and Shows", "3 folders": the folder part of a library toast. */
+export const folderNamesLabel = (names: string[]): string => (names.length > 2 ? `${names.length} folders` : names.join(" and "));

@@ -1,7 +1,7 @@
 import type { DrawOp, HitRegion, HomeClock, HomeFrame, HomeModel, HomeState, ZoneId } from "./types";
 import { CELL, COLS, INSET, ROWS } from "./types";
 import { clip } from "./text";
-import { drawRows, drawTitleBar, text, type Window, type ZoneBox } from "./layoutRows";
+import { drawRows, drawTitleBar, minChange, text, type Window, type ZoneBox } from "./layoutRows";
 
 /** Zone geometry in cells. Nothing but the background is drawn outside cols 2..37 / rows 2..27. */
 export const LEFT = INSET;
@@ -63,11 +63,11 @@ export function layout(model: HomeModel, state: HomeState, clock: HomeClock): Ho
     const box = BOXES[zone];
     drawTitleBar(ops, box.col, box.row - 1, box.cols, label, right, state.zone === zone, wins[zone]);
   }
-  let animated = !!wins.updates.paging;
+  let nextChange = wins.updates.paging ? UPDATES_PAGE_SECONDS - (Math.max(0, clock.elapsed) % UPDATES_PAGE_SECONDS) : null;
   for (const zone of ["library", "tv", "updates"] as const) {
-    animated = drawRows(ops, hits, BOXES[zone], model.zones[zone], wins[zone], state.cursor[zone], state.zone === zone, clock) || animated;
+    nextChange = minChange(nextChange, drawRows(ops, hits, BOXES[zone], model.zones[zone], wins[zone], state.cursor[zone], state.zone === zone, clock));
   }
   credits(ops, model);
-  return { ops, hits, animated };
+  return { ops, hits, nextChange };
 }
 

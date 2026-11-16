@@ -4,10 +4,12 @@ import { canvasInput } from "../shader/gl/canvasInput";
 import type { CanvasInput } from "../shader/gl/frameInput";
 import { formatClock, msToNextMinute, sameOps } from "../utils/home/frame";
 import { layout } from "../utils/home/layout";
+import { onWindowActivity, windowActive } from "../utils/windowActivity";
+import { useLatest } from "./useLatest";
 import type { DrawOp, HomeFrame, HomeModel, HomeState } from "../utils/home/types";
 
-/** Repaint rate while something on screen moves (a marquee steps every 0.25 s, the updates page every 6 s). */
-const TICK_MS = 125;
+/** Wake a little after the change so the layout is certainly past the boundary. */
+const WAKE_SLACK_MS = 5;
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 
 interface Options {
@@ -24,15 +26,15 @@ export interface HomePaint {
 }
 
 /**
- * Paints the home screen on its 2D canvas: on every state/model change, once a minute for the clock, and on a
- * ~8 Hz tick only while the frame says something moves. A paint that would draw the same ops is skipped, so the
- * effect only re-uploads the canvas when pixels change. Nothing paints before the pixel font has loaded.
+ * Paints the home screen on its 2D canvas: on every state/model change, once a minute for the clock, and once
+ * at the moment the layout says something changes with time (the next marquee step or updates page), only while
+ * the window is visible and focused. A paint that would draw the same ops is skipped, so the effect only
+ * re-uploads the canvas when pixels change. Nothing paints before the pixel font has loaded.
  */
 export function useHomePaint({ canvasRef, model, state }: Options): HomePaint {
   const frameRef = useRef<HomeFrame | null>(null);
   const inputRef = useRef<CanvasInput | null>(null);
-  const latest = useRef({ model, state });
-  latest.current = { model, state };
+  const latest = useLatest({ model, state });
   const repaintRef = useRef<() => void>(() => {});
 
   const makeInput = useCallback(() => {
@@ -70,7 +72,7 @@ export function useHomePaint({ canvasRef, model, state }: Options): HomePaint {
         painted = frame.ops;
         makeInput()?.painted();
       }
-      if (frame.animated) tick = setTimeout(repaint, TICK_MS);
+      if (frame.nextChange !== null && windowActive()) tick = setTimeout(repaint, frame.nextChange * 1000 + WAKE_SLACK_MS);
     };
     const everyMinute = () => { repaint(); minute = setTimeout(everyMinute, msToNextMinute(new Date())); };
     repaintRef.current = repaint;
@@ -83,7 +85,9 @@ export function useHomePaint({ canvasRef, model, state }: Options): HomePaint {
         everyMinute();
       });
     motion.addEventListener("change", repaint);
+    const offActivity = onWindowActivity(repaint); // pauses the time-driven repaint, resumes it on return
     return () => {
+      offActivity();
       disposed = true;
       clearTimeout(tick);
       clearTimeout(minute);
@@ -92,7 +96,7 @@ export function useHomePaint({ canvasRef, model, state }: Options): HomePaint {
       inputRef.current?.dispose();
       inputRef.current = null;
     };
-  }, [canvasRef, makeInput]);
+  }, [canvasRef, makeInput, latest]);
 
   useEffect(() => repaintRef.current(), [model, state]);
 

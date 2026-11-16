@@ -60,6 +60,29 @@ export function marquee(text: string, cols: number, elapsed: number): string {
   return all.slice(offset, offset + cols).join("");
 }
 
+/**
+ * Seconds until `marquee(text, cols, elapsed)` shows a different window, or null when it never changes. The offset
+ * steps at pause + j/rate going out and at 2*pause + travel + j/rate coming back (j = 1..overflow), per period.
+ */
+export function marqueeNextChange(text: string, cols: number, elapsed: number): number | null {
+  const overflow = cells(text).length - cols;
+  if (overflow <= 0 || cols <= 0) return null;
+  const step = 1 / MARQUEE_CELLS_PER_SECOND;
+  const travel = overflow * step;
+  const pause = MARQUEE_PAUSE_SECONDS;
+  const period = 2 * (pause + travel);
+  const e = Number.isFinite(elapsed) ? Math.max(0, elapsed) : 0;
+  // Same expressions as marquee(), so both agree on which side of a step boundary `t` is.
+  const t = ((e % period) + period) % period;
+  const rate = MARQUEE_CELLS_PER_SECOND;
+  let next: number;
+  if (t < pause) next = pause + step;
+  else if (t < pause + travel) next = pause + (Math.floor((t - pause) * rate) + 1) / rate;
+  else if (t < 2 * pause + travel) next = 2 * pause + travel + step;
+  else next = 2 * pause + travel + (Math.floor((t - 2 * pause - travel) * rate) + 1) / rate;
+  return next - t;
+}
+
 export function formatDuration(sec: number | null): string {
   if (sec === null || !Number.isFinite(sec) || sec < 0) return "--:--";
   const total = Math.floor(sec);

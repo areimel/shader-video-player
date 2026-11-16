@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
+import { useLatest } from "./useLatest";
 import { COMMANDS, isCommandId, type CommandId } from "../../shared/commands";
 
 export type CommandHandlers = Partial<Record<CommandId, () => void>>;
@@ -38,8 +39,7 @@ export function commandForKey(e: Pick<KeyboardEvent, "key" | "shiftKey">): Comma
  * alone. `enabled` lets the caller suspend all shortcuts (e.g. while a modal owns the keyboard).
  */
 export function usePlayerShortcuts(enabled: boolean, handlers: CommandHandlers): void {
-  const ref = useRef(handlers);
-  ref.current = handlers;
+  const ref = useLatest(handlers);
   useEffect(() => {
     if (!enabled) return;
     const onKey = (e: KeyboardEvent) => {
@@ -61,8 +61,7 @@ export function usePlayerShortcuts(enabled: boolean, handlers: CommandHandlers):
 
 /** Runs handlers for commands sent from the native menu. Unknown ids are ignored. */
 export function useMenuCommands(handlers: CommandHandlers): void {
-  const ref = useRef(handlers);
-  ref.current = handlers;
+  const ref = useLatest(handlers);
   useEffect(() => window.player.onCommand((id) => {
     if (isCommandId(id)) ref.current[id]?.();
   }), []);

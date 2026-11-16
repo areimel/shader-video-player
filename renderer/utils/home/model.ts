@@ -71,9 +71,10 @@ function updateRows(changelog: ChangelogEntry[], credits: Credits): HomeRow[] {
   return rows;
 }
 
-export function buildModel(input: HomeModelInput): HomeModel {
+/** `library` may be passed in already built (the hook memoises it on the snapshot and recents). */
+export function buildModel(input: HomeModelInput, library: HomeRow[] = libraryRows(input.library, input.recents)): HomeModel {
   return {
-    zones: { library: libraryRows(input.library, input.recents), tv: tvRows(input), updates: updateRows(input.changelog, input.credits) },
+    zones: { library, tv: tvRows(input), updates: updateRows(input.changelog, input.credits) },
     credits: input.credits,
     libraryStatus: input.library.scanning ? "SCANNING"
       : input.library.folders.length === 0 ? "NO FOLDERS" : countLabel(input.library.items.length),

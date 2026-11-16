@@ -1,6 +1,6 @@
 import type { ColorRole, DrawOp, HitRegion, HomeClock, HomeRow, ZoneId } from "./types";
 import { CELL } from "./types";
-import { clip, clipWords, marquee } from "./text";
+import { clip, clipWords, marquee, marqueeNextChange } from "./text";
 
 /** A zone's row window, in cells. */
 export interface ZoneBox {
@@ -57,8 +57,8 @@ export interface Window {
 export function drawRows(
   ops: DrawOp[], hits: HitRegion[], box: ZoneBox, rows: HomeRow[], win: Window,
   cursor: number, focused: boolean, clock: HomeClock,
-): boolean {
-  let animated = false;
+): number | null {
+  let next: number | null = null;
   const markerCols = box.marker === false ? 0 : 1;
   for (let i = 0; i < box.visible; i++) {
     const index = win.first + i;
@@ -72,16 +72,21 @@ export function drawRows(
     const mainCols = Math.max(0, box.cols - markerCols - (secW > 0 ? secW + 1 : 0));
     const main = row.cols[0] ?? "";
     const scrolls = onCursor && !clock.reducedMotion && Array.from(main).length > mainCols;
-    animated ||= scrolls;
-    const shown = scrolls ? marquee(main, mainCols, clock.elapsed - clock.cursorSince).trimEnd() : clipWords(main, mainCols);
+    const since = clock.elapsed - clock.cursorSince;
+    if (scrolls) next = minChange(next, marqueeNextChange(main, mainCols, since));
+    const shown = scrolls ? marquee(main, mainCols, since).trimEnd() : clipWords(main, mainCols);
     const color = rowColor(row, onCursor);
     text(ops, box.col, y, (markerCols ? (row.current ? ">" : " ") : "") + shown, color);
     if (markerCols && row.standby) text(ops, box.col, y, ">", onCursor ? "accentInk" : "dim");
     if (secW > 0) text(ops, box.col + box.cols, y, secondary, onCursor ? "accentInk" : row.alert ? "alert" : "dim", "right");
     if (row.action) hits.push({ x: px(box.col), y: px(y), w: px(box.cols), h: CELL, target: { zone: box.zone, index } });
   }
-  return animated;
+  return next;
 }
+
+/** The sooner of two "seconds until the next change" values; null means never. */
+export const minChange = (a: number | null, b: number | null): number | null =>
+  a === null ? b : b === null ? a : Math.min(a, b);
 
 /** Cells at the right end of a title bar kept for the scroll hints: "^" (rows above), "v" (rows below). */
 export const HINT_COLS = 2;
