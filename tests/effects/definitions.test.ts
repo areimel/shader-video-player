@@ -28,6 +28,14 @@ describe.each(EFFECTS.map((e) => [e.id, e] as const))("effect %s definition", (i
     expect(new Set(effect.passes.map((p) => p.id)).size).toBe(effect.passes.length);
   });
 
+  it("maps the centre of the viewport with default values to near the centre of the picture", () => {
+    const env = { viewport: { width: 1920, height: 1080 }, video: { width: 1920, height: 1080 } };
+    const p = effect.pointerToSource({ x: 0.5, y: 0.5 }, resolveValues(effect.params), env);
+    expect(p).not.toBeNull();
+    expect(p!.x).toBeCloseTo(0.5, 2);
+    expect(p!.y).toBeCloseTo(0.5, 2);
+  });
+
   describe("shaders", () => {
     const dir = join(EFFECTS_DIR, id);
     const paramIds = new Set(effect.params.map((p) => p.id));

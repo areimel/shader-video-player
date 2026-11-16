@@ -11,7 +11,7 @@ const make = (id: string): EffectDefinition => ({
   params: [range("amount", "Amount", "G", 0, 1, 0.1, 0.5), select("mode", "Mode", "G", ["a", "b", "c"], 1), toggle("on", "On", "G", false)],
   groups: ["G"],
   presets: [{ id: "p1", label: "P1", values: { amount: 0.9 } }, { id: "p2", label: "P2", values: { mode: 2 } }],
-  derive: () => ({}), passes: [], chunks: {},
+  derive: () => ({}), pointerToSource: () => null, passes: [], chunks: {},
 });
 const A = make("a");
 const B = make("b");

@@ -2,6 +2,7 @@ import type { EffectDefinition } from "../types";
 import { chunksFromGlob } from "../shared/chunks";
 import { tubeChunks } from "../shared/tube/chunks";
 import { deriveVhs } from "./derive";
+import { vhsPointerToSource } from "./pointer";
 import { VHS_GROUPS, VHS_PARAMS } from "./params";
 import { VHS_PASSES } from "./pipeline";
 import { VHS_PRESETS } from "./presets";
@@ -18,6 +19,7 @@ export const vhsEffect: EffectDefinition = {
   groups: VHS_GROUPS,
   presets: VHS_PRESETS,
   derive: deriveVhs,
+  pointerToSource: vhsPointerToSource,
   passes: VHS_PASSES,
   requiresFloat: true, // signed I/Q, modulated chroma, unclamped R'G'B', noise below 0 and above 1
   chunks: { ...tubeChunks, ...vhsChunks }, // common chunks are added by the engine

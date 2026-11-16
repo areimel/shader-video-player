@@ -2,6 +2,8 @@
 // Spaces: viewport uv (0,0 top-left) -> tube t in [0,1] (undistorted face) -> c = 2t-1 in [-1,1]
 //         -> curved picture coords s = c * f(c) -> tube uv = s/2 + 1/2, used to sample uSource/uGlow/uDiffuse.
 // Needs (declared in main.frag): uViewportSize.
+// Keep in step with shared/tube/geometry.ts (TS port of the uv part of tubeGeometry: tube placement, CURVE_BULGE,
+// curveFactorMinusOne), which maps a pointer back through the glass.
 
 uniform float d_tubeW;        // tube width, fraction of the viewport
 uniform float d_tubeH;        // tube height, fraction of the viewport

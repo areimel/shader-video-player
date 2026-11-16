@@ -42,6 +42,8 @@ export interface EffectDefinition {
   presets: Preset[];
   /** Values computed from parameters and sizes, exposed to shaders as `d_<name>`. */
   derive(values: ParamValues, env: DeriveEnv): ParamValues;
+  /** Maps a point on the output (viewport uv, origin top-left, 0..1) to source-picture uv (0..1), or null when it misses the picture. Ignores time-varying displacement. */
+  pointerToSource(viewUv: { x: number; y: number }, values: ParamValues, env: DeriveEnv): { x: number; y: number } | null;
   passes: PassSpec[];
   /** Passes store signed or >1 values (RGBA8 is not enough): the effect refuses to start without float render targets. */
   requiresFloat?: boolean;
