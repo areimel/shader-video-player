@@ -59,7 +59,8 @@ export type HitTarget = { zone: ZoneId; index: number };
 export type HomeAction =
   | { type: "move"; by: number }
   | { type: "edge"; to: "start" | "end" }
-  | { type: "zone"; dir: -1 | 1 }
+  /** wrap: Tab cycles through the zones, the arrow keys clamp at the ends. */
+  | { type: "zone"; dir: -1 | 1; wrap?: boolean }
   | { type: "point"; target: HitTarget }
   | { type: "wheel"; zone: ZoneId; by: number }
   /** The model changed: clamp cursors and scroll, keep the cursor on the same row id where possible. */
