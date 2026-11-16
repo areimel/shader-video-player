@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { pickPlayable } from "../electron/queue";
-import { EMPTY_QUEUE, nextIndex, previousTarget, queueReducer, reachedEnd, type QueueState } from "../renderer/utils/queue";
+import {
+  EMPTY_QUEUE, LOOP_MODES, autoAdvanceTarget, manualNext, nextIndex, nextLoopMode, previousTarget,
+  queueReducer, reachedEnd, type QueueState,
+} from "../renderer/utils/queue";
 
 const item = (n: string) => ({ path: `/v/${n}.mp4`, name: `${n}.mp4` });
 const three: QueueState = { items: [item("a"), item("b"), item("c")], index: 1 };
@@ -30,6 +33,64 @@ describe("queueReducer", () => {
   });
   it("clear empties the queue", () => {
     expect(queueReducer(three, { type: "clear" })).toEqual(EMPTY_QUEUE);
+  });
+  it("append adds new items to the end and keeps the index", () => {
+    expect(queueReducer(three, { type: "append", items: [item("d"), item("e")] })).toEqual({
+      items: [item("a"), item("b"), item("c"), item("d"), item("e")],
+      index: 1,
+    });
+  });
+  it("append skips paths already queued, including duplicates within the list", () => {
+    expect(queueReducer(three, { type: "append", items: [item("b"), item("d"), item("d")] })).toEqual({
+      items: [item("a"), item("b"), item("c"), item("d")],
+      index: 1,
+    });
+  });
+  it("append with nothing new returns the same state", () => {
+    expect(queueReducer(three, { type: "append", items: [item("a")] })).toBe(three);
+    expect(queueReducer(three, { type: "append", items: [] })).toBe(three);
+  });
+  it("append to an empty queue starts at index 0", () => {
+    expect(queueReducer(EMPTY_QUEUE, { type: "append", items: [item("x"), item("y")] })).toEqual({
+      items: [item("x"), item("y")],
+      index: 0,
+    });
+  });
+});
+
+describe("loop modes", () => {
+  it("nextLoopMode cycles off -> all -> one -> off", () => {
+    expect(nextLoopMode("off")).toBe("all");
+    expect(nextLoopMode("all")).toBe("one");
+    expect(nextLoopMode("one")).toBe("off");
+    expect(LOOP_MODES).toEqual(["off", "one", "all"]);
+  });
+  it("autoAdvanceTarget: one replays the current item", () => {
+    expect(autoAdvanceTarget(three, "one")).toBe(1);
+    expect(autoAdvanceTarget({ ...three, index: 2 }, "one")).toBe(2);
+  });
+  it("autoAdvanceTarget: all advances and wraps to the first item", () => {
+    expect(autoAdvanceTarget(three, "all")).toBe(2);
+    expect(autoAdvanceTarget({ ...three, index: 2 }, "all")).toBe(0);
+    expect(autoAdvanceTarget({ items: [item("a")], index: 0 }, "all")).toBe(0);
+  });
+  it("autoAdvanceTarget: off stops at the end", () => {
+    expect(autoAdvanceTarget(three, "off")).toBe(2);
+    expect(autoAdvanceTarget({ ...three, index: 2 }, "off")).toBeNull();
+  });
+  it("autoAdvanceTarget is null for an empty queue in every mode", () => {
+    for (const m of LOOP_MODES) expect(autoAdvanceTarget(EMPTY_QUEUE, m)).toBeNull();
+  });
+  it("manualNext wraps only when looping all", () => {
+    const last = { ...three, index: 2 };
+    expect(manualNext(last, "all")).toBe(0);
+    expect(manualNext(last, "off")).toBeNull();
+    expect(manualNext(last, "one")).toBeNull();
+    expect(manualNext(three, "one")).toBe(2);
+    expect(manualNext(three, "off")).toBe(2);
+  });
+  it("manualNext is null for an empty queue", () => {
+    expect(manualNext(EMPTY_QUEUE, "all")).toBeNull();
   });
 });
 
