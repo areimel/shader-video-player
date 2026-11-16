@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef, type MutableRefObject, type RefObject } from "react";
 import { EffectRenderer } from "../shader/gl/effectRenderer";
 import type { EffectDefinition, ParamValues } from "../shader/effects/types";
 
@@ -11,6 +11,8 @@ interface Options {
   /** Changes when the <video> element or its source is replaced. */
   sourceKey: string;
   onError: (e: Error) => void;
+  /** Filled with the renderer's capture function while an effect is active, null otherwise. */
+  captureRef?: MutableRefObject<(() => Promise<Blob>) | null>;
 }
 
 function devicePixels(entry: ResizeObserverEntry): [number, number] {
@@ -21,7 +23,7 @@ function devicePixels(entry: ResizeObserverEntry): [number, number] {
 }
 
 /** Owns the EffectRenderer lifecycle for the canvas. Everything GL lives in the renderer; this only wires it to React. */
-export function useEffectChain({ canvasRef, videoRef, effect, values, sourceKey, onError }: Options): void {
+export function useEffectChain({ canvasRef, videoRef, effect, values, sourceKey, onError, captureRef }: Options): void {
   const rendererRef = useRef<EffectRenderer | null>(null);
   const valuesRef = useRef(values);
   const onErrorRef = useRef(onError);
@@ -40,6 +42,7 @@ export function useEffectChain({ canvasRef, videoRef, effect, values, sourceKey,
       return;
     }
     rendererRef.current = renderer;
+    if (captureRef) captureRef.current = () => renderer.capture();
     renderer.setValues(valuesRef.current);
     const observer = new ResizeObserver((entries) => {
       const entry = entries[entries.length - 1];
@@ -51,8 +54,9 @@ export function useEffectChain({ canvasRef, videoRef, effect, values, sourceKey,
       observer.disconnect();
       renderer.dispose();
       rendererRef.current = null;
+      if (captureRef) captureRef.current = null;
     };
-  }, [canvasRef, videoRef, effect, sourceKey]);
+  }, [canvasRef, videoRef, effect, sourceKey, captureRef]);
 
   useEffect(() => { rendererRef.current?.setValues(values); }, [values]);
 }

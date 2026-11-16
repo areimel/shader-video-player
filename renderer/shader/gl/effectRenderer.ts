@@ -113,6 +113,19 @@ export class EffectRenderer {
     this.renderNow();
   }
 
+  /**
+   * Renders the current frame and encodes it as PNG. The drawing buffer is not preserved, so the
+   * snapshot is taken synchronously right after the draw (toBlob captures at call time).
+   */
+  capture(): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      if (!this.graph || this.ctx.isLost()) return reject(new Error("The effect is not ready"));
+      this.renderNow();
+      if (!this.graph) return reject(new Error("The effect failed to render"));
+      this.canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Could not encode the frame"))), "image/png");
+    });
+  }
+
   invalidate(): void {
     this.dirty = true;
     this.schedule();

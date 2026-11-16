@@ -83,6 +83,8 @@ export interface PlayerBridge {
   getExternalSubtitle(id: string, offsetSec: number): Promise<string>;
   getRecents(): Promise<RecentFile[]>;
   reveal(path: string): void;
+  /** Asks where to save a PNG. Resolves to the saved path, or null if the user cancelled. */
+  saveScreenshot(png: Uint8Array, suggestedName: string): Promise<string | null>;
   setPlaying(playing: boolean): void;
   closeMedia(): void;
   onPlan(cb: (plan: PlaybackPlan) => void): () => void;

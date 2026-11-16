@@ -8,6 +8,7 @@ import { isQueued } from "./queue";
 import { getRecents, isRecent } from "./recents";
 import { openSelection } from "./selection";
 import { registerSubtitleIpc } from "./subtitleIpc";
+import { registerScreenshotIpc } from "./screenshot";
 import { getWindow } from "./window";
 
 function validPath(p: unknown): p is string {
@@ -29,6 +30,7 @@ export async function showOpenDialog(): Promise<OpenResult | null> {
 
 export function registerIpc(): void {
   registerSubtitleIpc();
+  registerScreenshotIpc();
   ipcMain.handle("media:open-dialog", () => showOpenDialog());
   ipcMain.handle("media:open-dropped", (_e, paths: unknown) => openSelection(paths));
   ipcMain.handle("media:open-queued", (_e, p: unknown) => {

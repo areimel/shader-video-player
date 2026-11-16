@@ -36,6 +36,7 @@ const bridge: PlayerBridge = {
   loadDroppedSubtitle: (file) => ipcRenderer.invoke("subtitle:load-dropped", droppedPaths([file])[0] ?? ""),
   getExternalSubtitle: (id, off) => ipcRenderer.invoke("subtitle:external", id, off),
   getRecents: () => ipcRenderer.invoke("media:recents"),
+  saveScreenshot: (png, name) => ipcRenderer.invoke("screenshot:save", png, name),
   reveal: (p) => ipcRenderer.send("media:reveal", p),
   setPlaying: (on) => ipcRenderer.send("media:playing", on),
   closeMedia: () => ipcRenderer.send("media:close"),
