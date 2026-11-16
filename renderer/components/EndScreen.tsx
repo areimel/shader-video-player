@@ -16,11 +16,11 @@ export function EndScreen({ multi, onReplay, onPlayQueue, onHome }: Props) {
   return (
     <div className="end-screen" role="dialog" aria-label="Playback finished" onDoubleClick={(e) => e.stopPropagation()}>
       <div className="end-actions">
-        <button type="button" ref={replay} className="primary-btn end-btn" onClick={onReplay}>
+        <button type="button" ref={replay} className="btn btn-primary end-btn" onClick={onReplay}>
           <Icon name="replay" size={18} /> Replay
         </button>
-        {multi && <button type="button" className="primary-btn end-btn" onClick={onPlayQueue}>Play queue again</button>}
-        <button type="button" className="link-btn" onClick={onHome}>Back to home</button>
+        {multi && <button type="button" className="btn btn-primary end-btn" onClick={onPlayQueue}>Play queue again</button>}
+        <button type="button" className="btn btn-link" onClick={onHome}>Back to home</button>
       </div>
     </div>
   );
