@@ -1,12 +1,18 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
+import { readFileSync } from "node:fs";
 
 const csp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src svp-media: blob:";
+const pkg = JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf8")) as { version: string; author: string };
 
 export default defineConfig({
   root: resolve(__dirname, "renderer"),
   base: "./",
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+    __APP_AUTHOR__: JSON.stringify(pkg.author),
+  },
   plugins: [
     react(),
     {
