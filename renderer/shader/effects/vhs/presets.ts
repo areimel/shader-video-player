@@ -8,16 +8,16 @@ export const VHS_PRESETS: Preset[] = [
   {
     id: "rental", label: "Worn rental",
     values: {
-      generation: 1, saturation: 0.9, sharpening: 0.45, chromaSmear: 1.3, lumaNoise: 0.3, chromaNoise: 0.4,
-      lineJitter: 0.5, wobble: 1, topSkew: 3, headSwitch: 7, headSwitchNoise: 0.6, dropouts: 0.5, dropoutLength: 12,
+      generation: 1, saturation: 0.9, sharpening: 0.45, chromaSmear: 1.3, lumaNoise: 0.25, chromaNoise: 0.35,
+      lineJitter: 0.35, wobble: 0.7, topSkew: 2.5, headSwitch: 7, headSwitchNoise: 0.5, dropouts: 0.3, dropoutLength: 12,
       tracking: 0.12, trackingRoll: 0.03,
     },
   },
   {
     id: "ep", label: "Six-hour EP",
     values: {
-      tapeSpeed: TAPE_SPEED.ep, saturation: 0.9, chromaSmear: 1.2, lumaNoise: 0.2, chromaNoise: 0.25,
-      lineJitter: 0.35, wobble: 0.6, dropouts: 0.08,
+      tapeSpeed: TAPE_SPEED.ep, saturation: 0.9, lumaBandwidthSP: 2.8, chromaBandwidthSP: 0.35, chromaDelay: 1.3, chromaSmear: 1.3,
+      lumaNoise: 0.22, chromaNoise: 0.25, lineJitter: 0.35, wobble: 0.6, dropouts: 0.05,
     },
   },
   {
