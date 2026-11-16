@@ -1,0 +1,17 @@
+---
+import { navigation, site, url } from "../lib/site";
+---
+<footer class="container">
+  <div><a class="wordmark" href={url()}>CRT-TV</a><p>Your videos. Back on the tube.</p></div>
+  <nav aria-label="Footer navigation">{navigation.map((item) => <a href={url(item.path)}>{item.label}</a>)}<a href={site.repository}>GitHub ↗</a></nav>
+  <div class="fine"><span>MADE FOR THE LOVE OF THE PICTURE.</span><span>Linux · Open source · In development</span></div>
+</footer>
+<style>
+  footer { padding-block: 48px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 24px; border-top: 1px solid var(--line); }
+  .wordmark { font-size: 25px; font-weight: 850; text-decoration: none; letter-spacing: -1px; }
+  p { color: var(--muted); font-size: 14px; margin-top: 6px; }
+  nav { display: flex; flex-wrap: wrap; gap: 24px; font-size: 14px; }
+  nav a { text-decoration: none; }
+  .fine { width: 100%; display: flex; justify-content: space-between; gap: 20px; color: var(--muted); font: 10px/1.8 monospace; }
+  @media (max-width: 600px) { .fine { flex-direction: column; gap: 8px; } }
+</style>

@@ -1,0 +1,23 @@
+---
+import { navigation, url } from "../lib/site";
+const current = Astro.url.pathname.replace(/\/$/, "");
+---
+<header class="container">
+  <a class="brand" href={url()} aria-label="CRT-TV home"><span class="brand-icon" aria-hidden="true">▰</span> CRT-TV</a>
+  <nav aria-label="Main navigation">
+    {navigation.map((item) => <a href={url(item.path)} aria-current={current === url(item.path).replace(/\/$/, "") ? "page" : undefined}><span class="channel" aria-hidden="true">{item.channel}</span>{item.label}</a>)}
+  </nav>
+  <span class="header-note">LOCAL FILES. ANALOG SOUL.</span>
+</header>
+<style>
+  header { min-height: 104px; display: flex; align-items: center; gap: 48px; border-bottom: 1px solid var(--line); }
+  .brand { font-weight: 850; font-size: 26px; white-space: nowrap; letter-spacing: -1.4px; text-decoration: none; }
+  .brand-icon { display: inline-grid; place-items: center; width: 31px; height: 26px; border: 2px solid var(--text); border-radius: 8px; font-size: 18px; vertical-align: 2px; margin-right: 5px; }
+  nav { display: flex; align-items: center; gap: 30px; }
+  nav a { display: flex; gap: 8px; align-items: center; text-decoration: none; font-size: 14px; }
+  nav a[aria-current] { color: var(--yellow); }
+  .channel { font-family: monospace; color: var(--muted); font-size: 10px; }
+  .header-note { margin-left: auto; font: 9px/1.8 monospace; color: var(--muted); letter-spacing: 1px; }
+  @media (max-width: 1000px) { .header-note { display: none; } header { justify-content: space-between; gap: 20px; } }
+  @media (max-width: 600px) { header { padding-block: 24px 16px; flex-wrap: wrap; } nav { width: 100%; justify-content: space-between; gap: 12px; } nav a { font-size: 13px; } }
+</style>

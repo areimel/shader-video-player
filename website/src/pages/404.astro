@@ -1,0 +1,8 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { url } from "../lib/site";
+---
+<SiteLayout title="404 — No signal" noindex>
+  <section class="container page-heading missing"><p class="eyebrow">CH 404 / NO SIGNAL</p><h1>This channel<br />is off the air.</h1><p class="lede">The page you’re looking for isn’t here. Let’s get you back to something good.</p><div class="actions"><a class="button" href={url()}>Back to Home ↗</a><a class="text-link" href={url("docs/")}>Read the guide</a></div></section>
+</SiteLayout>
+<style>.missing { padding-bottom: 100px; } h1 { color: var(--yellow); }</style>

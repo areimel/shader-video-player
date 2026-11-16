@@ -166,3 +166,7 @@ See `CLAUDE.md` for the conventions used in this codebase, the security model an
 MIT — see [LICENSE](LICENSE).
 
 The player is based on [babu-video-player](https://github.com/babu-studios/babu-video-player) by Babu Studios (MIT). Shader techniques draw on published work credited in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). ffmpeg is used as an external program and is not bundled. The interface typeface, Archivo (SIL Open Font License 1.1), is bundled so the app works offline.
+
+## Product website
+
+The Astro marketing site lives in [`website/`](website/README.md), with CRT-TV branding, launch signup, starter docs, and a manual GitHub Pages deployment workflow. Desktop branding is unchanged.

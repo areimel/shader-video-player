@@ -1,0 +1,26 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import CommandBlock from "../components/CommandBlock.astro";
+import SignupSection from "../components/SignupSection.astro";
+import { site, url } from "../lib/site";
+---
+<SiteLayout title="Download" description="Get ready for CRT-TV on Linux. See system requirements and sign up for the first public release.">
+  <section class="container page-heading"><p class="eyebrow">CH 02 / Download</p><h1>Almost on<br />the air.</h1><p class="lede">Your next favorite player is still taking shape. The first release is headed for Linux.</p></section>
+  <section class="container split download-content">
+    <div class="install-panel"><span class="badge">In development</span><h2>One command.<br />When it’s ready.</h2><p>A public installer is not available yet. This is a preview of the download experience, not a working installation command.</p><CommandBlock command={site.installCommand} /><p class="muted small">The example.com address is a placeholder. No app will be installed by this command.</p><a class="text-link" href={site.repository}>Follow development on GitHub ↗</a></div>
+    <aside><p class="eyebrow">CHECK YOUR CONNECTIONS</p><h2 class="requirements-title">Made for Linux.</h2><dl><div><dt>Operating system</dt><dd>Linux x64 · Wayland or X11</dd></div><div><dt>Package target</dt><dd>Debian / Ubuntu (.deb)</dd></div><div><dt>Media tools</dt><dd>ffmpeg and ffprobe on your PATH</dd></div><div><dt>Graphics</dt><dd>WebGL2 with floating-point render targets for effects</dd></div></dl><p class="muted small">Windows and macOS builds are not available. Node and pnpm are only needed to build from source.</p><a class="text-link" href={url("docs/")}>Read the starter guide ↗</a></aside>
+  </section>
+  <SignupSection id="launch" />
+</SiteLayout>
+<style>
+  .download-content { padding-bottom: 80px; gap: 64px; grid-template-columns: 1.25fr 1fr; }
+  .install-panel { padding: 32px; background: var(--panel); border: 1px solid var(--line); }
+  .install-panel h2 { font-size: 38px; margin-block: 28px 20px; }
+  .install-panel > p { color: var(--muted); }
+  .small { font-size: 13px; }
+  .requirements-title { font-size: 32px; }
+  dl { margin: 0 0 24px; }
+  dl div { padding: 18px 0; border-bottom: 1px solid var(--line); }
+  dt { font-weight: 650; font-size: 15px; } dd { margin: 5px 0 0; color: var(--muted); font-size: 14px; }
+  @media (max-width: 760px) { .download-content { grid-template-columns: 1fr; gap: 40px; } .install-panel { padding: 24px 20px; } }
+</style>

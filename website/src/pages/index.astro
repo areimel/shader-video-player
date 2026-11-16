@@ -1,0 +1,46 @@
+---
+import SignupSection from "../components/SignupSection.astro";
+import SiteLayout from "../layouts/SiteLayout.astro";
+import TvFrame from "../components/TvFrame.astro";
+import SectionHeading from "../components/SectionHeading.astro";
+import { url } from "../lib/site";
+import { features } from "../lib/features";
+import "../styles/home.css";
+---
+<SiteLayout>
+  <section class="hero container">
+    <div class="hero-copy">
+      <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> A little nostalgia. A new way to watch.</p>
+      <h1>Your videos.<br />Back on<br /> the <em>tube.</em></h1>
+      <p class="lede">The glow. The grain. The good stuff.<br />Give your video collection the CRT and VHS treatment with a player made for Linux.</p>
+      <div class="actions"><a class="button" href={url("download/")}>Get CRT-TV <span aria-hidden="true">↗</span></a><a class="text-link" href="#picture">Explore the picture <span aria-hidden="true">↓</span></a></div>
+      <p class="release-note"><span class="status-light" aria-hidden="true"></span> In development · Linux x64 · Open source</p>
+    </div>
+    <div class="hero-visual">
+      <div class="monitor-caption"><span>INPUT 01 — YOUR COLLECTION</span><span>4:3</span></div>
+      <TvFrame><img src={url("images/home.webp")} width="1440" height="1080" alt="The app's blue CRT home screen showing a video library and television presets" fetchpriority="high" /></TvFrame>
+      <div class="under-monitor"><span class="eyebrow">YES, EVEN THE HOME SCREEN.</span><span>Actual app capture. Original desktop branding.</span></div>
+    </div>
+  </section>
+  <div class="signal-strip" aria-label="Product highlights"><div class="container"><span>REAL-TIME EFFECTS</span><span aria-hidden="true">✳</span><span>YOUR LOCAL VIDEOS</span><span aria-hidden="true">✳</span><span>ANALOG CHARACTER</span><span aria-hidden="true">✳</span><span>NO TAPES REQUIRED</span></div></div>
+  <section class="container section" id="picture">
+    <div class="showcase-heading"><SectionHeading channel="01" label="Picture controls" title="Same video. Another era."><p class="lede">Not just a filter. A whole different signal.</p></SectionHeading><span class="eyebrow corner-label">ADJUST TO TASTE ↙</span></div>
+    <div class="effect-grid">
+      <article class="effect">
+        <div class="effect-image"><img src={url("images/crt.webp")} width="1440" height="1080" alt="CRT effect on generated color bars with the app's adjustable signal and raster controls" loading="lazy" /><span class="image-tag">01 / CRT TELEVISION</span></div>
+        <div class="effect-copy"><p class="eyebrow">The living-room classic</p><h3>A soft spot for a sharp picture.</h3><p>Scanlines, phosphor masks, curved glass, and that unmistakable glow. Go from a well-loved consumer TV to a crisp broadcast monitor.</p><div class="tags"><span>4 presets</span><span>Composite / S-Video / RGB</span></div></div>
+      </article>
+      <article class="effect">
+        <div class="effect-image"><img src={url("images/vhs.webp")} width="1440" height="1080" alt="VHS Home recording preset applied to the same generated color-bar test pattern" loading="lazy" /><span class="image-tag">02 / VHS TAPE</span></div>
+        <div class="effect-copy"><p class="eyebrow">Be kind. Rewind.</p><h3>A little wear looks good on it.</h3><p>Soft color, tape noise, tracking faults, and camcorder date stamps. Dial in a fresh recording or a rental that’s been around the block.</p><div class="tags"><span>7 presets</span><span>Optional CRT output</span></div></div>
+      </article>
+    </div>
+    <p class="capture-note">Actual app captures using a generated test pattern. Effects are adjustable; presets are still being tuned.</p>
+  </section>
+  <section class="playback-section"><div class="container section">
+    <SectionHeading channel="02" label="Beyond the nostalgia" title="Old-school picture. Everyday player." />
+    <div class="features">{features.map((feature) => <article><span class="feature-number">{feature.number}</span><h3>{feature.title}</h3><p>{feature.copy}</p><span class="eyebrow">{feature.detail}</span></article>)}</div>
+    <a class="text-link" href={url("docs/")}>Meet your new remote. Read the guide <span aria-hidden="true">↗</span></a>
+  </div></section>
+  <SignupSection id="stay-tuned" />
+</SiteLayout>
