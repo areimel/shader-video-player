@@ -1,0 +1,17 @@
+---
+interface Props { label?: string; }
+const { label = "CRT-TV / COLOR MONITOR" } = Astro.props;
+---
+<div class="television">
+  <div class="screen"><slot /></div>
+  <div class="hardware" aria-hidden="true"><span>{label}</span><span class="vents"></span><span class="power"></span><span>POWER</span></div>
+</div>
+<style>
+  .television { padding: 18px 18px 0; border: 1px solid #555654; border-radius: 22px; background: linear-gradient(135deg, #424341, #272827 40%, #1d1e1d); box-shadow: 0 25px 65px #0007, inset 0 1px 1px #ffffff25; }
+  .screen { position: relative; overflow: hidden; border: 5px solid #111311; border-radius: 35px / 28px; background: var(--navy); box-shadow: 0 0 0 2px #55564e, inset 0 0 30px #000; }
+  .screen::after { pointer-events: none; content: ""; position: absolute; inset: 0; border-radius: inherit; background: repeating-linear-gradient(0deg, #0000 0px, #0000 2px, #0002 3px, #0000 4px); box-shadow: inset 0 0 35px #0008; }
+  .hardware { height: 56px; display: flex; align-items: center; gap: 10px; color: #b9b9ac; font: 8px/1.5 monospace; letter-spacing: 1px; }
+  .vents { margin-left: auto; width: 70px; height: 14px; background: repeating-linear-gradient(90deg, #101110 0 2px, transparent 2px 5px); }
+  .power { background: #b3dc6b; box-shadow: 0 0 9px #b3dc6b66; width: 6px; height: 6px; border-radius: 50%; margin-left: 10px; }
+  @media (max-width: 600px) { .television { padding: 10px 10px 0; border-radius: 16px; } .hardware { height: 42px; font-size: 6px; } .screen { border-radius: 20px; } .vents { width: 36px; } }
+</style>
