@@ -49,7 +49,8 @@ export function usePlayQueue(
     const v = videoRef.current;
     if (!plan || !v) return;
     setEnded(false);
-    if (plan.mode === "native" || plan.startOffset === 0) {
+    // A finished transcode may no longer hold the start, so it restarts the stream instead of seeking.
+    if (plan.mode === "native") {
       v.currentTime = 0;
       void v.play().catch(() => undefined);
     } else void restartAt(0, plan.audioOrdinal);

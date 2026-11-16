@@ -46,6 +46,8 @@ export function usePlayerShortcuts(enabled: boolean, handlers: CommandHandlers):
       const t = e.target as HTMLElement | null;
       const tag = t?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || t?.isContentEditable || e.metaKey || e.ctrlKey || e.altKey) return;
+      // Space/Enter on a focused control activates that control, not a global command.
+      if ((e.key === " " || e.key === "Enter") && t?.closest('button, a[href], [role="radio"], [role="switch"], [role="option"], [role="slider"]')) return;
       const id = commandForKey(e);
       const h = id && ref.current[id];
       if (!h) return;

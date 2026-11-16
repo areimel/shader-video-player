@@ -4,7 +4,7 @@ import type { QueueItem } from "../shared/types";
 import { SUPPORTED_EXTENSIONS } from "./media/formats";
 import { closeMedia, currentVideoPath, openMedia, restartStream, subtitleFor } from "./playback";
 import { setPreventSleep } from "./powerSave";
-import { clearQueue, isQueued } from "./queue";
+import { clearQueue, commitQueue, isQueued } from "./queue";
 import { getRecents, isRecent } from "./recents";
 import { openSelection, queueSelection } from "./selection";
 import { registerSubtitleIpc } from "./subtitleIpc";
@@ -50,9 +50,12 @@ export function registerIpc(): void {
     if (!isQueued(p)) throw new Error("File not found");
     return openMedia(p);
   });
-  ipcMain.handle("media:open-recent", (_e, p: unknown) => {
+  ipcMain.handle("media:open-recent", async (_e, p: unknown) => {
     if (!validPath(p) || !isRecent(p)) throw new Error("File not found");
-    return openMedia(p);
+    const plan = await openMedia(p);
+    // A recent becomes a one-item queue, so later append/previous can reopen it through `isQueued`.
+    commitQueue([{ path: plan.info.path, name: plan.info.name }]);
+    return plan;
   });
   ipcMain.handle("media:restart", (_e, start: number, audio: number) =>
     restartStream(Math.max(0, Number(start) || 0), Math.max(0, Number(audio) || 0)));
