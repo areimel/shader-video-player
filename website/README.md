@@ -52,3 +52,11 @@ For local origin/base changes, edit `website/.env`. Shell environment values tak
 - Screenshot provenance: `public/images/README.md`.
 
 Keep repeated UI in shared components and files under roughly 300 lines. App screenshots use generated test footage, and still show the existing desktop branding. The Download command is intentionally a nonfunctional `example.com` placeholder.
+
+## Browser verification
+
+`pnpm --dir website test:browser` builds and tests two production variants: a dummy Web3Forms key with mocked responses, then no key. It starts and stops its own preview server on port 4321; stop any existing website server first. It leaves the output without the dummy key. No test submissions reach Web3Forms.
+
+The suite uses local `/usr/bin/google-chrome` when present. Otherwise run `pnpm --dir website exec playwright install chromium`, or set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to a Chrome/Chromium executable. Tests cover desktop/mobile layouts, links, command copying, consent, submission states and unavailable forms.
+
+Repository policy also requires `pnpm typecheck`, `pnpm test`, and `pnpm check:shaders` before each commit. Astro type checks and builds are separate from those desktop checks.
