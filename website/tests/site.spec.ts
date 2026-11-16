@@ -47,13 +47,31 @@ test("navigation opens each route under the GitHub Pages base", async ({ page })
   }
 });
 
-test("download copies the visibly placeholder command", async ({ page, context }) => {
+const installCommand = "curl -fsSL https://areimel.github.io/shader-video-player/install.sh | bash";
+
+test("download copies the install command", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("download/");
+  await expect(page.locator("[data-command-block] code")).toHaveText(installCommand);
   await page.getByRole("button", { name: /copy/i }).click();
-  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(
-    "curl -fsSL https://example.com/crt-tv/install.sh",
-  );
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(installCommand);
+});
+
+test("the install script is served beneath the hosting base", async ({ request }) => {
+  const response = await request.get("install.sh");
+  expect(response.status()).toBe(200);
+  const body = await response.text();
+  expect(body.startsWith("#!/usr/bin/env bash")).toBe(true);
+  expect(body).toContain('REPO="areimel/shader-video-player"');
+  expect(body.trimEnd().endsWith('main "$@"')).toBe(true);
+});
+
+test("home page carries SoftwareApplication structured data and a sitemap link", async ({ page }) => {
+  await page.goto("./");
+  const data = JSON.parse((await page.locator('script[type="application/ld+json"]').textContent()) ?? "{}");
+  expect(data["@type"]).toBe("SoftwareApplication");
+  expect(data.operatingSystem).toBe("Linux");
+  expect(await page.locator('link[rel="sitemap"]').getAttribute("href")).toBe("/shader-video-player/sitemap-index.xml");
 });
 
 test("keyboard skip link moves navigation into the page", async ({ page }) => {

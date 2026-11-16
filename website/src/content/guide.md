@@ -1,14 +1,14 @@
 ## Before you tune in
 
-CRT-TV is in development. A public installer is not available yet; the command on the Download page is a placeholder.
+CRT-TV is in public beta. Install it with the one-line command on the Download page, or download the `.deb` from GitHub Releases. In your app launcher it appears as **Shader Video Player**.
 
-The first release targets **Linux x64**, on Wayland or X11. You will need `ffmpeg` and `ffprobe` installed and available on your PATH, plus a GPU that supports WebGL2 and floating-point render targets for the effects. On Debian or Ubuntu, `sudo apt install ffmpeg` installs the media tools. Node and pnpm are needed only when building the app from source.
+The beta runs on **Linux x64**, on Wayland or X11. You will need `ffmpeg` and `ffprobe` installed and available on your PATH, plus a GPU that supports WebGL2 and floating-point render targets for the effects. The installer pulls in ffmpeg; otherwise `sudo apt install ffmpeg` installs it. Node and pnpm are needed only when building the app from source.
 
 ## Open your first video
 
 Press **Ctrl+O** to choose a local video, or drop one into the player. MP4, MKV, WebM, MOV, and AVI are among the supported containers. When the browser engine cannot decode a file directly, the app uses ffmpeg to convert it during playback. Only local video files are supported; images, playlists, and network streams are not.
 
-Use **Add library folder** or drop a folder onto the home screen to build your library. The player lists videos with their duration and resolution, watches those folders for changes, and remembers playback positions. Press **Ctrl+W** to return home.
+Use **Add library folder** or drop a folder onto the home screen to build your library. The player lists videos with their duration and file size, watches those folders for changes, and remembers playback positions. Press **Ctrl+W** to return home.
 
 ## Settle in for a double feature
 

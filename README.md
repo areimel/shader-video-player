@@ -198,4 +198,4 @@ pnpm --dir website build                  # static output in website/dist
 pnpm --dir website test:browser           # Playwright: desktop/mobile layouts, links, forms (mocked)
 ```
 
-The forms post to [Web3Forms](https://web3forms.com/) with a public access key; without a key they show as unavailable. Deployment to GitHub Pages runs only when you start the **Deploy CRT-TV website** workflow by hand. The install command on the Download page is a placeholder until an install method exists. See [`website/README.md`](website/README.md) for setup, Pages configuration and editing notes.
+The forms post to [Web3Forms](https://web3forms.com/) with a public access key; without a key they show as unavailable. Deployment to GitHub Pages runs only when you start the **Deploy CRT-TV website** workflow by hand. The Download page's install command runs `website/public/install.sh`, which installs the newest `.deb` from GitHub Releases. See [`website/README.md`](website/README.md) for setup, Pages configuration and editing notes.

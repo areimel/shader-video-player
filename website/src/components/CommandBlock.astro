@@ -3,7 +3,7 @@ interface Props { command: string; }
 const { command } = Astro.props;
 ---
 <div class="command-block" data-command-block>
-  <div class="command-heading"><span>TERMINAL / PLACEHOLDER</span><button type="button" data-copy>Copy command</button></div>
+  <div class="command-heading"><span>TERMINAL</span><button type="button" data-copy>Copy command</button></div>
   <pre><code>{command}</code></pre>
   <p class="copy-status" role="status" aria-live="polite" data-copy-status></p>
 </div>
@@ -15,7 +15,7 @@ const { command } = Astro.props;
     button.addEventListener("click", async () => {
       try {
         await navigator.clipboard.writeText(command);
-        status.textContent = "Copied. This is a placeholder, not an available installer.";
+        status.textContent = "Copied. Paste it into a terminal.";
       } catch {
         status.textContent = "Could not copy automatically. Select the command above to copy it.";
       }

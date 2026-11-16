@@ -90,7 +90,8 @@ website/                  Astro 7 static site (CRT-TV), own package.json, pnpm-w
   src/pages/              index, download, docs, contact, 404
   src/components/         Header, Footer, TvFrame, SectionHeading, CommandBlock, SignupSection, ContactForm
   src/layouts/            SiteLayout (head, canonical/social meta)
-  src/lib/                site.ts (name, repo, install command, url(), navigation), features.ts
+  src/lib/                site.ts (name, repo/releases/issues, author, install command, url(), absoluteUrl(), navigation), features.ts
+  public/install.sh       curl | bash installer: newest release .deb, SHA256SUMS check, apt install
   src/scripts/forms.ts    Web3Forms submit and status states (the consent checkbox is in ContactForm)
   src/styles/             global.css (tokens, type, spacing, @fontsource imports), home.css
   src/content/guide.md    starter manual rendered on /docs
@@ -202,7 +203,8 @@ A new effect can reuse `glsl/common/` (subcarrier, composite encode/decode, blur
 - **Styling:** tokens in `src/styles/global.css`, shared pieces in `src/components/`; same DRY and ~300-line rules as the app. Fonts are the same bundled `@fontsource` packages, no CDN.
 - **Screenshots** in `public/images/` come from the devCapture harness on generated fixtures and show the desktop app's own branding; note how each was made in `public/images/README.md`.
 - **Deploy** happens only through the manual `workflow_dispatch` of `website-pages.yml`. `test:browser` needs port 4321 free (stop a dev server first), mocks every submission and leaves `dist` built without the dummy key.
-- The Download page's install command (`site.installCommand`) is a deliberate `example.com` placeholder until an install method exists (`TODO.md`).
+- **Install:** `public/install.sh` is served at `<base>/install.sh`; the Download page's `curl … | bash` (`site.installCommand`, built from `SITE_URL` + `url()`) runs it. It reads the newest GitHub release (pre-releases included), so every release must attach `shader-video-player_<version>_amd64.deb` and a `SHA256SUMS` covering it. Keep the script's body inside `main`.
+- **SEO:** canonical/OG meta and `<link rel="sitemap">` in `SiteLayout`, JSON-LD `SoftwareApplication` on the home page. No `robots.txt`: under a project base path crawlers would never read it.
 
 ## Known gaps
 
