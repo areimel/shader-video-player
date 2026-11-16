@@ -27,7 +27,8 @@ export type RowAction =
 export interface HomeRow {
   /** Stable across rebuilds (the cursor follows it); also the a11y mirror's element id suffix. */
   id: string;
-  kind: "item" | "header" | "action" | "text";
+  /** subheader: a sub-directory inside a library folder (drawn dim). */
+  kind: "item" | "header" | "subheader" | "action" | "text";
   /** Main text, then right-aligned secondary columns (length, resolution, date...). */
   cols: string[];
   /** Rows without an action cannot take the cursor. */

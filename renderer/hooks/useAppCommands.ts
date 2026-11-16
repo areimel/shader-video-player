@@ -21,6 +21,8 @@ interface Deps {
   queue: PlayQueue;
   panels: Panels;
   openDialog: () => void;
+  /** Library folder picker (the native menu's File > Add folder). */
+  addFolder: () => void;
   /** usePlayQueue's `close`: drops playback and empties the queue. */
   closeMedia: () => void;
   /** Saves the current frame (with the active effect) as a PNG. */
@@ -69,6 +71,7 @@ export function useAppCommands(d: Deps): { commands: CommandHandlers; goHome: ()
   const commands: CommandHandlers = {
     ...media,
     open: d.openDialog,
+    addFolder: d.addFolder,
     // These two also work on the home screen (it is drawn through the effect).
     toggleEffect: fx.toggle,
     fullscreen: fs.toggle,

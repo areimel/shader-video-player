@@ -39,7 +39,7 @@ function folderRows(snapshot: LibrarySnapshot): HomeRow[] {
     for (const it of items) {
       if (it.dir !== dir) {
         dir = it.dir;
-        if (dir !== "") rows.push({ id: `dir:${folder.id}:${dir}`, kind: "text", cols: [dir] });
+        if (dir !== "") rows.push({ id: `dir:${folder.id}:${dir}`, kind: "subheader", cols: [`${dir}/`] });
       }
       rows.push({
         id: `item:${it.id}`,
@@ -75,3 +75,13 @@ export function libraryRows(snapshot: LibrarySnapshot, recents: RecentFile[]): H
 
 /** No folders and no items: the library before one is loaded (or before the library service is wired). */
 export const EMPTY_LIBRARY: LibrarySnapshot = { revision: 0, scanning: false, folders: [], items: [] };
+
+/** Newer-or-equal revision wins; an older snapshot (a late reply racing a push) is ignored. */
+export const newerSnapshot = (held: LibrarySnapshot, next: LibrarySnapshot): LibrarySnapshot =>
+  next.revision >= held.revision ? next : held;
+
+/** Names of folders in `next` that were not in `prev` (for the "Added ... to the library" toast). */
+export function addedFolderNames(prev: LibrarySnapshot, next: LibrarySnapshot): string[] {
+  const had = new Set(prev.folders.map((f) => f.id));
+  return next.folders.filter((f) => !had.has(f.id)).map((f) => f.name);
+}

@@ -57,5 +57,6 @@ describe("buildModel", () => {
     expect(model().libraryStatus).toBe("2 TAPES");
     expect(model({ library: snapshot([item("a", "A")]) }).libraryStatus).toBe("1 TAPE");
     expect(model({ library: snapshot([], { scanning: true }) }).libraryStatus).toBe("SCANNING");
+    expect(model({ library: snapshot([], { folders: [] }) }).libraryStatus).toBe("NO FOLDERS");
   });
 });

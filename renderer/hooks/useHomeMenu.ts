@@ -32,7 +32,7 @@ const EFFECT_ENTRIES = EFFECTS.map((e) => ({ id: e.id, label: e.label, presets: 
 
 /** Model, cursor state and row actions for the home screen. Painting lives in useHomePaint. */
 export function useHomeMenu(fx: EffectSettings, library: LibrarySnapshot, handlers: HomeHandlers): HomeMenu {
-  // null until loaded: the cursor starts on the newest tape, not on whatever row was first before they arrived.
+  // null until loaded (see `touched` below).
   const [recents, setRecents] = useState<RecentFile[] | null>(null);
   useEffect(() => { void window.player.getRecents().then(setRecents, () => setRecents([])); }, []);
 
@@ -45,21 +45,19 @@ export function useHomeMenu(fx: EffectSettings, library: LibrarySnapshot, handle
 
   // The state remembers the model it was computed for; a new model is synced during render, so no frame
   // is ever laid out with a cursor that belongs to the previous rows.
-  const loaded = recents !== null;
-  const [held, setHeld] = useState(() => ({ model, state: initialState(model), loaded }));
+  // Until the user acts, a new model (recents, then the library, arrive after mount) starts the screen over, so
+  // the cursor is at the top rather than wherever the rows that came first had put it. After that it is synced.
+  const [held, setHeld] = useState(() => ({ model, state: initialState(model), touched: false }));
   let state = held.state;
-  if (loaded && !held.loaded) {
-    state = initialState(model);
-    setHeld({ model, state, loaded });
-  } else if (held.model !== model) {
-    state = homeReducer(held.state, { type: "sync", prev: held.model, next: model }, model);
-    setHeld({ model, state, loaded });
+  if (held.model !== model) {
+    state = held.touched ? homeReducer(held.state, { type: "sync", prev: held.model, next: model }, model) : initialState(model);
+    setHeld({ model, state, touched: held.touched });
   }
 
   const dispatch = useCallback((action: HomeAction) => {
     setHeld((h) => {
       const next = homeReducer(h.state, action, h.model);
-      return next === h.state ? h : { ...h, state: next };
+      return next === h.state ? h : { ...h, state: next, touched: true };
     });
   }, []);
 

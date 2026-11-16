@@ -72,6 +72,7 @@ export function buildModel(input: HomeModelInput): HomeModel {
   return {
     zones: { library: libraryRows(input.library, input.recents), tv: tvRows(input), updates: updateRows(input.changelog, input.credits) },
     credits: input.credits,
-    libraryStatus: input.library.scanning ? "SCANNING" : countLabel(input.library.items.length),
+    libraryStatus: input.library.scanning ? "SCANNING"
+      : input.library.folders.length === 0 ? "NO FOLDERS" : countLabel(input.library.items.length),
   };
 }

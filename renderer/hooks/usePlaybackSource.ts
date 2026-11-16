@@ -84,6 +84,8 @@ export function usePlaybackSource(notify: Notify, onQueue: OnQueue) {
   const openDropped = useCallback((files: File[]) => {
     return files.length ? openSelection(() => window.player.openDropped(files)) : Promise.resolve(false);
   }, [openSelection]);
+  /** A library item: the main process queues its directory siblings and returns the index it opened at. */
+  const openLibraryItem = useCallback((id: string) => openSelection(() => window.player.openLibraryItem(id)), [openSelection]);
   const openRecent = useCallback(async (p: string): Promise<boolean> => {
     const got: { plan?: PlaybackPlan } = {};
     const ok = await run(async () => (got.plan = await window.player.openRecent(p)));
@@ -112,5 +114,5 @@ export function usePlaybackSource(notify: Notify, onQueue: OnQueue) {
     syncLoading();
   }, []);
 
-  return { plan, initialTime, loading, openDialog, openRecent, openDropped, openQueued, restartAt, onVideoError, close };
+  return { plan, initialTime, loading, openDialog, openRecent, openDropped, openLibraryItem, openQueued, restartAt, onVideoError, close };
 }

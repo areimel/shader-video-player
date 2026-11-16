@@ -43,6 +43,7 @@ export function secondaryText(cols: string[]): string {
 function rowColor(row: HomeRow, onCursor: boolean): ColorRole {
   if (onCursor) return "accentInk";
   if (row.alert) return "alert";
+  if (row.kind === "subheader") return "dim";
   return row.kind === "header" ? "accent" : "text";
 }
 
@@ -89,14 +90,19 @@ export const HINT_COLS = 2;
  * zone's label and hints turn yellow; the others are white. Right text is dim.
  */
 export function drawTitleBar(
-  ops: DrawOp[], col: number, row: number, cols: number, label: string, right: string, focused: boolean, win: { above: boolean; below: boolean },
+  ops: DrawOp[], col: number, row: number, cols: number, label: string, right: string, focused: boolean,
+  /** null: a bar that never scrolls (no hint cells reserved). */
+  win: { above: boolean; below: boolean } | null,
 ): void {
   bar(ops, col, row, cols, "band");
   const ink: ColorRole = focused ? "accent" : "text";
-  const labelText = clip(label, cols - HINT_COLS);
+  const hints = win ? HINT_COLS : 0;
+  const labelText = clip(label, cols - hints);
   text(ops, col, row, labelText, ink);
-  const end = col + cols - HINT_COLS;
-  text(ops, end, row, clip(right, Math.max(0, cols - HINT_COLS - Array.from(labelText).length - 1)), "dim", "right");
-  if (win.above) text(ops, end, row, "^", ink);
-  if (win.below) text(ops, end + 1, row, "v", ink);
+  const end = col + cols - hints;
+  // A space between the right text and the hints, so "10 TAPES" never runs into "^v".
+  const rightEnd = hints ? end - 1 : end;
+  text(ops, rightEnd, row, clip(right, Math.max(0, rightEnd - col - Array.from(labelText).length - 1)), "dim", "right");
+  if (win?.above) text(ops, end, row, "^", ink);
+  if (win?.below) text(ops, end + 1, row, "v", ink);
 }

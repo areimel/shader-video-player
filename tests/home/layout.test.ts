@@ -98,6 +98,16 @@ describe("drawing rules", () => {
     }
   });
 
+  it("keeps a space between a title bar's right text and its hints, and none on a bar that never scrolls", () => {
+    const m = bigModel();
+    const ops = textOps(layout(m, homeReducer(initialState(m), { type: "wheel", zone: "library", by: 2 }, m), clock));
+    const status = ops.find((o) => o.y === 5 * 8 && o.align === "right" && o.color === "dim")!;
+    const hint = ops.find((o) => o.y === 5 * 8 && o.text === "^")!;
+    expect(status.x).toBe(hint.x - 8);
+    const version = ops.find((o) => o.text === "V0.2.0")!;
+    expect(version.x).toBe((BOXES.updates.col + BOXES.updates.cols) * 8);
+  });
+
   it("keeps a one-cell gutter between the TV and updates zones", () => {
     expect(BOXES.tv.col + BOXES.tv.cols).toBe(BOXES.updates.col - 1);
     expect(BOXES.updates.col + BOXES.updates.cols).toBe(38);

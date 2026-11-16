@@ -69,14 +69,15 @@ export function HomeScreen({ fx, library, handlers, active, notify }: Props) {
 
   const [pointing, setPointing] = useState(false);
   // Chromium sends a pointermove without movement whenever the content under a resting pointer changes (every
-  // repaint here); only a real move may take the cursor, or the keyboard cursor would snap back to the mouse.
+  // repaint here, or the window resizing under it); only a real move may take the cursor, or the keyboard cursor
+  // would snap back to the mouse. Screen coordinates, because a resize changes the client ones.
   const lastMove = useRef<{ x: number; y: number } | null>(null);
   const onPointerMove = (e: MouseEvent) => {
     const target = targetAt(e);
     setPointing(!!target);
     const last = lastMove.current;
-    lastMove.current = { x: e.clientX, y: e.clientY };
-    if (!last || (last.x === e.clientX && last.y === e.clientY)) return;
+    lastMove.current = { x: e.screenX, y: e.screenY };
+    if (!last || (last.x === e.screenX && last.y === e.screenY)) return;
     if (target) menu.dispatch({ type: "point", target });
   };
   const onClick = (e: MouseEvent) => {

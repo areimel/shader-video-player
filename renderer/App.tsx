@@ -7,6 +7,7 @@ import { useAppCommands } from "./hooks/useAppCommands";
 import { useEffectSettings } from "./hooks/useEffectSettings";
 import { useFullscreen } from "./hooks/useFullscreen";
 import { useIdleControls } from "./hooks/useIdleControls";
+import { useLibrary } from "./hooks/useLibrary";
 import { usePanels } from "./hooks/usePanels";
 import { usePlayQueue } from "./hooks/usePlayQueue";
 import { useMenuCommands, usePlayerShortcuts } from "./hooks/usePlayerShortcuts";
@@ -17,13 +18,14 @@ import { useShowRemaining } from "./hooks/useShowRemaining";
 import { useSubtitles } from "./hooks/useSubtitles";
 import { isSubtitlePath } from "../shared/subtitleFiles";
 import { togglePip } from "./utils/pip";
-import { EMPTY_LIBRARY } from "./utils/home/libraryRows";
+import { partitionDrop } from "./utils/dropItems";
 
 export function App() {
   const { items, push } = useToasts();
   const videoRef = useRef<HTMLVideoElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const { plan, initialTime, loading, openDialog, openRecent, openDropped, restartAt, onVideoError, close, queue } = usePlayQueue(videoRef, push);
+  const { plan, initialTime, loading, openDialog, openRecent, openDropped, openLibraryItem, restartAt, onVideoError, close, queue } = usePlayQueue(videoRef, push);
+  const library = useLibrary(push);
   const [dragging, setDragging] = useState(false);
   const fx = useEffectSettings();
   const panels = usePanels();
@@ -42,6 +44,7 @@ export function App() {
   const screenshot = useScreenshot({ videoRef, captureRef, plan, timeSec: player.time, notify: push });
   const { commands, goHome } = useAppCommands({
     screenshot, toggleRemaining, toggleShortcuts, videoRef, plan, player, fs, fx, subs, queue, panels, notify: push, closeMedia: close, openDialog: () => void openDialog(),
+    addFolder: library.addFolder,
   });
   usePlayerShortcuts(true, commands);
   useMenuCommands(commands);
@@ -49,7 +52,10 @@ export function App() {
 
   useEffect(() => { window.player.setPlaying(!!plan && !player.paused); }, [plan, player.paused]);
   useEffect(() => { panels.closeInfo(); if (plan) push("success", `Playing ${plan.info.name}`); }, [plan?.info.path]);
-  const homeHandlers = useMemo(() => ({ openRecent: (p: string) => void openRecent(p), openDialog: () => void openDialog() }), [openRecent, openDialog]);
+  const homeHandlers = useMemo(() => ({
+    openRecent: (p: string) => void openRecent(p), openDialog: () => void openDialog(), openItem: (id: string) => void openLibraryItem(id),
+    addFolder: library.addFolder, removeFolder: library.removeFolder, rescan: library.rescan,
+  }), [openRecent, openDialog, openLibraryItem, library.addFolder, library.removeFolder, library.rescan]);
 
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
@@ -57,6 +63,11 @@ export function App() {
     const files = Array.from(e.dataTransfer.files);
     // A dropped subtitle while a video is open loads as subtitles; Shift+drop appends to the queue.
     if (files[0] && plan && isSubtitlePath(files[0].name)) return void subs.loadDropped(files[0]);
+    if (!plan) { // home screen: folders join the library, video files play
+      const split = partitionDrop(e.dataTransfer.items);
+      library.addDropped(split.folders);
+      files.splice(0, files.length, ...split.files);
+    }
     if (!files.length) return;
     if (e.shiftKey) void queue.addDropped(files);
     else void openDropped(files);
@@ -78,10 +89,10 @@ export function App() {
           remaining={remaining} onToggleRemaining={toggleRemaining}
         />
       ) : (
-        <HomeScreen fx={fx} library={EMPTY_LIBRARY} handlers={homeHandlers} active={!helpOpen} notify={push} />
+        <HomeScreen fx={fx} library={library.snapshot} handlers={homeHandlers} active={!helpOpen} notify={push} />
       )}
       {loading && <div className="loading" role="status" aria-label="Loading"><div className="spinner" /></div>}
-      {dragging && <div className="drop-overlay">{plan ? "Drop to play (hold Shift to add to queue)" : "Drop to play"}</div>}
+      {dragging && <div className="drop-overlay">{plan ? "Drop to play (hold Shift to add to queue)" : "Drop to play, or drop a folder to add it"}</div>}
       {helpOpen && <ShortcutHelp onClose={() => setHelpOpen(false)} />}
       <ToastHost items={items} />
     </div>

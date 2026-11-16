@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyMetaPatches, libraryRows } from "../../renderer/utils/home/libraryRows";
+import { addedFolderNames, applyMetaPatches, libraryRows, newerSnapshot } from "../../renderer/utils/home/libraryRows";
 import { item, snapshot } from "./fixtures";
 
 const recent = (n: number) => ({ path: `/r/${n}.mkv`, name: `r${n}.mkv`, openedAt: n });
@@ -22,7 +22,8 @@ describe("libraryRows", () => {
       [],
     );
     const seq = rows.filter((r) => r.id.startsWith("item:") || r.id.startsWith("dir:")).map((r) => r.cols[0]);
-    expect(seq).toEqual(["z.mkv", "S0", "a.mkv", "S1", "e2.mkv", "e10.mkv"]);
+    expect(seq).toEqual(["z.mkv", "S0/", "a.mkv", "S1/", "e2.mkv", "e10.mkv"]);
+    expect(rows.find((r) => r.id.startsWith("dir:"))).toMatchObject({ kind: "subheader" });
     expect(rows.find((r) => r.id.startsWith("dir:"))!.action).toBeUndefined();
   });
 
@@ -48,5 +49,21 @@ describe("applyMetaPatches", () => {
     expect(snap.items[0]!.probe).toBe("pending");
     expect(applyMetaPatches(snap, [{ id: "zz", durationSec: 1, width: 1, height: 1, probe: "ok" }])).toBe(snap);
     expect(applyMetaPatches(snap, [])).toBe(snap);
+  });
+});
+
+describe("snapshot helpers", () => {
+  const base = snapshot([item("a", "A")], { revision: 5 });
+  it("keeps the newer revision", () => {
+    expect(newerSnapshot(base, { ...base, revision: 4 })).toBe(base);
+    const same = { ...base };
+    expect(newerSnapshot(base, same)).toBe(same);
+    const next = { ...base, revision: 6 };
+    expect(newerSnapshot(base, next)).toBe(next);
+  });
+  it("names added folders", () => {
+    const next = { ...base, folders: [...base.folders, { id: "f-2", name: "Shows", path: "/s", missing: false, truncated: false }] };
+    expect(addedFolderNames(base, next)).toEqual(["Shows"]);
+    expect(addedFolderNames(next, base)).toEqual([]);
   });
 });

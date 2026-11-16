@@ -40,7 +40,7 @@ function windowOf(zone: ZoneId, rowCount: number, state: HomeState, clock: HomeC
 /** The static credits block under the updates: version on the bar, author below. Third-party names page with the updates. */
 function credits(ops: DrawOp[], model: HomeModel): void {
   const { col, cols } = UPDATES_BOX;
-  drawTitleBar(ops, col, CREDITS_BAR_ROW, cols, "CREDITS", `V${model.credits.version}`, false, { above: false, below: false });
+  drawTitleBar(ops, col, CREDITS_BAR_ROW, cols, "CREDITS", `V${model.credits.version}`, false, null);
   text(ops, col, CREDITS_ROW, clip(model.credits.author, cols), "text");
 }
 
