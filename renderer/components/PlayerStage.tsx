@@ -1,9 +1,10 @@
-import type { MutableRefObject, RefObject } from "react";
+import { useCallback, type MutableRefObject, type RefObject } from "react";
 import type { EffectSettings } from "../hooks/useEffectSettings";
 import type { Panels } from "../hooks/usePanels";
 import type { PlayerState } from "../hooks/usePlayerState";
 import type { PlayQueue } from "../hooks/usePlayQueue";
 import type { SubtitleState } from "../hooks/useSubtitles";
+import { videoInput } from "../shader/gl/videoInput";
 import type { PlaybackPlan, ToastKind } from "../types/player";
 import { Controls } from "./Controls";
 import { EndScreen } from "./EndScreen";
@@ -36,7 +37,8 @@ interface Props {
 
 /** Everything shown while a file is open: picture, top bar, controls, panels and the end screen. */
 export function PlayerStage(p: Props) {
-  const { plan, player, fullscreen: fs, fx, queue, panels, visible } = p;
+  const { plan, player, fullscreen: fs, fx, queue, panels, visible, videoRef } = p;
+  const makeInput = useCallback(() => (videoRef.current ? videoInput(videoRef.current) : null), [videoRef]);
   return (
     <>
       <VideoView
@@ -45,7 +47,7 @@ export function PlayerStage(p: Props) {
         onToggle={player.toggle} onFullscreen={fs.toggle} onError={p.onVideoError}
       />
       <ShaderCanvas
-        videoRef={p.videoRef} effect={fx.effect} values={fx.values} sourceKey={plan.url} startOffset={plan.startOffset} captureRef={p.captureRef}
+        makeInput={makeInput} effect={fx.effect} values={fx.values} sourceKey={plan.url} startOffset={plan.startOffset} captureRef={p.captureRef}
         onToggle={player.toggle} onFullscreen={fs.toggle}
         onError={(e) => { fx.setEffect(null); p.notify("error", e.message.split("\n")[0]); console.error(e); }}
       />
