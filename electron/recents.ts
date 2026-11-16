@@ -1,28 +1,22 @@
-import { app } from "electron";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync } from "node:fs";
 import { basename } from "node:path";
 import type { RecentFile } from "../shared/types";
+import { readJson, writeJson } from "./jsonStore";
+import { MAX_RECENTS, healRecents } from "./recentsShape";
 
-const MAX = 12;
-const file = () => join(app.getPath("userData"), "recents.json");
+const FILE = "recents.json";
 
 const listeners: Array<() => void> = [];
 export function onRecentsChanged(cb: () => void): void { listeners.push(cb); }
 
 export function getRecents(): RecentFile[] {
-  try {
-    const list = JSON.parse(readFileSync(file(), "utf8")) as RecentFile[];
-    return list.filter((r) => existsSync(r.path));
-  } catch {
-    return [];
-  }
+  return readJson(FILE, healRecents).filter((r) => existsSync(r.path));
 }
 
 export function addRecent(path: string): void {
   const rest = getRecents().filter((r) => r.path !== path);
-  const next = [{ path, name: basename(path), openedAt: Date.now() }, ...rest].slice(0, MAX);
-  try { writeFileSync(file(), JSON.stringify(next)); } catch { /* non-fatal */ }
+  const next = [{ path, name: basename(path), openedAt: Date.now() }, ...rest].slice(0, MAX_RECENTS);
+  writeJson(FILE, next);
   for (const l of listeners) l();
 }
 
