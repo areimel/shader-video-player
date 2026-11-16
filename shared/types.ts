@@ -72,6 +72,10 @@ export interface OpenResult {
 export interface PlayerBridge {
   openDialog(): Promise<OpenResult | null>;
   openDropped(files: File[]): Promise<OpenResult>;
+  /** Opens the file dialog in the main process and adds the choice to the allow-set; [] when cancelled. */
+  addToQueueDialog(): Promise<QueueItem[]>;
+  /** Shift+drop: adds the dropped files to the allow-set (paths resolved in the preload). */
+  queueDropped(files: File[]): Promise<QueueItem[]>;
   openQueued(path: string): Promise<PlaybackPlan>;
   openRecent(path: string): Promise<PlaybackPlan>;
   restart(startSec: number, audioOrdinal: number): Promise<PlaybackPlan>;

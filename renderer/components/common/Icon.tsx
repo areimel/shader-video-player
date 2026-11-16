@@ -17,6 +17,13 @@ const PATHS = {
   skipNext: "M6 18l8.5-6L6 6zM16 6h2v12h-2z",
   skipPrev: "M6 6h2v12H6zM9.5 12l8.5 6V6z",
   queue: "M3 6h13v2H3zM3 11h13v2H3zM3 16h7v2H3zM14 15v6l5-3z",
+  back: "M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z",
+  loop: "M7 7h10v3l4-4-4-4v3H5v6h2zM17 17H7v-3l-4 4 4 4v-3h12v-6h-2z",
+  loopOne: "M7 7h10v3l4-4-4-4v3H5v6h2zM17 17H7v-3l-4 4 4 4v-3h12v-6h-2zM11 9.5v1h1.2V15H13.6V9z",
+  replay: "M12 5V1L7 6l5 5V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z",
+  camera: "M9 2 7.2 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3.2L15 2zM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",
+  keyboard: "M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM5 8h2v2H5zM9 8h2v2H9zM13 8h2v2h-2zM17 8h2v2h-2zM5 12h2v2H5zM9 12h2v2H9zM13 12h2v2h-2zM17 12h2v2h-2zM8 15h8v2H8z",
+  close: "M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19 5 17.6 10.6 12 5 6.4z",
 } as const;
 
 export type IconName = keyof typeof PATHS;

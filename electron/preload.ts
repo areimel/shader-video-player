@@ -26,6 +26,8 @@ function droppedPaths(files: unknown): string[] {
 const bridge: PlayerBridge = {
   openDialog: () => ipcRenderer.invoke("media:open-dialog"),
   openDropped: (files) => ipcRenderer.invoke("media:open-dropped", droppedPaths(files)),
+  addToQueueDialog: () => ipcRenderer.invoke("media:queue-dialog"),
+  queueDropped: (files) => ipcRenderer.invoke("media:queue-dropped", droppedPaths(files)),
   openQueued: (p) => ipcRenderer.invoke("media:open-queued", p),
   openRecent: (p) => ipcRenderer.invoke("media:open-recent", p),
   restart: (s, a) => ipcRenderer.invoke("media:restart", s, a),

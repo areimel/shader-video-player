@@ -1,0 +1,5 @@
+/* Below the controls (z-chrome) so the seek bar stays usable while the end screen shows. */
+.end-screen { position: absolute; inset: 0; z-index: calc(var(--z-chrome) - 1); display: grid; place-items: center; background: var(--scrim); }
+.end-actions { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); }
+.end-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); min-width: 180px; }
+.end-actions .link-btn { color: var(--phosphor); }

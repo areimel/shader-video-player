@@ -14,5 +14,7 @@ import "./styles/empty.css";
 import "./styles/queue.css";
 import "./styles/effects.css";
 import "./styles/subtitles.css";
+import "./styles/topbar.css";
+import "./styles/endscreen.css";
 
 createRoot(document.getElementById("root")!).render(<App />);

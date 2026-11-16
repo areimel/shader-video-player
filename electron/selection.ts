@@ -1,7 +1,7 @@
 import { isSuperseded } from "../shared/superseded";
-import type { OpenResult } from "../shared/types";
+import type { OpenResult, QueueItem } from "../shared/types";
 import { openMedia } from "./playback";
-import { commitQueue, selectFiles } from "./queue";
+import { appendToQueue, commitQueue, selectFiles } from "./queue";
 import { getWindow } from "./window";
 
 /**
@@ -22,6 +22,11 @@ export async function openSelection(paths: unknown): Promise<OpenResult> {
     }
   }
   throw failure;
+}
+
+/** Validates a selection and adds it to the current allow-set (nothing is probed until an item plays). */
+export function queueSelection(paths: unknown): QueueItem[] {
+  return appendToQueue(selectFiles(paths));
 }
 
 /** Pushes a selection to the renderer (CLI, second instance, menu): queue first, then the first plan. */

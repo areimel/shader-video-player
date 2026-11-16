@@ -31,6 +31,26 @@ export function commitQueue(items: readonly QueueItem[]): void {
   handedOut = new Set(items.map((i) => i.path));
 }
 
+/**
+ * Adds already-validated items to the allow-set without replacing it, keeping at most MAX_QUEUE paths.
+ * Returns the items that are now allowed (new ones that fit, plus ones that were already there).
+ */
+export function appendToQueue(items: readonly QueueItem[]): QueueItem[] {
+  const accepted: QueueItem[] = [];
+  for (const item of items) {
+    if (handedOut.has(item.path) || handedOut.size < MAX_QUEUE) {
+      handedOut.add(item.path);
+      accepted.push(item);
+    }
+  }
+  return accepted;
+}
+
+/** Forgets every handed-out path (media closed). */
+export function clearQueue(): void {
+  handedOut = new Set();
+}
+
 export function isQueued(path: unknown): path is string {
   return typeof path === "string" && handedOut.has(path) && existsSync(path);
 }
