@@ -35,13 +35,21 @@ describe("buildModel", () => {
     expect(rows[0]).toMatchObject({ kind: "header", cols: ["V0.2.0", "NOV 16"] });
     expect(rows[1]!.cols[0]).toBe("- Library");
     expect(rows.every((r) => !r.action)).toBe(true);
-    expect(rows.every((r) => Array.from(r.cols[0]!).length <= 15)).toBe(true);
-    expect(rows.some((r) => r.cols[0]!.startsWith("  "))).toBe(true);
+    expect(rows.every((r) => Array.from(r.cols[0]!).length <= 16)).toBe(true);
+    expect(model({ changelog: [{ version: "1.0", date: "", items: ["A line that is long enough to wrap twice over"] }] })
+      .zones.updates.some((r) => r.cols[0]!.startsWith("  "))).toBe(true);
+  });
+
+  it("ends the updates with the third-party credits", () => {
+    const rows = model().zones.updates;
+    const at = rows.findIndex((r) => r.id === "up:thanks");
+    expect(rows[at]).toMatchObject({ kind: "header", cols: ["THANKS TO"] });
+    expect(rows.slice(at + 1).map((r) => r.cols[0])).toEqual(["* Electron", "* React", "* Vite", "* Archivo", "* Press Start 2P"]);
   });
 
   it("limits updates to the newest 3 entries", () => {
     const many = [4, 3, 2, 1].map((v) => ({ version: `0.${v}.0`, date: "2026-01-01", items: ["x"] }));
-    const heads = model({ changelog: many }).zones.updates.filter((r) => r.kind === "header").map((r) => r.cols[0]);
+    const heads = model({ changelog: many }).zones.updates.filter((r) => r.kind === "header" && r.id !== "up:thanks").map((r) => r.cols[0]);
     expect(heads).toEqual(["V0.4.0", "V0.3.0", "V0.2.0"]);
   });
 

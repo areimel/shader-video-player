@@ -1,20 +1,26 @@
 import type { DrawOp, HitRegion, HomeClock, HomeFrame, HomeModel, HomeState, ZoneId } from "./types";
 import { CELL, COLS, INSET, ROWS } from "./types";
-import { clip, marquee } from "./text";
+import { clip } from "./text";
 import { drawRows, drawTitleBar, text, type Window, type ZoneBox } from "./layoutRows";
 
 /** Zone geometry in cells. Nothing but the background is drawn outside cols 2..37 / rows 2..27. */
 export const LEFT = INSET;
 export const RIGHT = COLS - INSET - 1;
 export const LIBRARY_BOX: ZoneBox = { zone: "library", col: LEFT, cols: RIGHT - LEFT + 1, row: 6, visible: 10 };
-export const TV_BOX: ZoneBox = { zone: "tv", col: LEFT, cols: 18, row: 18, visible: 10 };
-export const UPDATES_BOX: ZoneBox = { zone: "updates", col: 21, cols: RIGHT - 21 + 1, row: 18, visible: 6 };
+/**
+ * The two lower zones split the 36 cells 19 | gutter | 16. Scroll hints sit in the title bars, so rows use their
+ * zone's full width: the TV zone holds the marker plus 18 (every preset label but one fits), and the updates zone,
+ * which has no marker column, holds 16 (UPDATES_COLS in model.ts).
+ */
+export const TV_BOX: ZoneBox = { zone: "tv", col: LEFT, cols: 19, row: 18, visible: 10 };
+const UPDATES_COL = LEFT + 19 + 1;
+export const UPDATES_BOX: ZoneBox = { zone: "updates", col: UPDATES_COL, cols: RIGHT - UPDATES_COL + 1, row: 18, visible: 8, marker: false };
 export const BOXES: Record<ZoneId, ZoneBox> = { library: LIBRARY_BOX, tv: TV_BOX, updates: UPDATES_BOX };
 /** Visible rows per zone (also the page size). */
-export const VISIBLE: Record<ZoneId, number> = { library: 10, tv: 10, updates: 6 };
+export const VISIBLE: Record<ZoneId, number> = { library: LIBRARY_BOX.visible, tv: TV_BOX.visible, updates: UPDATES_BOX.visible };
 export const UPDATES_PAGE_SECONDS = 6;
-const CREDITS_BAR_ROW = 24;
-const CREDITS_ROW = 25;
+const CREDITS_BAR_ROW = UPDATES_BOX.row + UPDATES_BOX.visible;
+const CREDITS_ROW = CREDITS_BAR_ROW + 1;
 
 /** First visible row of the updates zone while it is unfocused: it pages like a guide channel. */
 export function updatesFirst(rowCount: number, elapsed: number): number {
@@ -28,17 +34,14 @@ function windowOf(zone: ZoneId, rowCount: number, state: HomeState, clock: HomeC
   const visible = VISIBLE[zone];
   const auto = zone === "updates" && state.zone !== "updates" && !clock.reducedMotion;
   const first = auto ? updatesFirst(rowCount, clock.elapsed) : Math.max(0, Math.min(state.scroll[zone], Math.max(0, rowCount - visible)));
-  return { first, above: first > 0, below: first + visible < rowCount };
+  return { first, above: first > 0, below: first + visible < rowCount, paging: auto && rowCount > visible };
 }
 
-function credits(ops: DrawOp[], model: HomeModel, clock: HomeClock): void {
+/** The static credits block under the updates: version on the bar, author below. Third-party names page with the updates. */
+function credits(ops: DrawOp[], model: HomeModel): void {
   const { col, cols } = UPDATES_BOX;
-  drawTitleBar(ops, col, CREDITS_BAR_ROW, cols, "DEV CREDITS", "", false, false);
+  drawTitleBar(ops, col, CREDITS_BAR_ROW, cols, "CREDITS", `V${model.credits.version}`, false, { above: false, below: false });
   text(ops, col, CREDITS_ROW, clip(model.credits.author, cols), "text");
-  text(ops, col, CREDITS_ROW + 1, clip(`V${model.credits.version}`, cols), "dim");
-  const names = model.credits.thirdParty.join(", ");
-  const line = clock.reducedMotion ? clip(names, cols) : marquee(names, cols, clock.elapsed).trimEnd();
-  text(ops, col, CREDITS_ROW + 2, line, "dim");
 }
 
 export function layout(model: HomeModel, state: HomeState, clock: HomeClock): HomeFrame {
@@ -58,12 +61,13 @@ export function layout(model: HomeModel, state: HomeState, clock: HomeClock): Ho
   ];
   for (const [zone, label, right] of titles) {
     const box = BOXES[zone];
-    drawTitleBar(ops, box.col, box.row - 1, box.cols, label, right, state.zone === zone, wins[zone].above);
+    drawTitleBar(ops, box.col, box.row - 1, box.cols, label, right, state.zone === zone, wins[zone]);
   }
+  let animated = !!wins.updates.paging;
   for (const zone of ["library", "tv", "updates"] as const) {
-    drawRows(ops, hits, BOXES[zone], model.zones[zone], wins[zone], state.cursor[zone], state.zone === zone, clock);
+    animated = drawRows(ops, hits, BOXES[zone], model.zones[zone], wins[zone], state.cursor[zone], state.zone === zone, clock) || animated;
   }
-  credits(ops, model, clock);
-  return { ops, hits };
+  credits(ops, model);
+  return { ops, hits, animated };
 }
 

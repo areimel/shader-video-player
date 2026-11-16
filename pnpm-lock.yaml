@@ -11,6 +11,9 @@ importers:
       '@fontsource-variable/archivo':
         specifier: ^5.3.0
         version: 5.3.0
+      '@fontsource/press-start-2p':
+        specifier: ^5.3.0
+        version: 5.3.0
       react:
         specifier: ^19.3.1
         version: 19.3.1
@@ -265,6 +268,9 @@ packages:
 
   '@fontsource-variable/archivo@5.3.0':
     resolution: {integrity: sha512-HogK8FJelrD1o7TlZlkIVtHgc20bO5PZRWE7mUeUTdMN055alznQV6/00J00IBeu8FQAH4s3zW9UJNvKExXf+g==}
+
+  '@fontsource/press-start-2p@5.3.0':
+    resolution: {integrity: sha512-gxWFxdeDglPhEYSwEeooomcaFK8kSQYLQwVxfnOJeYRj2sPEHXjpVtFgEaYfqzOjuAJGrIcJOipu2KY5YkbyuQ==}
 
   '@hapi/address@5.1.1':
     resolution: {integrity: sha512-A+po2d/dVoY7cYajycYI43ZbYMXukuopIsqCjh5QzsBCipDtdofHntljDlpccMjIfTy6UOkg+5KPriwYch2bXA==}
@@ -2038,6 +2044,8 @@ snapshots:
     optional: true
 
   '@fontsource-variable/archivo@5.3.0': {}
+
+  '@fontsource/press-start-2p@5.3.0': {}
 
   '@hapi/address@5.1.1':
     dependencies:

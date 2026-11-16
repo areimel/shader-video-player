@@ -68,7 +68,8 @@ export function ascii(frame: HomeFrame): string[] {
     if (op.op === "rect") {
       const ch = fill[op.color];
       if (ch === undefined) continue;
-      for (let y = op.y / 8; y < (op.y + op.h) / 8; y++) for (let x = op.x / 8; x < (op.x + op.w) / 8; x++) grid[y]![x] = ch;
+      // Bars start a pixel above their row; a cell counts as covered when the rect covers most of it.
+      for (let y = Math.round(op.y / 8); y < Math.round((op.y + op.h) / 8); y++) for (let x = op.x / 8; x < (op.x + op.w) / 8; x++) grid[y]![x] = ch;
     } else put(op);
   }
   return grid.map((r) => r.join(""));

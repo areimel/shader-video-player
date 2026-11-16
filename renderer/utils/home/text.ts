@@ -7,6 +7,22 @@ export function clip(text: string, cols: number): string {
   return cells(text).slice(0, Math.max(0, cols)).join("");
 }
 
+/**
+ * Like `clip`, but a cut that would split a word backs up to the last space or hyphen, as long as that keeps at
+ * least half the cells ("THIRD-GENERATION DUB" in 18 -> "THIRD-GENERATION", not "THIRD-GENERATION D").
+ */
+export function clipWords(text: string, cols: number): string {
+  const all = cells(text);
+  if (all.length <= cols) return all.join("");
+  const cut = Math.max(0, cols);
+  if (all[cut] === " ") return all.slice(0, cut).join("").trimEnd();
+  for (let i = cut - 1; i >= Math.ceil(cut / 2); i--) {
+    if (all[i] === " ") return all.slice(0, i).join("").trimEnd();
+    if (all[i] === "-") return all.slice(0, i + 1).join("");
+  }
+  return all.slice(0, cut).join("");
+}
+
 /** Upper-case, truncate and pad with spaces to exactly `cols` code points. */
 export function fit(text: string, cols: number): string {
   const c = Math.max(0, cols);

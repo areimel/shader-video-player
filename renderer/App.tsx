@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
-import { EmptyState } from "./components/EmptyState";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { PlayerStage } from "./components/PlayerStage";
 import { ShortcutHelp } from "./components/ShortcutHelp";
+import { HomeScreen } from "./components/home/HomeScreen";
 import { ToastHost, useToasts } from "./components/common/Toast";
 import { useAppCommands } from "./hooks/useAppCommands";
 import { useEffectSettings } from "./hooks/useEffectSettings";
@@ -17,6 +17,7 @@ import { useShowRemaining } from "./hooks/useShowRemaining";
 import { useSubtitles } from "./hooks/useSubtitles";
 import { isSubtitlePath } from "../shared/subtitleFiles";
 import { togglePip } from "./utils/pip";
+import { EMPTY_LIBRARY } from "./utils/home/libraryRows";
 
 export function App() {
   const { items, push } = useToasts();
@@ -48,6 +49,7 @@ export function App() {
 
   useEffect(() => { window.player.setPlaying(!!plan && !player.paused); }, [plan, player.paused]);
   useEffect(() => { panels.closeInfo(); if (plan) push("success", `Playing ${plan.info.name}`); }, [plan?.info.path]);
+  const homeHandlers = useMemo(() => ({ openRecent: (p: string) => void openRecent(p), openDialog: () => void openDialog() }), [openRecent, openDialog]);
 
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
@@ -66,7 +68,8 @@ export function App() {
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)} onDrop={onDrop}
     >
-      <div className="drag-region" />
+      {/* The window has a native frame; the strip only matters over the player, and on the home screen it would eat pointer events. */}
+      {plan && <div className="drag-region" />}
       {plan ? (
         <PlayerStage
           videoRef={videoRef} captureRef={captureRef} plan={plan} initialTime={initialTime} visible={visible} player={player} fullscreen={fs}
@@ -75,7 +78,7 @@ export function App() {
           remaining={remaining} onToggleRemaining={toggleRemaining}
         />
       ) : (
-        <EmptyState onOpen={openDialog} onRecent={openRecent} />
+        <HomeScreen fx={fx} library={EMPTY_LIBRARY} handlers={homeHandlers} active={!helpOpen} notify={push} />
       )}
       {loading && <div className="loading" role="status" aria-label="Loading"><div className="spinner" /></div>}
       {dragging && <div className="drop-overlay">{plan ? "Drop to play (hold Shift to add to queue)" : "Drop to play"}</div>}

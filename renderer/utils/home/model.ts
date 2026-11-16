@@ -3,9 +3,9 @@ import type { LibrarySnapshot, RecentFile } from "../../../shared/types";
 import { countLabel, libraryRows } from "./libraryRows";
 import { formatDate, wrap } from "./text";
 
-/** Zone width is 17 cells; one is the scroll-hint column and one the marker column, so rows hold 15. */
-export const UPDATES_COLS = 17;
-export const UPDATES_ROW_CHARS = UPDATES_COLS - 2;
+/** Updates rows hold 16 cells (no marker column, scroll hints in the title bar). Keep in step with UPDATES_BOX in layout.ts. */
+export const UPDATES_COLS = 16;
+export const UPDATES_ROW_CHARS = UPDATES_COLS;
 export const UPDATES_SHOWN = 3;
 const CUSTOM_PRESET = "custom";
 
@@ -46,7 +46,8 @@ function tvRows(input: HomeModelInput): HomeRow[] {
   return rows;
 }
 
-function updateRows(changelog: ChangelogEntry[]): HomeRow[] {
+/** Changelog entries, then the third-party credits: the updates zone pages through both like a guide channel. */
+function updateRows(changelog: ChangelogEntry[], credits: Credits): HomeRow[] {
   const rows: HomeRow[] = [];
   for (const entry of changelog.slice(0, UPDATES_SHOWN)) {
     rows.push({ id: `up:${entry.version}`, kind: "header", cols: [`V${entry.version}`, formatDate(entry.date)] });
@@ -56,12 +57,20 @@ function updateRows(changelog: ChangelogEntry[]): HomeRow[] {
       });
     });
   }
+  if (credits.thirdParty.length > 0) {
+    rows.push({ id: "up:thanks", kind: "header", cols: ["THANKS TO"] });
+    credits.thirdParty.forEach((name, i) => {
+      wrap(name, UPDATES_ROW_CHARS - 2).forEach((line, k) => {
+        rows.push({ id: `up:thanks:${i}:${k}`, kind: "text", cols: [(k === 0 ? "* " : "  ") + line] });
+      });
+    });
+  }
   return rows;
 }
 
 export function buildModel(input: HomeModelInput): HomeModel {
   return {
-    zones: { library: libraryRows(input.library, input.recents), tv: tvRows(input), updates: updateRows(input.changelog) },
+    zones: { library: libraryRows(input.library, input.recents), tv: tvRows(input), updates: updateRows(input.changelog, input.credits) },
     credits: input.credits,
     libraryStatus: input.library.scanning ? "SCANNING" : countLabel(input.library.items.length),
   };

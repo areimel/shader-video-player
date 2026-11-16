@@ -75,7 +75,12 @@ export type DrawOp =
 
 export interface HitRegion { x: number; y: number; w: number; h: number; target: HitTarget }
 
-export interface HomeFrame { ops: DrawOp[]; hits: HitRegion[] }
+export interface HomeFrame {
+  ops: DrawOp[];
+  hits: HitRegion[];
+  /** Something drawn depends on `HomeClock.elapsed` (a marquee or the updates paging): repaint on a tick. */
+  animated: boolean;
+}
 
 /** Things that change without user input; kept out of HomeState so the reducer stays replayable. */
 export interface HomeClock {

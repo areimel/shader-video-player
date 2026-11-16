@@ -57,10 +57,12 @@ describe("drawing rules", () => {
     const s = initialState(m);
     const f = layout(m, s, clock);
     const bars = f.ops.filter((o) => o.op === "rect" && o.color === "accent");
-    // focused title bar + cursor row
-    expect(bars).toHaveLength(2);
-    const cursorBar = bars.find((b) => b.op === "rect" && b.y === 7 * 8);
-    expect(cursorBar).toBeTruthy();
+    // only the cursor row gets a yellow bar (title bars stay navy; the focused label turns yellow)
+    expect(bars).toHaveLength(1);
+    expect(bars[0]).toMatchObject({ y: 7 * 8 - 1, h: 9 });
+    const title = textOps(f).find((o) => o.text === "LIBRARY")!;
+    expect(title.color).toBe("accent");
+    expect(textOps(f).find((o) => o.text === "TV PRESET")!.color).toBe("text");
     const tv = textOps(f).find((o) => o.text.includes("OFF"));
     expect(tv!.color).toBe("text");
   });
@@ -90,14 +92,34 @@ describe("drawing rules", () => {
     expect(top.some((o) => o.text === "^")).toBe(false);
     const scrolled = homeReducer(initialState(m), { type: "wheel", zone: "library", by: 5 }, m);
     expect(textOps(layout(m, scrolled, clock)).some((o) => o.text === "^")).toBe(true);
+    // Hints live on the title bars, never on a row.
+    for (const o of textOps(layout(m, scrolled, clock)).filter((o) => o.text === "^" || o.text === "v")) {
+      expect([5, 17].map((r) => r * 8)).toContain(o.y);
+    }
   });
 
-  it("draws credits with a marquee only when too long", () => {
-    const f = layout(model(), initialState(model()), clock);
-    const credits = textOps(f).filter((o) => o.y >= 25 * 8).map((o) => o.text);
-    expect(credits).toEqual(["ALEC REIMEL", "V0.2.0", "ELECTRON, REACT,"]);
-    const later = textOps(layout(model(), initialState(model()), { ...clock, elapsed: 3 })).filter((o) => o.y === 27 * 8)[0]!.text;
-    expect(later).not.toBe("ELECTRON, REACT,");
+  it("keeps a one-cell gutter between the TV and updates zones", () => {
+    expect(BOXES.tv.col + BOXES.tv.cols).toBe(BOXES.updates.col - 1);
+    expect(BOXES.updates.col + BOXES.updates.cols).toBe(38);
+  });
+
+  it("draws a static credits block: version on its bar, author below", () => {
+    const at = (c: HomeClock) => textOps(layout(model(), initialState(model()), c)).filter((o) => o.y >= 26 * 8).map((o) => o.text);
+    expect(at(clock)).toEqual(["CREDITS", "V0.2.0", "ALEC REIMEL"]);
+    expect(at({ ...clock, elapsed: 3 })).toEqual(at(clock));
+  });
+
+  it("reports motion only for a scrolling cursor title or the updates paging", () => {
+    const still = model({ changelog: [], credits: { version: "1", author: "A", thirdParty: [] } });
+    expect(layout(still, initialState(still), clock).animated).toBe(false);
+    const long = model({ changelog: [], credits: still.credits, recents: [{ path: "/x", name: "A really very long recent file name here, longer than the row.mkv", openedAt: 1 }] });
+    const s = initialState(long);
+    expect(long.zones.library[s.cursor.library]!.id).toBe("recent:/x");
+    expect(layout(long, s, clock).animated).toBe(true);
+    expect(layout(long, s, { ...clock, reducedMotion: true }).animated).toBe(false);
+    const paging = bigModel();
+    expect(layout(paging, initialState(paging), clock).animated).toBe(true);
+    expect(layout(paging, initialState(paging), { ...clock, reducedMotion: true }).animated).toBe(false);
   });
 });
 
@@ -108,10 +130,11 @@ describe("updates paging", () => {
     textOps(layout(m, s, c)).find((o) => o.y === 18 * 8 && o.x >= 21 * 8 && o.align !== "right")?.text;
 
   it("pages every 6 seconds while unfocused and wraps", () => {
-    expect(rows).toBeGreaterThan(6);
+    const page = BOXES.updates.visible;
+    expect(rows).toBeGreaterThan(page);
     expect(updatesFirst(rows, 0)).toBe(0);
-    expect(updatesFirst(rows, UPDATES_PAGE_SECONDS)).toBe(6);
-    const pages = Math.ceil(rows / 6);
+    expect(updatesFirst(rows, UPDATES_PAGE_SECONDS)).toBe(page);
+    const pages = Math.ceil(rows / page);
     expect(updatesFirst(rows, UPDATES_PAGE_SECONDS * pages)).toBe(0);
     expect(updatesFirst(4, 100)).toBe(0);
     expect(firstUpdateText({ ...clock, elapsed: 0 })).not.toBe(firstUpdateText({ ...clock, elapsed: 6 }));
@@ -122,7 +145,7 @@ describe("updates paging", () => {
     const focused = homeReducer(homeReducer(initialState(m), { type: "zone", dir: 1 }, m), { type: "zone", dir: 1 }, m);
     expect(firstUpdateText({ ...clock, elapsed: 0 }, focused)).toBe(firstUpdateText({ ...clock, elapsed: 7 }, focused));
     const moved = homeReducer(focused, { type: "wheel", zone: "updates", by: 1 }, m);
-    expect(firstUpdateText({ ...clock, elapsed: 0 }, moved)).toBe(" " + m.zones.updates[1]!.cols[0]!.toUpperCase());
+    expect(firstUpdateText({ ...clock, elapsed: 0 }, moved)).toBe(m.zones.updates[1]!.cols[0]!.toUpperCase());
   });
 });
 

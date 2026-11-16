@@ -1,3 +1,4 @@
+kbd { font: inherit; font-size: var(--fs-xs); font-variant-numeric: tabular-nums; padding: 1px 6px; border-radius: var(--r-ctl); background: var(--line); }
 .segmented { display: flex; gap: 2px; background: var(--hover); border-radius: var(--r-ctl); padding: 2px; }
 .segmented button { flex: 1; background: none; border: 0; color: var(--phosphor); font: inherit; padding: 5px var(--sp-1);
   border-radius: var(--r-ctl); cursor: pointer; }

@@ -32,7 +32,7 @@ interface Deps {
 
 /**
  * Builds the command-id -> handler map shared by the keyboard and the native menu. Media commands exist only
- * while a file is open. Also returns `goHome`, the full reset used by Close, the top bar and the end screen:
+ * while a file is open; the effect toggle and fullscreen work on the home screen too. Also returns `goHome`, the full reset used by Close, the top bar and the end screen:
  * clears the queue and end state, closes both panels, leaves fullscreen and picture in picture.
  */
 export function useAppCommands(d: Deps): { commands: CommandHandlers; goHome: () => void } {
@@ -56,9 +56,7 @@ export function useAppCommands(d: Deps): { commands: CommandHandlers; goHome: ()
     speedDown: () => player.stepRate(-1),
     speedUp: () => player.stepRate(1),
     ...(queue.multi && { next: queue.next, previous: queue.previous }),
-    toggleEffect: fx.toggle,
     toggleEffectsPanel: panels.toggleEffects,
-    fullscreen: fs.toggle,
     info: panels.toggleInfo,
     pip: () => togglePip(videoRef.current, notify),
     loadSubtitle: () => void subs.pickFile(),
@@ -71,6 +69,9 @@ export function useAppCommands(d: Deps): { commands: CommandHandlers; goHome: ()
   const commands: CommandHandlers = {
     ...media,
     open: d.openDialog,
+    // These two also work on the home screen (it is drawn through the effect).
+    toggleEffect: fx.toggle,
+    fullscreen: fs.toggle,
     addToQueue: () => void queue.addToQueue(),
     cycleLoop: queue.cycleLoop,
     shortcuts: d.toggleShortcuts,

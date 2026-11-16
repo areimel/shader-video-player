@@ -1,3 +1,4 @@
+import { VISIBLE } from "../../renderer/utils/home/layout";
 import { describe, expect, it } from "vitest";
 import { activate, homeReducer, initialState, keyToAction } from "../../renderer/utils/home/state";
 import type { HomeAction, HomeModel, HomeState } from "../../renderer/utils/home/types";
@@ -73,7 +74,7 @@ describe("zones", () => {
     s = run(s, m, down, down);
     expect(s.scroll.updates).toBe(2);
     s = run(s, m, { type: "edge", to: "end" });
-    expect(s.scroll.updates).toBe(m.zones.updates.length - 6);
+    expect(s.scroll.updates).toBe(m.zones.updates.length - VISIBLE.updates);
     expect(run(s, m, { type: "edge", to: "start" }).scroll.updates).toBe(0);
   });
 });

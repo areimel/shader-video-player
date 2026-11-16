@@ -72,3 +72,6 @@ export function libraryRows(snapshot: LibrarySnapshot, recents: RecentFile[]): H
   );
   return rows;
 }
+
+/** No folders and no items: the library before one is loaded (or before the library service is wired). */
+export const EMPTY_LIBRARY: LibrarySnapshot = { revision: 0, scanning: false, folders: [], items: [] };

@@ -22,3 +22,4 @@ html, body, #root { margin: 0; height: 100%; background: var(--bezel); color: va
 .btn-quiet:hover { background: var(--hover); }
 .btn-link { background: none; border: 0; color: var(--lamp); cursor: pointer; font-size: var(--fs-md); padding: 2px 0; text-align: left; }
 .btn-link:hover { text-decoration: underline; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

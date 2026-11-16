@@ -1,0 +1,8 @@
+/* Home screen: the canvas is the picture; the mirror beside it is the text for assistive tech. */
+.home-screen { position: absolute; inset: 0; overflow: hidden; background: var(--bezel); outline: none; }
+.home-screen:focus-visible { box-shadow: none; } /* the yellow cursor bar on the canvas is the focus indicator */
+.home-screen.is-pointing { cursor: pointer; }
+/* Effect off: shown directly, 4:3, centred on the bezel, glyph pixels kept square. */
+.home-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: contain; image-rendering: pixelated; }
+/* Effect on: only the effect's source. Out of view like the hidden <video>, never display:none. */
+.home-canvas.is-source { inset: auto; top: 0; left: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }

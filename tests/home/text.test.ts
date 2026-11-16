@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clip, fit, formatDate, formatDuration, formatResolution, marquee, wrap } from "../../renderer/utils/home/text";
+import { clip, clipWords, fit, formatDate, formatDuration, formatResolution, marquee, wrap } from "../../renderer/utils/home/text";
 
 describe("fit and clip", () => {
   it("upper-cases, pads and truncates", () => {
@@ -52,5 +52,16 @@ describe("wrap", () => {
   it("wraps on words and splits long words", () => {
     expect(wrap("one two three four", 9)).toEqual(["one two", "three", "four"]);
     expect(wrap("abcdefghij", 4)).toEqual(["abcd", "efgh", "ij"]);
+  });
+});
+
+describe("clipWords", () => {
+  it("backs a cut up to a word boundary when that keeps half the cells", () => {
+    expect(clipWords("Third-generation dub", 18)).toBe("THIRD-GENERATION");
+    expect(clipWords("The lord of the rings", 18)).toBe("THE LORD OF THE");
+    expect(clipWords("Six-hour EP", 18)).toBe("SIX-HOUR EP");
+    expect(clipWords("ab cdefghijklmnop", 10)).toBe("AB CDEFGHI");
+    expect(clipWords("one two", 4)).toBe("ONE");
+    expect(clipWords("anything", 0)).toBe("");
   });
 });
