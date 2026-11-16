@@ -150,3 +150,20 @@ Work happens on a new branch `feat/home-screen` off the current one. Wave-1 buil
 
 ## Not in this session
 Thumbnails / tape-shelf view, online update check, search, per-folder sort options.
+
+## As built
+
+Where the code differs from the plan above:
+
+- **Title bars** stay navy in every state; the focused zone's label is yellow. Yellow bars mark only the cursor row (`drawTitleBar` in `layoutRows.ts`).
+- **Lower columns** split 19 | 1 | 16 cells (TV preset | gutter | updates), not the sketch's proportions (`layout.ts`).
+- **Credits**: the bar reads `CREDITS` with `V<version>` and the author sits below it. Third-party names are not a separate block: they page with the updates under `THANKS TO` (`model.ts`, `layout.ts`).
+- **Standby marker**: with the effect off, the preset that comes back is marked `>` and the screen reader text says it "comes back when the effect is turned on" (`model.ts`, `HomeMirror.tsx`).
+- **Timers with the effect off**: the spec says "no timers". `useHomePaint` still runs the minute clock and, while the marquee or updates paging moves, a 125 ms repaint. Only the GL work is skipped.
+- **Effect failure on the home screen**: if the effect cannot start there, the screen falls back to the flat canvas for that visit, with one toast. The saved effect setting is left alone (`HomeScreen.tsx`).
+- **Hook split**: painting lives in `useHomePaint`, separate from `useHomeMenu` (rows, cursor, actions).
+- **Library opens**: the queue is the item's own subfolder only (same `dir`, name order, windowed to `MAX_QUEUE`), not the whole folder (`libraryIpc.ts`).
+- **Nesting**: a folder inside, containing or equal to a registered folder is refused, and so is the filesystem root (`folders.ts`). The cap is 32 folders.
+- **Metadata cache**: keyed by path and validated by size and mtime, not keyed by all three. It is saved when the probe queue drains, and at most every 30 s while it runs (`metaQueue.ts`).
+- **Rate limits** not in the plan: a manual rescan is ignored within 2 s of the last, and the focus or `library:get` fallback within 5 s (`service.ts`).
+- **Missing folders** stay in the list as `MISSING` in red, and their cached metadata is kept (`libraryRows.ts`, `service.ts`, `metaQueue.ts`).

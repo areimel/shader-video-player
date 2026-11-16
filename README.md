@@ -22,6 +22,8 @@ Built on Electron, React and WebGL2. Linux (Wayland/X11) is the supported platfo
 - Play queue: open or drop several files (Ctrl+Shift+O, or Shift+drop, adds to the queue), next/previous, auto-advance, and loop off / all / one.
 - Top bar with the file name and queue position. Ctrl+W or the top-bar back button returns to the home screen.
 - End screen when the queue finishes: Replay, Play queue again, or Back to home.
+- Home screen, drawn through the active effect: a TV-guide style video library (recently played, then your folders), a TV preset picker that is the same setting as the effects panel, and the latest updates.
+- Video library: add folders you choose (Add library folder, or drop a folder on the home screen). Videos are listed with their length and resolution, and the folders are watched for changes.
 - Screenshots (`S` or Ctrl+Shift+S) save the current frame, with the active effect applied, as a PNG.
 - Subtitles: embedded tracks plus external `.srt`, `.vtt`, `.ass` files (a file named like the video is picked up automatically). Subtitles are drawn above the effect so they stay sharp, with a text size control and a timing delay.
 - Shortcut overlay: press `?` for the full list of keys.
