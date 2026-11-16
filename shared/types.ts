@@ -133,6 +133,21 @@ export interface PlayerBridge {
   onError(cb: (message: string) => void): () => void;
   /** Native menu commands. Unknown ids are ignored by the renderer helper. */
   onCommand(cb: (id: CommandId) => void): () => void;
+  /** The library index (folders and items). Also triggers a rescan of unwatched folders. */
+  getLibrary(): Promise<LibrarySnapshot>;
+  /** Opens a folder picker in the main process and registers the choice; null when cancelled. */
+  addLibraryFolder(): Promise<LibrarySnapshot | null>;
+  /** Registers dropped directories (paths resolved in the preload; files are ignored). */
+  addLibraryDropped(files: File[]): Promise<LibrarySnapshot>;
+  removeLibraryFolder(folderId: string): Promise<LibrarySnapshot>;
+  /** Rescans every folder (rate-limited in the main process). */
+  rescanLibrary(): void;
+  /** Opens an item with the videos in the same directory as the queue. */
+  openLibraryItem(itemId: string): Promise<OpenResult>;
+  /** Full snapshots whenever folders, items or the scanning flag change. */
+  onLibrary(cb: (s: LibrarySnapshot) => void): () => void;
+  /** Metadata arriving from background probes, batched. Does not change the snapshot revision. */
+  onLibraryMeta(cb: (p: LibraryMetaPatch[]) => void): () => void;
   /** process.platform of the host. */
   platform: string;
   ready(): void;

@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
 import { isCommandId } from "../shared/commands";
-import type { PlayerBridge, PlaybackPlan, QueueItem } from "../shared/types";
+import type { LibraryMetaPatch, LibrarySnapshot, PlayerBridge, PlaybackPlan, QueueItem } from "../shared/types";
 
 function listen<T>(channel: string, cb: (v: T) => void): () => void {
   const handler = (_e: unknown, v: T) => cb(v);
@@ -46,6 +46,14 @@ const bridge: PlayerBridge = {
   onQueue: (cb) => listen<{ queue: QueueItem[]; index: number }>("media:queue", (v) => cb(v.queue, v.index)),
   onError: (cb) => listen<string>("media:error", cb),
   onCommand: (cb) => listen<unknown>("menu:command", (id) => { if (isCommandId(id)) cb(id); }),
+  getLibrary: () => ipcRenderer.invoke("library:get"),
+  addLibraryFolder: () => ipcRenderer.invoke("library:add-folder"),
+  addLibraryDropped: (files) => ipcRenderer.invoke("library:add-dropped", droppedPaths(files)),
+  removeLibraryFolder: (id) => ipcRenderer.invoke("library:remove-folder", id),
+  rescanLibrary: () => ipcRenderer.send("library:rescan"),
+  openLibraryItem: (id) => ipcRenderer.invoke("library:open", id),
+  onLibrary: (cb) => listen<LibrarySnapshot>("library:changed", cb),
+  onLibraryMeta: (cb) => listen<LibraryMetaPatch[]>("library:meta", cb),
   platform: process.platform,
   ready: () => ipcRenderer.send("app:ready"),
 };

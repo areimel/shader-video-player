@@ -7,6 +7,7 @@ import { setPreventSleep } from "./powerSave";
 import { clearQueue, commitQueue, isQueued } from "./queue";
 import { getRecents, isRecent } from "./recents";
 import { openSelection, queueSelection } from "./selection";
+import { registerLibraryIpc } from "./library/libraryIpc";
 import { registerSubtitleIpc } from "./subtitleIpc";
 import { registerScreenshotIpc } from "./screenshot";
 import { getWindow } from "./window";
@@ -42,6 +43,7 @@ async function showQueueDialog(): Promise<QueueItem[]> {
 export function registerIpc(): void {
   registerSubtitleIpc();
   registerScreenshotIpc();
+  registerLibraryIpc();
   ipcMain.handle("media:open-dialog", () => showOpenDialog());
   ipcMain.handle("media:open-dropped", (_e, paths: unknown) => openSelection(paths));
   ipcMain.handle("media:queue-dialog", () => showQueueDialog());

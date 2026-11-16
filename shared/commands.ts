@@ -24,6 +24,7 @@ export const GROUP_ORDER: readonly CommandGroup[] = ["File", "Playback", "Subtit
 export const COMMANDS = [
   { id: "open", label: "Open…", group: "File", accelerator: "CmdOrCtrl+O" },
   { id: "addToQueue", label: "Add to Queue…", group: "File", accelerator: "CmdOrCtrl+Shift+O" },
+  { id: "addFolder", label: "Add library folder…", group: "File" },
   { id: "close", label: "Close", group: "File", accelerator: "CmdOrCtrl+W" },
   { id: "screenshot", label: "Screenshot", group: "File", keys: ["s"], accelerator: "CmdOrCtrl+Shift+S" },
 

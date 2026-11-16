@@ -2,8 +2,9 @@ import { spawn, type ChildProcess } from "node:child_process";
 
 const tracked = new Set<ChildProcess>();
 
-export function spawnTracked(cmd: string, args: string[]): ChildProcess {
-  const child = spawn(cmd, args, { stdio: ["ignore", "ignore", "pipe"] });
+/** `stdout: true` pipes stdout for callers that read the output (library metadata probes). */
+export function spawnTracked(cmd: string, args: string[], opts: { stdout?: boolean } = {}): ChildProcess {
+  const child = spawn(cmd, args, { stdio: ["ignore", opts.stdout ? "pipe" : "ignore", "pipe"] });
   tracked.add(child);
   child.on("exit", () => tracked.delete(child));
   return child;

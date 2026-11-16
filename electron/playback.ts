@@ -59,6 +59,7 @@ export async function openMedia(path: string): Promise<PlaybackPlan> {
   cancelSubtitleExtraction();
   disposeSession();
   info = probed;
+  notifyOpenState();
   addRecent(probed.path);
   const mime = nativeMime(probed);
   if (!mime) {
@@ -83,6 +84,11 @@ export function subtitleFor(ordinal: number, offsetSec: number): Promise<string>
   return extractSubtitle(info.path, ordinal, offsetSec);
 }
 
+// Lets the library pause background probing while a video is open, without importing the library here.
+const openStateListeners: Array<(open: boolean) => void> = [];
+export function onOpenStateChanged(cb: (open: boolean) => void): void { openStateListeners.push(cb); }
+const notifyOpenState = () => { for (const l of openStateListeners) l(info !== null); };
+
 export function currentVideoPath(): string | null {
   return info?.path ?? null;
 }
@@ -93,4 +99,5 @@ export function closeMedia(): void {
   disposeSession();
   clearAllowed();
   info = null;
+  notifyOpenState();
 }
