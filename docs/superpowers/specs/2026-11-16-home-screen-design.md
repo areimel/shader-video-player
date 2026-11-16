@@ -159,7 +159,7 @@ Where the code differs from the plan above:
 - **Lower columns** split 19 | 1 | 16 cells (TV preset | gutter | updates), not the sketch's proportions (`layout.ts`).
 - **Credits**: the bar reads `CREDITS` with `V<version>` and the author sits below it. Third-party names are not a separate block: they page with the updates under `THANKS TO` (`model.ts`, `layout.ts`).
 - **Standby marker**: with the effect off, the preset that comes back is marked `>` and the screen reader text says it "comes back when the effect is turned on" (`model.ts`, `HomeMirror.tsx`).
-- **Timers with the effect off**: the spec says "no timers". `useHomePaint` still runs the minute clock and, while the marquee or updates paging moves, a 125 ms repaint. Only the GL work is skipped.
+- **Timers with the effect off**: the spec says "no timers". `useHomePaint` still runs the minute clock and, while the window is visible and focused, one timeout set for the next marquee step or updates page turn. Only the GL work is skipped.
 - **Effect failure on the home screen**: if the effect cannot start there, the screen falls back to the flat canvas for that visit, with one toast. The saved effect setting is left alone (`HomeScreen.tsx`).
 - **Hook split**: painting lives in `useHomePaint`, separate from `useHomeMenu` (rows, cursor, actions).
 - **Library opens**: the queue is the item's own subfolder only (same `dir`, name order, windowed to `MAX_QUEUE`), not the whole folder (`libraryIpc.ts`).
