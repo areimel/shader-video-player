@@ -12,6 +12,11 @@ Fabrice Bellard.
 
 This project is based on babu-video-player, MIT licensed, Copyright Babu Studios.
 
+## Hash without Sine
+
+`renderer/shader/glsl/common/noise.glsl` contains the `hash12` and `hash32` functions from "Hash without Sine"
+by Dave Hoskins, MIT licensed.
+
 ## Electron, Chromium, React
 
 Electron and Chromium are distributed under the MIT and BSD-style licenses; their notices ship in the app

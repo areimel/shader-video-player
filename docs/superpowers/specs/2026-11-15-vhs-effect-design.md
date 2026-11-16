@@ -457,3 +457,19 @@ The default configuration (composite, TV off) runs frame, tapeH, tapeV, signalEn
 - Generation loss narrows bandwidth by the cascade formula for 3rd-order filters, not by 1/√n.
 - In 480-row mode the two fields are interleaved rows with separate time-base errors (combing on motion).
 - Dropouts are seeded per render (the simulated tape runs at the display's field rate), not locked to the video frame.
+
+## Changes after review
+
+The code is the reference where it differs from the contract above. What changed during implementation and review:
+
+- **One engine change after all:** `uTime` is now the media position in both playback modes. A restarted transcode stream has timestamps from 0, so `EffectRenderer` adds the plan's start offset (`mediaPosition` in `gl/renderPolicy.ts`); without it the OSD counter and clock reset on every seek.
+- **Seeds:** the VHS passes no longer use `uFrame % 1024` (a 17-second loop at 60 Hz, visible as recurring dropouts). `renderSeed*` in `vhs/glsl/tape-noise.glsl` hashes the render counter instead.
+- **Subcarrier phase** in 480-row mode follows field lines (`vhs/glsl/tape-phase.glsl`), so the composite output crawls instead of showing a static two-row checkerboard. The shared decoder takes the phase line as an argument; CRT passes its row, unchanged.
+- **Chroma delay** is clamped in `derive.ts` so the delayed Gaussian stays inside tapeH's 33 taps (`|delay| + 2.5σ ≤ 16`).
+- **Camcorder stamp** is drawn over letterbox and pillarbox bars, and `osdDotW` shrinks on narrow (portrait) tape rasters so the date line fits.
+- **`tapeLines` 240** is one tape row per field line; nothing alternates between fields (C1's "one field per render" note overpromised).
+- **Shared names** differ from C3's proposals: `areaSample`, `compositeEncode`, `compositeAccumulate` / `compositeLumaPath` / `compositeDecodeYiq`, `tubeDisplay`, `tubePasses(source, { rasterSize, enabled })`, plus `glsl/common/filter-radius.glsl`.
+- **Luma noise** figures are before the enhancer; default sharpening raises the visible noise by about 1.33×.
+- **`precision highp int`** is required in every pass that divides or takes `%` of ints (Mesa's AMD compiler crashed on mediump int division).
+- **Presets:** `rental` and `ep` were retuned against real footage (see `presets.ts`).
+- **Not done:** CRT's `noise3` and VHS's `gaussNoise3` stay separate because they differ in the last digits of one constant and sharing would change CRT output; the hidden TV "Static noise" parameter keeps the render loop at display rate even with the TV stage off.
