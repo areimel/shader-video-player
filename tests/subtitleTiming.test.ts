@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SUB_DELAY_STEP, SUB_SIZES, activeCues, stepDelay } from "../renderer/utils/subtitleTiming";
+import { SUB_DELAY_STEP, SUB_SIZES, activeCues, formatDelay, stepDelay, untilNextChange } from "../renderer/utils/subtitleTiming";
 
 const cues = [
   { start: 1, end: 3, text: "a" },
@@ -54,5 +54,25 @@ describe("SUB_SIZES", () => {
     expect(SUB_SIZES.map((s) => s.id)).toEqual(["s", "m", "l", "xl"]);
     const scales = SUB_SIZES.map((s) => s.scale);
     expect([...scales].sort((a, b) => a - b)).toEqual(scales);
+  });
+});
+
+describe("formatDelay", () => {
+  it("signs and rounds", () => {
+    expect(formatDelay(0.3)).toBe("+0.3 s");
+    expect(formatDelay(-1.25)).toBe("-1.2 s");
+    expect(formatDelay(0)).toBe("0.0 s");
+    expect(formatDelay(-0.04)).toBe("0.0 s");
+  });
+});
+
+describe("untilNextChange", () => {
+  it("finds the next start or end", () => {
+    expect(untilNextChange(cues, 0, 0)).toBe(1);
+    expect(untilNextChange(cues, 1.5, 0)).toBe(1.5);
+    expect(untilNextChange(cues, 5, 0)).toBeNull();
+  });
+  it("accounts for the delay", () => {
+    expect(untilNextChange(cues, 1, 0.5)).toBe(0.5);
   });
 });

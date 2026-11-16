@@ -28,15 +28,20 @@ electron/                 main process
   protocol.ts allowlist.ts             svp-media:// (file + stream), the one servable file
   playback.ts selection.ts queue.ts    open/restart with a generation counter; queue allow-set
   devCapture.ts                        screenshot harness (dev only)
+  screenshot.ts pngName.ts             save-PNG dialog and IPC; validates the PNG and file name
   media/                               probe, formats, ffmpegArgs, session (transcode),
                                        subtitles, externalSubtitles, processes, binaries
 shared/                   types.ts (PlayerBridge IPC contract), subtitleFiles.ts, superseded.ts
+  commands.ts             every command: id, label, group, keys, accelerator (single source)
 renderer/
   App.tsx                 thin composition; keep it that way
   components/             Controls, VideoView, ShaderCanvas, SubtitleOverlay, QueuePanel, ...
-  components/common/      Slider, Dropdown, IconButton, Icon, Toast
-  components/effects/     EffectsPanel, PresetPicker, ParamGroup, ParamControl, Switch
+  components/common/      Button, Panel (+PanelHeader), Kbd, Segmented, Switch, Slider, Dropdown,
+                          IconButton, Icon, Toast
+  components/effects/     EffectsPanel, PresetPicker, ParamGroup, ParamControl
+  styles/tokens.css       colour, type, spacing, radius, layer and focus tokens
   hooks/                  usePlaybackSource, usePlayQueue, usePlayerState, usePlayerShortcuts,
+                          useAppCommands (command id → handler), useDismiss, useScreenshot,
                           useSubtitles, useEffectSettings, useEffectChain, ...
   utils/                  queue (reducer), effectSettings (reducer), effectStorage, cueText, step
   shader/gl/              context, program, shaderError, target, quad, includes, commonChunks,
@@ -74,6 +79,9 @@ scripts/                  dev.mjs, build-electron.mjs, check-shaders.mjs (+ -mai
 - **Integer maths:** a pass that uses integer division or `%` (the OSD chunks do) declares `precision highp int;`. `mediump` int division crashed Mesa's AMD shader compiler and killed the GPU process.
 - **Float targets:** an effect that stores signed or >1 values sets `requiresFloat`; it then refuses to start on a GPU without float render targets instead of rendering garbage.
 - **Shader licensing:** this repo is MIT. Do not paste code from GPL/LGPL shaders (CRT-Royale, CRT-Guest-Advanced, CRT-Geom, Easymode, zfast, Themaister/NTSC-Adaptive, blargg, Patchy NTSC). Permissive sources may be adapted with a credit in the file and in `THIRD_PARTY_NOTICES.md`.
+- **Commands are declared once** in `shared/commands.ts` (id, label, group, keys, accelerator). Keyboard shortcuts, the native menu, tooltips (`hint()`) and the `?` overlay are generated from it; add a handler in `renderer/hooks/useAppCommands.ts`. Never hard-code a shortcut hint.
+- **Styling uses tokens** from `renderer/styles/tokens.css` (colour, type scale, spacing, radii, layers); no raw hex/rgba outside it. Shared UI primitives live in `renderer/components/common/` (Button, Panel/PanelHeader, Kbd, Segmented, Switch, Slider, Dropdown, IconButton, Toast), and `useDismiss` handles Escape and outside-click for every overlay.
+- **Fonts:** Archivo is bundled via `@fontsource-variable/archivo` (imported in `renderer/main.tsx`), so the UI works offline. Don't load fonts from a CDN.
 - **Effect off means off.** Don't add per-frame work to the bypass path.
 - **DRY:** reuse `renderer/components/common/*` and existing hooks before writing new ones; extract a shared piece once something appears three times. Pure state logic goes in a reducer-style module under `utils/` with tests; hooks stay thin.
 - **File size:** keep files under ~300 lines; split by responsibility when they grow.

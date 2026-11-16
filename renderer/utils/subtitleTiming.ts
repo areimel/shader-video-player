@@ -30,3 +30,23 @@ export const SUB_SIZES = [
 ] as const;
 
 export type SubSize = typeof SUB_SIZES[number]["id"];
+
+/** "+0.3 s" / "-1.2 s" / "0.0 s", for the menu and toasts. */
+export function formatDelay(sec: number): string {
+  const v = Math.round(sec * 10) / 10 + 0;
+  return `${v > 0 ? "+" : ""}${v.toFixed(1)} s`;
+}
+
+/**
+ * Seconds of media time until the active cue set next changes after `timeSec` (a cue starting or
+ * ending once the delay is applied), or null if it never will.
+ */
+export function untilNextChange(cues: readonly TimedCue[], timeSec: number, delaySec: number): number | null {
+  const t = timeSec - delaySec;
+  let best = Infinity;
+  for (const c of cues) {
+    if (c.start > t && c.start < best) best = c.start;
+    if (c.end > t && c.end < best) best = c.end;
+  }
+  return best === Infinity ? null : best - t;
+}

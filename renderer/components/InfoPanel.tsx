@@ -1,5 +1,7 @@
 import type { PlaybackPlan } from "../types/player";
 import { formatBitrate, formatBytes, formatTime } from "../utils/format";
+import { Button } from "./common/Button";
+import { Panel, PanelHeader } from "./common/Panel";
 
 interface Props {
   plan: PlaybackPlan;
@@ -22,17 +24,15 @@ export function InfoPanel({ plan, onClose }: Props) {
     ["Playback", engine],
   ];
   return (
-    <div className="info-panel" onDoubleClick={(e) => e.stopPropagation()}>
-      <div className="info-head">
-        <strong>File info</strong>
-        <button type="button" className="link-btn" onClick={onClose}>Close</button>
-      </div>
+    <Panel className="info-panel" role="dialog" aria-label="File info" onDismiss={onClose}
+      onDoubleClick={(e) => e.stopPropagation()}>
+      <PanelHeader title="File info">
+        <Button variant="link" onClick={onClose}>Close</Button>
+      </PanelHeader>
       <dl>
         {rows.map(([k, v]) => (<div key={k}><dt>{k}</dt><dd>{v}</dd></div>))}
       </dl>
-      <button type="button" className="primary-btn" onClick={() => window.player.reveal(i.path)}>
-        Show in folder
-      </button>
-    </div>
+      <Button onClick={() => window.player.reveal(i.path)}>Show in folder</Button>
+    </Panel>
   );
 }

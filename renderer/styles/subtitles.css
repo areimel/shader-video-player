@@ -2,7 +2,7 @@
   display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
   padding: 0 5% 5cqh; transition: padding-bottom var(--dur) var(--ease); }
 .subtitle-overlay.controls-up { padding-bottom: calc(5cqh + var(--controls-h) - var(--sp-2) - 2px); }
-.subtitle-box { max-width: 100%; text-align: center; font-size: clamp(14px, 4.4cqh, 72px); line-height: 1.25;
+.subtitle-box { max-width: 100%; text-align: center; font-size: calc(clamp(14px, 4.4cqh, 72px) * var(--sub-scale, 1)); line-height: 1.25;
   color: var(--phosphor); font-weight: 500; white-space: pre-wrap; overflow-wrap: anywhere;
   text-shadow: 0 0 0.12em black, 0 0 0.12em black, 0.04em 0.04em 0.08em black, -0.04em -0.04em 0.08em black,
     0.04em -0.04em 0.08em black, -0.04em 0.04em 0.08em black; }

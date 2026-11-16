@@ -15,12 +15,12 @@ const extOf = (n: string) => (n.split(".").pop() ?? "").slice(0, 4).toUpperCase(
 export function RecentFiles({ items, onOpen }: { items: RecentFile[]; onOpen: (path: string) => void }) {
   if (items.length === 0) return null;
   return (
-    <section className="recents">
-      <h2>Recent</h2>
+    <section className="recents" aria-label="Recent files">
+      <h2>Recent files</h2>
       <ul>
         {items.slice(0, 5).map((r) => (
           <li key={r.path}>
-            <button type="button" className="recent-item" title={r.path} onClick={() => onOpen(r.path)}>
+            <button type="button" className="list-row recent-item" title={r.path} onClick={() => onOpen(r.path)}>
               <span className="recent-badge">{extOf(r.name)}</span>
               <span className="recent-name">{r.name}</span>
               <span className="recent-time">{ago(r.openedAt)}</span>

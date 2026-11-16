@@ -2,6 +2,4 @@
 .dropdown-menu { position: absolute; bottom: 40px; right: 0; margin: 0; padding: var(--sp-1); list-style: none;
   background: var(--panel-raised); border-radius: var(--r-ctl); min-width: 130px; max-height: 260px; overflow-y: auto;
   box-shadow: 0 6px 24px color-mix(in srgb, var(--bezel-deep) 80%, transparent); }
-.dropdown-menu li { padding: 6px 10px; border-radius: var(--r-ctl); cursor: pointer; white-space: nowrap; }
-.dropdown-menu li:hover { background: var(--hover); }
-.dropdown-menu li.is-selected { color: var(--lamp); }
+.dropdown-menu .list-row { white-space: nowrap; }

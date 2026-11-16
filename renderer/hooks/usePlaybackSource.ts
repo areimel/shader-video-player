@@ -8,7 +8,7 @@ type Notify = (kind: ToastKind, msg: string) => void;
 /** Called whenever the user opens something new, with the queue that selection forms. */
 type OnQueue = (items: QueueItem[], index?: number) => void;
 
-const single = (plan: PlaybackPlan): QueueItem[] => [{ path: plan.info.path, name: plan.info.name }];
+export const single = (plan: PlaybackPlan): QueueItem[] => [{ path: plan.info.path, name: plan.info.name }];
 
 export function usePlaybackSource(notify: Notify, onQueue: OnQueue) {
   const [plan, setPlan] = useState<PlaybackPlan | null>(null);

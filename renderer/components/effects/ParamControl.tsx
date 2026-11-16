@@ -1,6 +1,7 @@
 import { Dropdown } from "../common/Dropdown";
+import { Segmented } from "../common/Segmented";
 import { Slider } from "../common/Slider";
-import { Switch } from "./Switch";
+import { Switch } from "../common/Switch";
 import type { ParamSpec } from "../../shader/effects/types";
 import { stepDecimals } from "../../utils/step";
 
@@ -31,12 +32,8 @@ export function ParamControl({ spec, value, onChange, onReset }: Props) {
         <Slider label={spec.label} value={value} min={spec.min ?? 0} max={spec.max ?? 1} step={spec.step} onChange={onChange} />
       )}
       {spec.kind === "select" && options.length <= SEGMENTED_MAX && (
-        <div className="fx-segmented" role="radiogroup" aria-label={spec.label}>
-          {options.map((o, i) => (
-            <button key={o} type="button" role="radio" aria-checked={i === value}
-              className={i === value ? "is-selected" : ""} onClick={() => onChange(i)}>{o}</button>
-          ))}
-        </div>
+        <Segmented label={spec.label} value={value} onChange={onChange}
+          options={options.map((label, i) => ({ value: i, label }))} />
       )}
       {spec.kind === "select" && options.length > SEGMENTED_MAX && (
         <Dropdown className="fx-select" label={spec.label} selected={value} buttonText={options[value] ?? ""}

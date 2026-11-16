@@ -7,42 +7,50 @@ interface Props {
   /** Defaults to 0. */
   min?: number;
   max: number;
-  /** Snaps pointer values and enables arrow-key/Home/End control; omitted = continuous and pointer-only. */
+  /** Snaps pointer and keyboard values; omitted = continuous. */
   step?: number;
+  /** Arrow-key increment. Defaults to `step`, else 1% of the range. PageUp/PageDown use 10x. */
+  keyStep?: number;
   buffered?: number;
   label: string;
   className?: string;
   onChange: (v: number) => void;
   tooltip?: (v: number) => string;
+  /** Human-readable value for assistive tech (aria-valuetext). */
+  valueText?: (v: number) => string;
 }
 
-export function Slider({ value, min = 0, max, step, buffered = 0, label, className = "", onChange, tooltip }: Props) {
+export function Slider({ value, min = 0, max, step, keyStep, buffered = 0, label, className = "", onChange, tooltip, valueText }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<{ x: number; v: number } | null>(null);
   const dragging = useRef(false);
 
+  const fit = (v: number) => (step ? snapToStep(v, min, max, step) : clamp(Number(v.toFixed(6)), min, max));
   const valueAt = (e: PointerEvent): { x: number; v: number } => {
     const r = ref.current!.getBoundingClientRect();
     const x = clamp(e.clientX - r.left, 0, r.width);
-    const raw = min + (r.width ? (x / r.width) * (max - min) : 0);
-    return { x, v: step ? snapToStep(raw, min, max, step) : raw };
+    return { x, v: fit(min + (r.width ? (x / r.width) * (max - min) : 0)) };
   };
   const endDrag = () => { dragging.current = false; };
   const pct = (v: number) => (max > min ? clamp(((v - min) / (max - min)) * 100, 0, 100) : 0);
   const onKeyDown = (e: KeyboardEvent) => {
-    if (!step) return;
-    const to = { ArrowLeft: value - step, ArrowDown: value - step, ArrowRight: value + step, ArrowUp: value + step, Home: min, End: max }[e.key];
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const k = keyStep ?? step ?? (max - min) / 100;
+    const to = {
+      ArrowLeft: value - k, ArrowDown: value - k, ArrowRight: value + k, ArrowUp: value + k,
+      PageDown: value - k * 10, PageUp: value + k * 10, Home: min, End: max,
+    }[e.key];
     if (to === undefined) return;
     e.preventDefault();
     e.stopPropagation(); // keep window-level player shortcuts (arrows seek) out of this
-    onChange(snapToStep(to, min, max, step));
+    onChange(fit(to));
   };
 
   return (
     <div
       ref={ref} className={`slider ${className}`} role="slider" aria-label={label}
-      aria-valuemin={min} aria-valuemax={max} aria-valuenow={value}
-      tabIndex={step ? 0 : undefined} onKeyDown={onKeyDown}
+      aria-valuemin={min} aria-valuemax={max} aria-valuenow={value} aria-valuetext={valueText?.(value)}
+      tabIndex={0} onKeyDown={onKeyDown}
       onPointerDown={(e) => { dragging.current = true; e.currentTarget.setPointerCapture(e.pointerId); onChange(valueAt(e).v); }}
       onPointerMove={(e) => { const p = valueAt(e); setHover(p); if (dragging.current) onChange(p.v); }}
       onPointerUp={endDrag}

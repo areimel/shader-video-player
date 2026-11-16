@@ -26,6 +26,8 @@ function droppedPaths(files: unknown): string[] {
 const bridge: PlayerBridge = {
   openDialog: () => ipcRenderer.invoke("media:open-dialog"),
   openDropped: (files) => ipcRenderer.invoke("media:open-dropped", droppedPaths(files)),
+  addToQueueDialog: () => ipcRenderer.invoke("media:queue-dialog"),
+  queueDropped: (files) => ipcRenderer.invoke("media:queue-dropped", droppedPaths(files)),
   openQueued: (p) => ipcRenderer.invoke("media:open-queued", p),
   openRecent: (p) => ipcRenderer.invoke("media:open-recent", p),
   restart: (s, a) => ipcRenderer.invoke("media:restart", s, a),
@@ -36,6 +38,7 @@ const bridge: PlayerBridge = {
   loadDroppedSubtitle: (file) => ipcRenderer.invoke("subtitle:load-dropped", droppedPaths([file])[0] ?? ""),
   getExternalSubtitle: (id, off) => ipcRenderer.invoke("subtitle:external", id, off),
   getRecents: () => ipcRenderer.invoke("media:recents"),
+  saveScreenshot: (png, name) => ipcRenderer.invoke("screenshot:save", png, name),
   reveal: (p) => ipcRenderer.send("media:reveal", p),
   setPlaying: (on) => ipcRenderer.send("media:playing", on),
   closeMedia: () => ipcRenderer.send("media:close"),

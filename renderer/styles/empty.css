@@ -1,30 +1,49 @@
 .empty { position: relative; height: 100%; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; background: var(--bezel); padding: 48px var(--sp-5) var(--sp-5); overflow: hidden; }
-.empty-glow { position: absolute; top: -20%; left: 50%; width: 700px; height: 500px; transform: translateX(-50%);
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--lamp) 14%, transparent), transparent); pointer-events: none; }
-.empty-main { position: relative; display: flex; flex-direction: column; align-items: center; width: min(460px, 100%); }
-.logo { filter: drop-shadow(0 10px 28px color-mix(in srgb, var(--lamp) 30%, transparent)); }
-.empty h1 { font-size: var(--fs-2xl); font-weight: 650; font-stretch: calc(var(--wdth-expanded) * 1%);
-  font-variation-settings: "wdth" var(--wdth-expanded); letter-spacing: -0.01em; margin: 18px 0 var(--sp-1); }
-.tagline { color: var(--dim); margin: 0 0 26px; font-size: 14px; }
-.dropzone { width: 100%; display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); padding: 28px 20px;
-  border: 1.5px dashed var(--line); border-radius: var(--r-panel); background: var(--hover);
-  cursor: pointer; transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease); outline: none; }
-.dropzone:hover, .dropzone:focus-visible { border-color: var(--lamp); background: var(--selected); }
-.dropzone-title { font-size: var(--fs-lg); font-weight: 550; }
-.dropzone-sub { color: var(--dim); font-size: var(--fs-sm); }
-.dropzone .primary-btn { display: inline-flex; align-items: center; gap: 10px; padding: 9px 18px; font-weight: 600; }
-kbd { font: inherit; font-size: var(--fs-xs); padding: 1px 6px; border-radius: var(--r-ctl); background: var(--line); }
-.formats { margin-top: 10px; color: var(--dim); font-size: var(--fs-xs); opacity: 0.75; }
-.recents { width: 100%; margin-top: 28px; }
-.recents h2 { font-size: var(--fs-xs); color: var(--dim); text-transform: uppercase; letter-spacing: 0.09em; margin: 0 0 var(--sp-2) var(--sp-1);
-  font-weight: 600; font-stretch: calc(var(--wdth-expanded) * 1%); font-variation-settings: "wdth" var(--wdth-expanded); }
+  justify-content: center; background: var(--bezel); padding: var(--sp-6) var(--sp-5) var(--sp-4); overflow: auto; }
+.empty-main { display: flex; flex-direction: column; align-items: center; gap: var(--sp-5); width: min(100%, max(560px, 30vw)); margin: auto 0 0; }
+.empty > .help-note { margin-top: auto; padding-top: var(--sp-5); }
+
+/* The monitor: a bezel holding the tube (drop target) and a nameplate strip with the standby lamp. */
+.monitor { width: 100%; background: var(--panel); border-radius: var(--r-panel); padding: var(--sp-3) var(--sp-3) 0; }
+.tube { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-4);
+  aspect-ratio: 16 / 10; max-height: 52vh; width: 100%; padding: var(--sp-5); text-align: center; cursor: pointer; overflow: hidden;
+  border-radius: 28px / 22px; background: var(--bezel-deep);
+  /* inner curvature: dark rim, faint scanlines */
+  box-shadow: inset 0 0 60px 8px var(--screen), inset 0 0 0 1px var(--line);
+  transition: box-shadow var(--dur) var(--ease); }
+.tube::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.05;
+  background: repeating-linear-gradient(to bottom, var(--phosphor) 0 1px, transparent 1px 3px); }
+.tube:hover { box-shadow: inset 0 0 60px 8px var(--screen), inset 0 0 0 1px var(--lamp); }
+.tube:focus-visible { box-shadow: inset 0 0 60px 8px var(--screen), inset 0 0 0 2px var(--lamp); }
+.tube > * { position: relative; }
+.tube-title { margin: 0; font-size: 24px; font-weight: 500; }
+.tube-open { display: inline-flex; align-items: center; gap: var(--sp-3); padding: 10px var(--sp-4); }
+.tube-open kbd { background: color-mix(in srgb, var(--lamp-ink) 14%, transparent); color: var(--lamp-ink); }
+.formats { margin: 0; color: var(--dim); font-size: var(--fs-sm); }
+
+.nameplate { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-1); }
+.empty h1 { margin: 0; font-size: var(--fs-lg); font-weight: 600; letter-spacing: 0.01em;
+  font-stretch: calc(var(--wdth-expanded) * 1%); font-variation-settings: "wdth" var(--wdth-expanded); }
+
+/* Standby lamp. The lit state is the default; the animation only warms it up once. */
+.lamp { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--lamp);
+  box-shadow: 0 0 6px 1px var(--lamp), 0 0 18px 3px color-mix(in srgb, var(--lamp) 45%, transparent);
+  animation: lamp-warm 900ms var(--ease) 1; }
+@keyframes lamp-warm {
+  from { background: color-mix(in srgb, var(--lamp) 18%, var(--bezel)); box-shadow: 0 0 0 0 transparent; }
+  60% { background: var(--lamp); box-shadow: 0 0 10px 2px var(--lamp), 0 0 26px 6px color-mix(in srgb, var(--lamp) 55%, transparent); }
+}
+
+kbd { font: inherit; font-size: var(--fs-xs); font-variant-numeric: tabular-nums; padding: 1px 6px; border-radius: var(--r-ctl); background: var(--line); }
+
+.recents { width: 100%; }
+.recents h2 { font-size: var(--fs-sm); color: var(--dim); margin: 0 0 var(--sp-2) 10px; font-weight: 500; }
 .recents ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
-.recent-item { width: 100%; display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) 10px; background: none;
-  border: 0; border-radius: var(--r-panel); color: var(--phosphor); cursor: pointer; font-size: var(--fs-md); text-align: left; }
-.recent-item:hover { background: var(--hover); }
+.recent-item { gap: var(--sp-3); padding: var(--sp-2) 10px; font-size: var(--fs-md); }
 .recent-badge { flex: none; min-width: 40px; text-align: center; padding: var(--sp-1) 0; border-radius: var(--r-ctl); font-size: 10px;
-  font-weight: 700; letter-spacing: 0.04em; color: var(--lamp); background: var(--selected); }
-.recent-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.recent-time { flex: none; color: var(--dim); font-size: var(--fs-xs); }
-.help-note { position: absolute; bottom: 14px; margin: 0; font-size: var(--fs-xs); color: var(--dim); opacity: 0.6; }
+  font-weight: 700; color: var(--lamp); background: var(--selected); }
+.recent-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.recent-time { flex: none; color: var(--dim); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
+.help-note { margin: var(--sp-5) 0 0; flex: none; font-size: var(--fs-xs); color: var(--dim); }
+
+@media (max-height: 520px) { .tube { aspect-ratio: auto; min-height: 160px; padding: var(--sp-4); gap: var(--sp-3); } }
