@@ -11,6 +11,9 @@ set -euo pipefail
 
 REPO="areimel/shader-video-player"
 PACKAGE="shader-video-player"
+TMP_DIR=""  # global: the EXIT trap runs after main() has returned
+
+cleanup() { if [ -n "$TMP_DIR" ]; then rm -rf "$TMP_DIR"; fi; }
 
 say() { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31merror:\033[0m %s\n' "$*" >&2; exit 1; }
@@ -42,8 +45,9 @@ main() {
   [ -n "$sums_url" ] || die "the newest release has no SHA256SUMS file."
 
   local tmp deb
-  tmp="$(mktemp -d)"
-  trap 'rm -rf "$tmp"' EXIT
+  TMP_DIR="$(mktemp -d)"
+  tmp="$TMP_DIR"
+  trap cleanup EXIT
   deb="${deb_url##*/}"
 
   say "Downloading $deb"
