@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ExternalSubtitle, PlaybackPlan } from "../types/player";
 import { isSuperseded } from "../../shared/superseded";
 import { friendlyError } from "../utils/format";
+import { stepDelay as stepDelayValue, type SubSize } from "../utils/subtitleTiming";
+import { loadSubSize, saveSubSize } from "../utils/storage";
 
 export const SUB_OFF = "off";
 export const embeddedChoice = (ordinal: number) => `emb:${ordinal}`;
@@ -17,6 +19,13 @@ export interface SubtitleState {
   adopt: (s: ExternalSubtitle) => void;
   pickFile: () => Promise<void>;
   loadDropped: (file: File) => Promise<void>;
+  /** Seconds the subtitles are shifted later (negative = earlier). Reset to 0 when the track changes. */
+  delay: number;
+  /** Moves the delay by SUB_DELAY_STEP; returns the new value (for a toast). */
+  stepDelay: (dir: 1 | -1) => number;
+  resetDelay: () => void;
+  size: SubSize;
+  setSize: (s: SubSize) => void;
 }
 
 function fetchVtt(choice: string, offset: number): Promise<string> {
@@ -32,6 +41,10 @@ export function useSubtitles(plan: PlaybackPlan | null, onError: (m: string) => 
   const [choice, setChoice] = useState(SUB_OFF);
   const [url, setUrl] = useState<string | null>(null);
   const [external, setExternal] = useState<ExternalSubtitle[]>([]);
+  const [delay, setDelay] = useState(0);
+  const [size, setSizeState] = useState<SubSize>(loadSubSize);
+  const delayRef = useRef(0);
+  delayRef.current = delay;
   const file = plan?.info.path;
   const offset = plan?.startOffset ?? 0;
 
@@ -48,6 +61,8 @@ export function useSubtitles(plan: PlaybackPlan | null, onError: (m: string) => 
     }).catch(() => { /* no siblings offered */ });
     return () => { cancelled = true; };
   }, [file]);
+
+  useEffect(() => { setDelay(0); }, [choice]);
 
   useEffect(() => {
     if (choice === SUB_OFF) { setUrl(null); return; }
@@ -79,5 +94,14 @@ export function useSubtitles(plan: PlaybackPlan | null, onError: (m: string) => 
     try { adopt(await window.player.loadDroppedSubtitle(file)); } catch (e) { onError(friendlyError(e)); }
   }, [adopt, onError]);
 
-  return { choice, setChoice, url, external, adopt, pickFile, loadDropped };
+  const stepDelay = useCallback((dir: 1 | -1) => {
+    const next = stepDelayValue(delayRef.current, dir);
+    delayRef.current = next;
+    setDelay(next);
+    return next;
+  }, []);
+  const resetDelay = useCallback(() => setDelay(0), []);
+  const setSize = useCallback((s: SubSize) => { setSizeState(s); saveSubSize(s); }, []);
+
+  return { choice, setChoice, url, external, adopt, pickFile, loadDropped, delay, stepDelay, resetDelay, size, setSize };
 }

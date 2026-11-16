@@ -1,68 +1,76 @@
-import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
-import { Controls } from "./components/Controls";
-import { EmptyState } from "./components/EmptyState";
-import { InfoPanel } from "./components/InfoPanel";
-import { EffectsPanel } from "./components/effects/EffectsPanel";
-import { ShaderCanvas } from "./components/ShaderCanvas";
-import { VideoView } from "./components/VideoView";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import { PlayerStage } from "./components/PlayerStage";
+import { ShortcutHelp } from "./components/ShortcutHelp";
+import { HomeScreen } from "./components/home/HomeScreen";
 import { ToastHost, useToasts } from "./components/common/Toast";
+import { useAppCommands } from "./hooks/useAppCommands";
 import { useEffectSettings } from "./hooks/useEffectSettings";
 import { useFullscreen } from "./hooks/useFullscreen";
 import { useIdleControls } from "./hooks/useIdleControls";
+import { useLibrary } from "./hooks/useLibrary";
+import { usePanels } from "./hooks/usePanels";
 import { usePlayQueue } from "./hooks/usePlayQueue";
-import { usePlayerShortcuts } from "./hooks/usePlayerShortcuts";
+import { useMenuCommands, usePlayerShortcuts } from "./hooks/usePlayerShortcuts";
 import { usePlayerState } from "./hooks/usePlayerState";
+import { useResumePosition } from "./hooks/useResumePosition";
+import { useScreenshot } from "./hooks/useScreenshot";
+import { useShowRemaining } from "./hooks/useShowRemaining";
 import { useSubtitles } from "./hooks/useSubtitles";
 import { isSubtitlePath } from "../shared/subtitleFiles";
-import { savePosition } from "./utils/storage";
+import { togglePip } from "./utils/pip";
+import { partitionDrop } from "./utils/dropItems";
 
 export function App() {
   const { items, push } = useToasts();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const { plan, initialTime, loading, openDialog, openRecent, openDropped, restartAt, onVideoError, queue } = usePlayQueue(videoRef, push);
   const stageRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef(0);
-  const [showInfo, setShowInfo] = useState(false);
+  const { plan, initialTime, loading, openDialog, openRecent, openDropped, openLibraryItem, restartAt, onVideoError, close, queue } = usePlayQueue(videoRef, push);
+  const library = useLibrary(push);
   const [dragging, setDragging] = useState(false);
   const fx = useEffectSettings();
-  const [showEffects, setShowEffects] = useState(false);
-  const closeEffects = useCallback(() => setShowEffects(false), []);
-  const toggleEffects = useCallback(() => { setShowEffects((v) => !v); setShowInfo(false); }, []);
+  const panels = usePanels();
+  const [remaining, toggleRemaining] = useShowRemaining();
+  const [helpOpen, setHelpOpen] = useState(false);
+  const toggleShortcuts = useCallback(() => setHelpOpen((v) => !v), []);
 
-  audioRef.current = plan?.audioOrdinal ?? 0;
-  const restart = useCallback((t: number) => void restartAt(t, audioRef.current), [restartAt]);
+  const audio = plan?.audioOrdinal ?? 0;
+  const restart = useCallback((t: number) => void restartAt(t, audio), [restartAt, audio]);
   const player = usePlayerState(videoRef, plan, restart);
   const fs = useFullscreen(stageRef);
-  const visible = useIdleControls(!!plan && !player.paused && !showEffects);
+  // The end screen keeps the controls up so the seek bar stays reachable.
+  const visible = useIdleControls(!!plan && !player.paused && !panels.showEffects && !queue.ended);
   const subs = useSubtitles(plan, useCallback((m: string) => push("error", m), [push]));
-
-  usePlayerShortcuts({ enabled: !!plan, player, toggleFullscreen: fs.toggle, toggleEffect: fx.toggle, toggleEffectsPanel: toggleEffects, onNext: queue.multi ? queue.next : undefined, onPrevious: queue.multi ? queue.previous : undefined });
+  const captureRef = useRef<(() => Promise<Blob>) | null>(null);
+  const screenshot = useScreenshot({ videoRef, captureRef, plan, timeSec: player.time, notify: push });
+  const { commands, goHome } = useAppCommands({
+    screenshot, toggleRemaining, toggleShortcuts, videoRef, plan, player, fs, fx, subs, queue, panels, notify: push, closeMedia: close, openDialog: () => void openDialog(),
+    addFolder: library.addFolder,
+  });
+  usePlayerShortcuts(true, commands);
+  useMenuCommands(commands);
+  useResumePosition(plan, player.time);
 
   useEffect(() => { window.player.setPlaying(!!plan && !player.paused); }, [plan, player.paused]);
-  useEffect(() => { setShowInfo(false); if (plan) push("success", `Playing ${plan.info.name}`); }, [plan?.info.path]);
-  // `player.time` still holds the previous file's playhead right after a plan change; save only once it has moved.
-  const timeBase = useRef<{ plan: typeof plan; stale: number }>({ plan, stale: player.time });
-  useEffect(() => {
-    const base = timeBase.current;
-    if (base.plan !== plan) { timeBase.current = { plan, stale: player.time }; return; }
-    if (plan && player.time > 0 && player.time !== base.stale) savePosition(plan.info, player.time);
-  }, [plan, Math.floor(player.time / 3)]);
-
-  const togglePip = () => {
-    const job = document.pictureInPictureElement
-      ? document.exitPictureInPicture()
-      : videoRef.current?.requestPictureInPicture();
-    job?.catch(() => push("error", "Picture in picture isn't available."));
-  };
+  useEffect(() => { panels.closeInfo(); if (plan) push("success", `Playing ${plan.info.name}`); }, [plan?.info.path]);
+  const homeHandlers = useMemo(() => ({
+    openRecent: (p: string) => void openRecent(p), openDialog: () => void openDialog(), openItem: (id: string) => void openLibraryItem(id),
+    addFolder: library.addFolder, removeFolder: library.removeFolder, rescan: library.rescan,
+  }), [openRecent, openDialog, openLibraryItem, library.addFolder, library.removeFolder, library.rescan]);
 
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
     setDragging(false);
-    const f = e.dataTransfer.files[0];
-    // Subtitle branch: a dropped subtitle file while a video is open loads as subtitles.
-    if (f && plan && isSubtitlePath(f.name)) return void subs.loadDropped(f);
     const files = Array.from(e.dataTransfer.files);
-    if (files.length) void openDropped(files);
+    // A dropped subtitle while a video is open loads as subtitles; Shift+drop appends to the queue.
+    if (files[0] && plan && isSubtitlePath(files[0].name)) return void subs.loadDropped(files[0]);
+    if (!plan) { // home screen: folders join the library, video files play
+      const split = partitionDrop(e.dataTransfer.items);
+      library.addDropped(split.folders);
+      files.splice(0, files.length, ...split.files);
+    }
+    if (!files.length) return;
+    if (e.shiftKey) void queue.addDropped(files);
+    else void openDropped(files);
   };
 
   return (
@@ -71,34 +79,21 @@ export function App() {
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)} onDrop={onDrop}
     >
-      <div className="drag-region" />
+      {/* The window has a native frame; the strip only matters over the player, and on the home screen it would eat pointer events. */}
+      {plan && <div className="drag-region" />}
       {plan ? (
-        <>
-          <VideoView
-            videoRef={videoRef} plan={plan} initialTime={initialTime} subtitleUrl={subs.url} controlsVisible={visible} hidden={!!fx.effect}
-            onToggle={player.toggle} onFullscreen={fs.toggle} onError={onVideoError}
-          />
-          <ShaderCanvas
-            videoRef={videoRef} effect={fx.effect} values={fx.values}
-            sourceKey={plan.url} onToggle={player.toggle} onFullscreen={fs.toggle}
-            onError={(e) => { fx.setEffect(null); push("error", e.message.split("\n")[0]); console.error(e); }}
-          />
-          <Controls
-            plan={plan} player={player} visible={visible} fullscreen={fs.active}
-            subs={subs}
-            onAudio={(o) => restartAt(player.time, o)} onFullscreen={fs.toggle}
-            onPip={togglePip}
-            onInfo={() => { setShowInfo(!showInfo); closeEffects(); }}
-            effectsActive={!!fx.effect} onEffects={toggleEffects} queue={queue}
-          />
-          {showInfo && <InfoPanel plan={plan} onClose={() => setShowInfo(false)} />}
-          {showEffects && <EffectsPanel fx={fx} onClose={closeEffects} />}
-        </>
+        <PlayerStage
+          videoRef={videoRef} captureRef={captureRef} plan={plan} initialTime={initialTime} visible={visible} player={player} fullscreen={fs}
+          subs={subs} fx={fx} queue={queue} panels={panels} notify={push} onHome={goHome} onVideoError={onVideoError}
+          onAudio={(o) => restartAt(player.time, o)} onPip={() => togglePip(videoRef.current, push)}
+          remaining={remaining} onToggleRemaining={toggleRemaining}
+        />
       ) : (
-        <EmptyState onOpen={openDialog} onRecent={openRecent} />
+        <HomeScreen fx={fx} library={library.snapshot} handlers={homeHandlers} active={!helpOpen} notify={push} />
       )}
       {loading && <div className="loading" role="status" aria-label="Loading"><div className="spinner" /></div>}
-      {dragging && <div className="drop-overlay">Drop to play</div>}
+      {dragging && <div className="drop-overlay">{plan ? "Drop to play (hold Shift to add to queue)" : "Drop to play, or drop a folder to add it"}</div>}
+      {helpOpen && <ShortcutHelp onClose={() => setHelpOpen(false)} />}
       <ToastHost items={items} />
     </div>
   );

@@ -1,7 +1,7 @@
 {
   "name": "shader-video-player",
   "productName": "Shader Video Player",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Desktop video player with real-time shader effects (CRT, VHS)",
   "main": "dist-electron/main.js",
   "license": "MIT",
@@ -16,6 +16,8 @@
     "check:shaders": "node scripts/check-shaders.mjs"
   },
   "dependencies": {
+    "@fontsource-variable/archivo": "^5.3.0",
+    "@fontsource/press-start-2p": "^5.3.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },

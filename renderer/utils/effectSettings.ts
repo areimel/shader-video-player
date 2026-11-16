@@ -34,8 +34,17 @@ export function healState(effect: EffectDefinition, raw: unknown): EffectState {
   return { presetId: knownPreset ? String(raw.presetId) : CUSTOM, values: resolveValues(effect.params, partial) };
 }
 
+/**
+ * `raw` is null when nothing is stored or the stored text does not parse (effectStorage.read). That is
+ * first run: the first registered effect is on. A stored value that is present but not a record is
+ * corrupt and stays off. A stored record with `active: null` is an explicit off and stays off.
+ */
 export function healSelection(effects: EffectDefinition[], raw: unknown): Selection {
   const known = (v: unknown): string | null => (typeof v === "string" && effects.some((e) => e.id === v) ? v : null);
+  if (raw === null || raw === undefined) {
+    const first = effects[0]?.id ?? null;
+    return { active: first, last: first };
+  }
   if (!isRecord(raw)) return { active: null, last: null };
   const active = known(raw.active);
   return { active, last: active ?? known(raw.last) };

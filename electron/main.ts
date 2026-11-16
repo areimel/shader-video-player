@@ -13,6 +13,7 @@ import { openSelection, pushSelection } from "./selection";
 import { setPreventSleep } from "./powerSave";
 import { registerProtocol, registerScheme } from "./protocol";
 import { setupDevCapture } from "./devCapture";
+import { refreshIfStale, startLibrary, stopLibrary } from "./library/service";
 import { createWindow, getWindow } from "./window";
 
 applyGpuFlags();
@@ -42,6 +43,7 @@ function cliFiles(argv: string[]): string[] {
 }
 
 function shutdown(): void {
+  stopLibrary(); // before killAll: stops watchers and the probe queue, and writes the metadata cache
   closeMedia();
   setPreventSleep(false);
   killAll();
@@ -70,7 +72,11 @@ if (!app.requestSingleInstanceLock()) {
   void app.whenReady().then(() => {
     registerProtocol();
     registerIpc();
-    setupDevCapture(createWindow(() => { rendererReady = false; }));
+    startLibrary();
+    const win = createWindow(() => { rendererReady = false; });
+    // Folders whose watcher failed (or that were missing) are rescanned when the user comes back.
+    win.on("focus", refreshIfStale);
+    setupDevCapture(win);
     ipcMain.on("app:ready", () => {
       rendererReady = true;
       if (queued) pushSelection(queued.result);

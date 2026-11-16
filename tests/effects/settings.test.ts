@@ -11,7 +11,7 @@ const make = (id: string): EffectDefinition => ({
   params: [range("amount", "Amount", "G", 0, 1, 0.1, 0.5), select("mode", "Mode", "G", ["a", "b", "c"], 1), toggle("on", "On", "G", false)],
   groups: ["G"],
   presets: [{ id: "p1", label: "P1", values: { amount: 0.9 } }, { id: "p2", label: "P2", values: { mode: 2 } }],
-  derive: () => ({}), passes: [], chunks: {},
+  derive: () => ({}), pointerToSource: () => null, passes: [], chunks: {},
 });
 const A = make("a");
 const B = make("b");
@@ -47,7 +47,23 @@ describe("effect settings", () => {
 
   it("heals the stored selection", () => {
     expect(healSelection(effects, { active: "zzz", last: "b" })).toEqual({ active: null, last: "b" });
-    expect(healSelection(effects, null)).toEqual({ active: null, last: null });
+    expect(healSelection(effects, { active: "zzz", last: "zzz" })).toEqual({ active: null, last: null });
+  });
+
+  it("first run (nothing stored) turns the first registered effect on", () => {
+    expect(healSelection(effects, null)).toEqual({ active: "a", last: "a" });
+    expect(healSelection(effects, undefined)).toEqual({ active: "a", last: "a" });
+    expect(healSelection([], null)).toEqual({ active: null, last: null });
+  });
+
+  it("keeps a stored off: active null stays off and last is kept", () => {
+    expect(healSelection(effects, { active: null, last: "b" })).toEqual({ active: null, last: "b" });
+    expect(healSelection(effects, { active: null, last: null })).toEqual({ active: null, last: null });
+  });
+
+  it("treats a present but non-record stored value as corrupt and stays off", () => {
+    expect(healSelection(effects, "garbage")).toEqual({ active: null, last: null });
+    expect(healSelection(effects, 0)).toEqual({ active: null, last: null });
   });
 
   it("toggle remembers the last effect and defaults to the first", () => {

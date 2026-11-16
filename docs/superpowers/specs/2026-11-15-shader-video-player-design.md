@@ -4,7 +4,7 @@ Date: 2026-11-15. Status: approved.
 
 ## Intent
 
-A VLC-style desktop video player for Alec's own daily use whose distinguishing feature is live shader filters over the video. The CRT television effect comes first; VHS follows later. Reliable playback matters as much as the effect.
+A VLC-style desktop video player for Alec's own daily use whose distinguishing feature is live shader filters over the video. The CRT television effect comes first; VHS follows later (its design is in `2026-11-15-vhs-effect-design.md`). Reliable playback matters as much as the effect.
 
 ## Goals
 
@@ -16,7 +16,7 @@ A VLC-style desktop video player for Alec's own daily use whose distinguishing f
 
 ## Non-goals (this build)
 
-VHS effect, HDR output, WebGPU, Windows/macOS packaging, media library, mpv fallback.
+VHS effect (added after this spec; see `2026-11-15-vhs-effect-design.md`), HDR output, WebGPU, Windows/macOS packaging, media library, mpv fallback.
 
 ## Anti-goals
 

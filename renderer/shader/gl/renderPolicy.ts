@@ -17,6 +17,14 @@ export function shouldRender(s: LoopState): boolean {
   return s.dirty || (s.playing && s.animating);
 }
 
+/**
+ * `uTime` is the position in the media, not in the element: a restarted transcode stream (-ss) has timestamps
+ * from 0, so its start offset is added back. Native playback has offset 0. Shaders that need a small phase wrap it.
+ */
+export function mediaPosition(startOffset: number, elementTime: number): number {
+  return startOffset + elementTime;
+}
+
 /** Maximum frame delta reported to shaders, so a stall does not make animation jump. */
 export const MAX_DELTA = 0.1;
 

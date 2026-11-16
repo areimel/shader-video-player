@@ -1,14 +1,10 @@
 import type { EffectDefinition } from "../types";
+import { tubeChunks } from "../shared/tube/chunks";
 import { deriveCrt } from "./derive";
+import { crtPointerToSource } from "./pointer";
 import { CRT_GROUPS, CRT_PARAMS } from "./params";
 import { CRT_PASSES } from "./pipeline";
 import { CRT_PRESETS } from "./presets";
-
-/** Effect-local `#include` chunks: every glsl/*.glsl file, keyed by bare name. */
-const files = import.meta.glob<string>("./glsl/*.glsl", { query: "?raw", import: "default", eager: true });
-const chunks: Record<string, string> = Object.fromEntries(
-  Object.entries(files).map(([path, src]) => [path.replace(/^.*\/|\.glsl$/g, ""), src]),
-);
 
 export const crtEffect: EffectDefinition = {
   id: "crt",
@@ -17,7 +13,8 @@ export const crtEffect: EffectDefinition = {
   groups: CRT_GROUPS,
   presets: CRT_PRESETS,
   derive: deriveCrt,
+  pointerToSource: crtPointerToSource,
   passes: CRT_PASSES,
   requiresFloat: true, // signed I/Q, modulated chroma, values above 1 and a feedback loop that needs more than 8 bits
-  chunks,
+  chunks: { ...tubeChunks }, // CRT has no chunks of its own; common chunks are added by the engine
 };

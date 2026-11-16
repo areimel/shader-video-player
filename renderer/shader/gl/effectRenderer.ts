@@ -1,9 +1,10 @@
 import { commonChunks } from "./commonChunks";
 import { createGlContext, type GlContext } from "./context";
+import type { FrameInput } from "./frameInput";
 import { PassGraph } from "./passGraph";
 import { checkFloatRequirement } from "./passPlan";
 import type { PassSpec, Size } from "./passTypes";
-import { clampDelta, hasActiveAnimation, shouldRender, type AnimatedParam } from "./renderPolicy";
+import { clampDelta, hasActiveAnimation, mediaPosition, shouldRender, type AnimatedParam } from "./renderPolicy";
 import { VideoSource } from "./videoSource";
 
 /** The part of EffectDefinition the renderer needs (structural, so gl/ does not depend on effects/). */
@@ -19,9 +20,9 @@ const prefixed = (prefix: string, values: Record<string, number>): Record<string
   Object.fromEntries(Object.entries(values).map(([k, v]) => [k.startsWith(prefix) ? k : prefix + k, v]));
 
 /**
- * Drives one effect on one canvas/video pair: dirty tracking, rAF scheduling, feedback resets and
+ * Drives one effect on one canvas/input pair: dirty tracking, rAF scheduling, feedback resets and
  * rebuilding after a context loss. Rendering only happens when something changed, or while an
- * animated parameter is non-zero and the video is playing.
+ * animated parameter is non-zero and the input is playing.
  */
 export class EffectRenderer {
   private readonly ctx: GlContext;
@@ -39,25 +40,23 @@ export class EffectRenderer {
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
-    private readonly video: HTMLVideoElement,
+    private readonly input: FrameInput,
     private readonly effect: RunnableEffect,
     private readonly onError: (e: Error) => void,
+    /** Plan start offset (seconds): a restarted stream gets a new source, hence a new renderer, so it is fixed per instance. */
+    private readonly startOffset = 0,
   ) {
     this.ctx = createGlContext(canvas);
     this.cleanups.push(
       this.ctx.onLost(() => { this.teardown(); }),
       this.ctx.onRestored(() => { this.init(); }),
     );
-    const listen = (type: string, fn: () => void) => {
-      video.addEventListener(type, fn);
-      this.cleanups.push(() => video.removeEventListener(type, fn));
-    };
-    listen("seeked", () => { this.graph?.resetFeedback(); this.source?.uploadNow(true); this.invalidate(); });
-    listen("play", () => this.invalidate());
-    listen("pause", () => this.invalidate()); // one final render, then the loop idles
-    // The decoded size can change mid-stream (adaptive or concatenated sources): re-upload, then refresh derived values.
-    listen("resize", () => { this.source?.uploadNow(); this.refreshUniforms(); this.invalidate(); });
-    listen("loadeddata", () => { this.source?.uploadNow(); this.refreshUniforms(); this.invalidate(); });
+    this.cleanups.push(input.listen({
+      onJump: () => { this.graph?.resetFeedback(); this.source?.uploadNow(true); this.invalidate(); },
+      // Re-upload first so derived values see the new size.
+      onResized: () => { this.source?.uploadNow(); this.refreshUniforms(); this.invalidate(); },
+      onPlayState: () => this.invalidate(), // on pause: one final render, then the loop idles
+    }));
     this.init();
   }
 
@@ -68,7 +67,7 @@ export class EffectRenderer {
     try {
       const { gl, caps } = this.ctx;
       checkFloatRequirement(this.effect.requiresFloat, caps.floatTargets);
-      this.source = new VideoSource(gl, this.video, () => this.invalidate(), (e) => this.fail(e));
+      this.source = new VideoSource(gl, this.input, () => this.invalidate(), (e) => this.fail(e));
       this.graph = new PassGraph(gl, caps, this.effect.passes, { ...commonChunks, ...this.effect.chunks }, this.source);
       this.source.start();
       this.source.uploadNow();
@@ -113,6 +112,19 @@ export class EffectRenderer {
     this.renderNow();
   }
 
+  /**
+   * Renders the current frame and encodes it as PNG. The drawing buffer is not preserved, so the
+   * snapshot is taken synchronously right after the draw (toBlob captures at call time).
+   */
+  capture(): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      if (!this.graph || this.ctx.isLost()) return reject(new Error("The effect is not ready"));
+      this.renderNow();
+      if (!this.graph) return reject(new Error("The effect failed to render"));
+      this.canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Could not encode the frame"))), "image/png");
+    });
+  }
+
   invalidate(): void {
     this.dirty = true;
     this.schedule();
@@ -140,10 +152,6 @@ export class EffectRenderer {
     }
   }
 
-  private get playing(): boolean {
-    return !this.video.paused && !this.video.ended;
-  }
-
   private schedule(): void {
     if (this.raf || this.disposed || !this.graph) return;
     this.raf = requestAnimationFrame(() => {
@@ -154,7 +162,7 @@ export class EffectRenderer {
   }
 
   private needsLoop(): boolean {
-    return shouldRender({ dirty: this.dirty, playing: this.playing, animating: hasActiveAnimation(this.effect.params, this.userValues) });
+    return shouldRender({ dirty: this.dirty, playing: this.input.playing(), animating: hasActiveAnimation(this.effect.params, this.userValues) });
   }
 
   private renderIfNeeded(): void {
@@ -173,7 +181,7 @@ export class EffectRenderer {
     this.dirty = false;
     try {
       graph.render(this.uniformValues, {
-        time: this.playing ? source.mediaTime : this.video.currentTime,
+        time: mediaPosition(this.startOffset, this.input.time()),
         delta,
         frame: this.frame++,
         videoFrame: source.videoFrame,

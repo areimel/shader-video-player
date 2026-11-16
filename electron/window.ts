@@ -14,7 +14,7 @@ export function createWindow(onClosed: () => void): BrowserWindow {
 
   win = new BrowserWindow({
     width: 1100, height: 680, minWidth: 480, minHeight: 320,
-    title: "Shader Video Player", backgroundColor: "#0e0f12",
+    title: "Shader Video Player", backgroundColor: "#17181a",
     webPreferences: {
       preload: join(__dirname, "preload.js"),
       contextIsolation: true, nodeIntegration: false, sandbox: true,

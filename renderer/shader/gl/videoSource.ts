@@ -1,24 +1,27 @@
+import type { FrameInput, FrameTick } from "./frameInput";
+
 const VIDEO_FRAME_WRAP = 6_000_000;
 
-/** Owns the video texture. Orientation convention: see program.ts (uploaded unflipped, row 0 = top). */
+/**
+ * Owns the source texture for any FrameInput (the class keeps its name: passGraph binds it as the "video" input).
+ * Orientation convention: see program.ts (uploaded unflipped, row 0 = top).
+ */
 export class VideoSource {
   readonly texture: WebGLTexture;
-  mediaTime = 0;
-  /** Presented video frames, wrapped at VIDEO_FRAME_WRAP (a multiple of 2 and 3, so parity and phase stay continuous). */
+  /** Presented frames, wrapped at VIDEO_FRAME_WRAP (a multiple of 2 and 3, so parity and phase stay continuous). */
   videoFrame = 0;
   private width = 0;
   private height = 0;
   private frameReady = false;
   private mipsStale = true;
   private mipFilter = false;
-  private callbackId = 0;
-  private running = false;
+  private unsubscribe: (() => void) | null = null;
   private failed = false;
 
-  /** `onFrame` fires when the decoder presents a new frame (use it to schedule a render). */
+  /** `onFrame` fires when the input presents a new frame (use it to schedule a render). */
   constructor(
     private readonly gl: WebGL2RenderingContext,
-    private readonly video: HTMLVideoElement,
+    private readonly input: FrameInput,
     private readonly onFrame: () => void,
     /** Called once if frames cannot be uploaded to the GPU. */
     private readonly onFailure: (e: Error) => void,
@@ -32,25 +35,23 @@ export class VideoSource {
   }
 
   get size(): { width: number; height: number } {
-    return { width: this.width || this.video.videoWidth || 1, height: this.height || this.video.videoHeight || 1 };
+    const intrinsic = this.input.size();
+    return { width: this.width || intrinsic?.width || 1, height: this.height || intrinsic?.height || 1 };
   }
 
   start(): void {
-    if (this.running) return;
-    this.running = true;
-    const tick = (_now: number, meta: VideoFrameCallbackMetadata) => {
-      this.mediaTime = meta.mediaTime;
+    if (this.unsubscribe) return;
+    this.unsubscribe = this.input.subscribe((tick: FrameTick) => {
       this.videoFrame = (this.videoFrame + 1) % VIDEO_FRAME_WRAP;
-      this.frameReady = true;
+      // A counter-only tick keeps the last upload (and its mips): the pixels did not change.
+      if (tick.image) this.frameReady = true;
       this.onFrame();
-      if (this.running) this.callbackId = this.video.requestVideoFrameCallback(tick);
-    };
-    this.callbackId = this.video.requestVideoFrameCallback(tick);
+    });
   }
 
   stop(): void {
-    this.running = false;
-    this.video.cancelVideoFrameCallback(this.callbackId);
+    this.unsubscribe?.();
+    this.unsubscribe = null;
   }
 
   /** Uploads if a new frame arrived since the last upload. Returns whether it did. */
@@ -60,25 +61,26 @@ export class VideoSource {
 
   /**
    * Uploads the current frame regardless (paused seeks do not always produce a frame callback).
-   * `newFrame` counts the upload as a presented video frame (a seek, which may not fire the frame callback).
+   * `newFrame` counts the upload as a presented frame (a seek, which may not fire the frame callback).
    */
   uploadNow(newFrame = false): boolean {
-    const v = this.video;
-    if (v.readyState < HTMLMediaElement.HAVE_CURRENT_DATA || v.videoWidth === 0) return false;
+    const s = this.input.size();
+    if (!this.input.ready() || !s) return false;
     const gl = this.gl;
+    const image = this.input.image;
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
     try {
-      if (v.videoWidth === this.width && v.videoHeight === this.height) {
-        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, v);
+      if (s.width === this.width && s.height === this.height) {
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, image);
       } else {
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, v);
-        this.width = v.videoWidth;
-        this.height = v.videoHeight;
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        this.width = s.width;
+        this.height = s.height;
       }
     } catch (e) {
       if (!this.failed) {
         this.failed = true;
-        console.error("Video upload failed (is the video CORS-clean?)", e);
+        console.error("Frame upload failed (is the source origin-clean?)", e);
         this.onFailure(new Error("Could not upload video frames to the GPU"));
       }
       return false;

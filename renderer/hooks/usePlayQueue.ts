@@ -1,7 +1,12 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type RefObject } from "react";
 import type { QueueItem, ToastKind } from "../types/player";
-import { EMPTY_QUEUE, nextIndex, previousTarget, queueReducer, reachedEnd } from "../utils/queue";
-import { usePlaybackSource } from "./usePlaybackSource";
+import { friendlyError } from "../utils/format";
+import {
+  EMPTY_QUEUE, autoAdvanceTarget, manualNext, nextLoopMode, previousTarget, queueReducer, reachedEnd,
+} from "../utils/queue";
+import { loadLoop, saveLoop } from "../utils/storage";
+import { single, usePlaybackSource } from "./usePlaybackSource";
+import { useLatest } from "./useLatest";
 
 /** Owns the play queue and the playback source it drives; every item plays via the single-file open path. */
 export function usePlayQueue(
@@ -9,14 +14,16 @@ export function usePlayQueue(
   notify: (kind: ToastKind, msg: string) => void,
 ) {
   const [state, dispatch] = useReducer(queueReducer, EMPTY_QUEUE);
-  const stateRef = useRef(state);
-  stateRef.current = state;
+  const stateRef = useLatest(state);
+  const [loop, setLoop] = useState(loadLoop);
+  const loopRef = useLatest(loop);
+  /** True once the media really ended with nothing left to play; drives the end screen. */
+  const [ended, setEnded] = useState(false);
 
   const replace = useCallback((items: QueueItem[], index = 0) => dispatch({ type: "replace", items, index }), []);
   const source = usePlaybackSource(notify, replace);
-  const { plan, loading, openQueued, restartAt } = source;
-  const loadingRef = useRef(false);
-  loadingRef.current = loading;
+  const { plan, loading, openQueued, restartAt, openDialog, openDropped, close: closeSource } = source;
+  const loadingRef = useLatest(loading);
 
   /** The path being opened; navigation is ignored meanwhile so "next" twice cannot chase the same item. */
   const pending = useRef<string | null>(null);
@@ -35,8 +42,20 @@ export function usePlayQueue(
     else if (auto) await goTo(at + 1, true);
   }, [openQueued]);
 
+  /** Plays the current item again from the start (also used from the ended state). */
+  const restartCurrent = useCallback(() => {
+    const v = videoRef.current;
+    if (!plan || !v) return;
+    setEnded(false);
+    // A finished transcode may no longer hold the start, so it restarts the stream instead of seeking.
+    if (plan.mode === "native") {
+      v.currentTime = 0;
+      void v.play().catch(() => undefined);
+    } else void restartAt(0, plan.audioOrdinal);
+  }, [videoRef, plan, restartAt]);
+
   const next = useCallback(() => {
-    const n = nextIndex(stateRef.current);
+    const n = manualNext(stateRef.current, loopRef.current);
     if (n !== null) void goTo(n);
   }, [goTo]);
 
@@ -44,38 +63,90 @@ export function usePlayQueue(
     const v = videoRef.current;
     const t = (plan?.startOffset ?? 0) + (v?.currentTime ?? 0);
     const target = previousTarget(stateRef.current, t);
-    if (target !== stateRef.current.index) { void goTo(target); return; }
-    if (!plan || !v) return;
-    if (plan.mode === "native" || plan.startOffset === 0) v.currentTime = 0;
-    else void restartAt(0, plan.audioOrdinal);
-  }, [videoRef, plan, goTo, restartAt]);
+    if (target !== stateRef.current.index) void goTo(target);
+    else restartCurrent();
+  }, [videoRef, plan, goTo, restartCurrent]);
 
-  // Auto-advance; at the end of the queue the video simply stays ended.
+  // End of media: loop/advance per the loop mode, otherwise stay on the last frame and show the end screen.
   useEffect(() => {
+    setEnded(false);
     const v = videoRef.current;
     if (!v || !plan) return;
     const onEnded = () => {
       // A restart/seek on a transcode disposes the old stream, which ends the old <video> cleanly.
       if (loadingRef.current || !reachedEnd(plan.startOffset, v.currentTime, plan.info.durationSec)) return;
-      const n = nextIndex(stateRef.current);
-      if (n !== null) void goTo(n, true);
+      const s = stateRef.current;
+      const n = s.items.length === 0 && loopRef.current !== "off" ? s.index : autoAdvanceTarget(s, loopRef.current);
+      if (n === null) setEnded(true);
+      else if (n === s.index) restartCurrent();
+      else void goTo(n, true);
     };
+    const clear = () => setEnded(false);
     v.addEventListener("ended", onEnded);
-    return () => v.removeEventListener("ended", onEnded);
-  }, [videoRef, plan, goTo]);
+    v.addEventListener("play", clear);
+    v.addEventListener("seeking", clear);
+    return () => {
+      v.removeEventListener("ended", onEnded);
+      v.removeEventListener("play", clear);
+      v.removeEventListener("seeking", clear);
+    };
+  }, [videoRef, plan, goTo, restartCurrent]);
+
+  const cycleLoop = useCallback(() => {
+    const m = nextLoopMode(loopRef.current);
+    setLoop(m);
+    saveLoop(m);
+    notify("success", `Loop: ${m}`);
+  }, [notify]);
+
+  /** Appends validated items; with no queue but a playing file, that file becomes the first entry. */
+  const addItems = useCallback((items: QueueItem[]) => {
+    const s = stateRef.current;
+    const fresh = items.filter((it) => !s.items.some((q) => q.path === it.path));
+    if (!s.items.length && plan) dispatch({ type: "replace", items: single(plan) });
+    dispatch({ type: "append", items });
+    notify("success", fresh.length ? `Added ${fresh.length} to queue` : "Already in the queue");
+  }, [plan, notify]);
+
+  /** Adds via the dialog / a drop; with nothing open the selection simply plays. */
+  const addToQueue = useCallback(async () => {
+    if (!plan) { void openDialog(); return; }
+    try {
+      const items = await window.player.addToQueueDialog();
+      if (items.length) addItems(items);
+    } catch (e) { notify("error", friendlyError(e)); }
+  }, [plan, openDialog, addItems, notify]);
+
+  const addDropped = useCallback(async (files: File[]) => {
+    if (!plan) { void openDropped(files); return; }
+    try {
+      const items = await window.player.queueDropped(files);
+      if (items.length) addItems(items);
+    } catch (e) { notify("error", friendlyError(e)); }
+  }, [plan, openDropped, addItems, notify]);
+
+  /** Back to home: drops the playback, empties the queue and clears the end state. */
+  const close = useCallback(() => {
+    closeSource();
+    dispatch({ type: "clear" });
+    setEnded(false);
+  }, [closeSource]);
 
   const queue = useMemo(() => ({
     items: state.items,
     index: state.index,
     /** Navigation only makes sense (and is shown) with more than one item. */
     multi: state.items.length > 1,
-    next, previous,
+    loop, cycleLoop, ended,
+    next, previous, replay: restartCurrent,
+    playFromStart: () => void goTo(0),
     jumpTo: (i: number) => void goTo(i),
     remove: (i: number) => dispatch({ type: "remove", index: i }),
     clear: () => dispatch({ type: "clear" }),
-  }), [state, next, previous, goTo]);
+    addToQueue, addDropped,
+  }), [state, loop, ended, cycleLoop, next, previous, restartCurrent, goTo, addToQueue, addDropped]);
 
-  return { ...source, queue };
+  return { ...source, close, queue };
 }
 
 export type PlayQueue = ReturnType<typeof usePlayQueue>["queue"];

@@ -7,6 +7,12 @@ export function formatTime(sec: number): string {
   return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
 }
 
+/** Countdown label such as "-1:05"; without a finite positive duration it shows the elapsed time. */
+export function formatRemaining(time: number, duration: number): string {
+  if (!Number.isFinite(duration) || duration <= 0) return formatTime(time);
+  return `-${formatTime(Math.max(0, duration - time))}`;
+}
+
 export function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
   const units = ["KB", "MB", "GB", "TB"];

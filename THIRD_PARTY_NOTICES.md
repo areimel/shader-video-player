@@ -12,6 +12,30 @@ Fabrice Bellard.
 
 This project is based on babu-video-player, MIT licensed, Copyright Babu Studios.
 
+## Hash without Sine
+
+`renderer/shader/glsl/common/noise.glsl` contains the `hash12` and `hash32` functions from "Hash without Sine"
+by Dave Hoskins, MIT licensed.
+
+## Archivo
+
+The interface typeface is Archivo, distributed through `@fontsource-variable/archivo` and bundled with the app.
+
+> Copyright 2020 The Archivo Project Authors (https://github.com/Omnibus-Type/Archivo)
+
+Licensed under the SIL Open Font License, Version 1.1 (https://openfontlicense.org). The full licence text ships
+with the package as `node_modules/@fontsource-variable/archivo/LICENSE`.
+
+## Press Start 2P
+
+The home screen's pixel typeface is Press Start 2P by CodeMan38, distributed through `@fontsource/press-start-2p` and
+bundled with the app.
+
+> Copyright 2012 The Press Start 2P Project Authors (cody@zone38.net), with Reserved Font Name "Press Start 2P".
+
+Licensed under the SIL Open Font License, Version 1.1 (https://openfontlicense.org). The full licence text ships
+with the package as `node_modules/@fontsource/press-start-2p/LICENSE`.
+
 ## Electron, Chromium, React
 
 Electron and Chromium are distributed under the MIT and BSD-style licenses; their notices ship in the app

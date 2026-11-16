@@ -14,5 +14,7 @@ export function useFullscreen(ref: RefObject<HTMLElement | null>) {
     else void ref.current?.requestFullscreen();
   }, [ref]);
 
-  return { active, toggle };
+  const exit = useCallback(() => { if (document.fullscreenElement) void document.exitFullscreen(); }, []);
+
+  return { active, toggle, exit };
 }
