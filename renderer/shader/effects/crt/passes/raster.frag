@@ -7,6 +7,7 @@ precision highp float;
 
 #include "color"
 #include "yiq"
+#include "resample"
 
 in vec2 vUv;
 out vec4 fragColor;
@@ -21,27 +22,6 @@ uniform float p_overscan;
 uniform float p_saturation;
 uniform float p_tint;
 uniform float p_colorTemp;
-
-const int TAPS = 4;
-
-// Tent-filtered tap grid over `extent` (source uv, half-width of the tent) around `uv`.
-// With N taps at u = (i + 0.5) / N * 2 - 1 and weight 1 - |u|, the grid spacing is
-// extent / 2 source texels at the chosen LOD, so every source row/column under the
-// footprint contributes and nothing shimmers when the picture scrolls.
-vec3 tentSample(vec2 uv, vec2 extent, float lod) {
-  vec3 sum = vec3(0.0);
-  float wsum = 0.0;
-  for (int j = 0; j < TAPS; j++) {
-    float uy = (float(j) + 0.5) / float(TAPS) * 2.0 - 1.0;
-    for (int i = 0; i < TAPS; i++) {
-      float ux = (float(i) + 0.5) / float(TAPS) * 2.0 - 1.0;
-      float w = (1.0 - abs(ux)) * (1.0 - abs(uy));
-      sum += w * textureLod(uSource, uv + vec2(ux, uy) * extent, lod).rgb;
-      wsum += w;
-    }
-  }
-  return sum / wsum;
-}
 
 // Colour temperature as a white-point gain on the gamma-encoded signal. This is a
 // log-linear approximation of a Planckian white-point shift (not a full chromatic
@@ -66,19 +46,9 @@ void main() {
     return;
   }
 
-  // Footprint of one raster texel in source texels and in source uv.
+  // Footprint of one raster texel in source uv.
   vec2 footUv = scale * uOutputSize.zw;
-  vec2 footTexels = footUv * uSourceSize.xy;
-  float widest = max(footTexels.x, footTexels.y);
-
-  vec3 c;
-  if (widest <= 1.0) {
-    c = textureLod(uSource, uv, 0.0).rgb;  // video is no larger than the raster: plain bilinear (LOD 0; no implicit derivatives after the early return)
-  } else {
-    // Mip texels are ~widest/2 source texels wide, matching the tap spacing above.
-    float lod = max(0.0, log2(widest) - 1.0);
-    c = tentSample(uv, footUv, lod);
-  }
+  vec3 c = areaSample(uSource, uv, footUv, uSourceSize.xy);
 
   // Saturation and tint in YIQ: scale / rotate the chroma plane, luma untouched.
   vec3 yiq = rgb2yiq(c);

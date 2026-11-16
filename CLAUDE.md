@@ -42,11 +42,14 @@ renderer/
   shader/gl/              context, program, shaderError, target, quad, includes, commonChunks,
                           passTypes, passPlan (pure), passGraph, videoSource, renderPolicy (pure),
                           effectRenderer
-  shader/glsl/common/     color, yiq, noise, gaussian, sampling, subcarrier, composite-encode,
-                          composite-decode  (#include "name"; pure, no p_/d_ names)
-  shader/effects/shared/  signal.ts (NTSC timing: subcarrier and cutoff cycles per sample)
+  shader/glsl/common/     color, yiq, noise, gaussian, sampling, blur, resample, subcarrier,
+                          composite-encode, composite-decode  (#include "name"; pure, no p_/d_ names)
   shader/effects/         types.ts, params.ts (generic helpers), registry.ts
-  shader/effects/crt/     params, presets, derive, pipeline, index, passes/*.frag, glsl/*.glsl
+  shader/effects/shared/  signal.ts (NTSC timing: subcarrier and cutoff cycles per sample),
+                          chunks.ts (glob -> chunk map), tube/ (the CRT tube as a reusable display stage:
+                          params, derive, pipeline (tubePasses), chunks, glsl/{beam,geometry,mask,post,display},
+                          passes/{linearize,glow-h,glow-v,diffuse-down,diffuse-up}.frag)
+  shader/effects/crt/     params, presets, derive, pipeline, index, passes/{raster,signal-encode,signal-decode,main}.frag
 tests/                    vitest; tests/shaders/compile-entry.ts is the check:shaders entry
 scripts/                  dev.mjs, build-electron.mjs, check-shaders.mjs (+ -main.cjs)
 ```
@@ -56,14 +59,14 @@ scripts/                  dev.mjs, build-electron.mjs, check-shaders.mjs (+ -mai
 - **Playback:** ffprobe every file. Native when Chromium can decode it; otherwise ffmpeg remuxes or transcodes live into a growing fragmented MP4 served at `svp-media://stream/<id>`. Seeking or switching audio in that mode restarts ffmpeg (`restartStream`).
 - **Effect on:** the `<video>` stays in the DOM but hidden (`.video-hidden`, never `display:none`), `VideoSource` uploads frames on `requestVideoFrameCallback`, `PassGraph` runs the effect's passes, the last pass draws to the canvas. `EffectRenderer` renders only when a frame, parameter or size changed, or while an `animated` parameter is non-zero during playback.
 - **Effect off:** the plain `<video>` is shown, the canvas is unmounted and its WebGL context released.
-- **CRT pipeline:** `raster → signalEncode → signalDecode → linearize (feedback) → glowH → glowV → diffuseDown → diffuseUp → main`. Everything before `main` is in tube space at raster resolution.
+- **CRT pipeline:** `raster → signalEncode → signalDecode → linearize (feedback) → glowH → glowV → diffuseDown → diffuseUp → main` (`linearize…diffuseUp` come from `tubePasses` in `shared/tube/pipeline.ts`; `main.frag` just calls `tubeDisplay` from `shared/tube/glsl/display.glsl`). Everything before `main` is in tube space at raster resolution.
 - **Settings:** `localStorage` keys `svp.effect.active` and `svp.effect.<id>`; loaded through `resolveValues`, so stale or out-of-range values heal. First run: CRT's first preset is selected but the effect is off.
 - **Subtitles** are always drawn by `SubtitleOverlay` (track kept in `hidden` mode) so they look the same with the effect on or off.
 
 ## Rules
 
-- **One source of truth per parameter.** An effect parameter is declared once in `effects/<effect>/params.ts` as a `ParamSpec`. Uniforms (`p_<id>`), the settings panel, presets, persistence and reset are all generated from that table. Never hand-write a slider or a uniform upload for a parameter. Select option order is part of the shader contract (see the index constants in `crt/params.ts`).
-- **Derived values live in `derive.ts`** (pure, unit-tested) and reach shaders as `d_<name>`; the engine adds the `p_`/`d_` prefixes. Where a shader and `derive.ts` share an assumption, keep them in step and say so in a comment. Current pairs: mask transmittance (`mask.glsl` ↔ `maskTransmittance`), peak-1 beams with duty σ√(2π) (`beam.glsl` ↔ `exposureGain`), and `BEAM_SIGMA_MAX = 0.55` (the three-line beam sum is only accurate up to that width).
+- **One source of truth per parameter.** An effect parameter is declared once in `effects/<effect>/params.ts` as a `ParamSpec` (the tube's parameters in `effects/shared/tube/params.ts`, spread into each effect that has a tube). Uniforms (`p_<id>`), the settings panel, presets, persistence and reset are all generated from that table. Never hand-write a slider or a uniform upload for a parameter. Select option order is part of the shader contract (see the index constants in `crt/params.ts` and `shared/tube/params.ts`).
+- **Derived values live in `derive.ts`** (pure, unit-tested) and reach shaders as `d_<name>`; the engine adds the `p_`/`d_` prefixes. Where a shader and `derive.ts` share an assumption, keep them in step and say so in a comment. Current pairs: mask transmittance (`shared/tube/glsl/mask.glsl` ↔ `maskTransmittance` in `shared/tube/derive.ts`), peak-1 beams with duty σ√(2π) (`shared/tube/glsl/beam.glsl` ↔ `exposureGain` in `shared/tube/derive.ts`), and `BEAM_SIGMA_MAX = 0.55` in `shared/tube/params.ts` (the three-line beam sum is only accurate up to that width).
 - **Shader contract:** GLSL ES 3.00, `vUv` origin top-left, `out vec4 fragColor`, `#include "name"` for shared chunks, every uniform a float except samplers, `uFrame` (per render: noise seeds) and `uVideoFrame` (per presented video frame: dot crawl, bob). A uniform used by several chunks is declared once. `gl_FragCoord` is bottom-left origin in every pass; only use it where origin does not matter (mask, noise, dither). Use `textureLod` wherever derivatives are undefined (after an early return, inside loops with `break`).
 - **Float targets:** an effect that stores signed or >1 values sets `requiresFloat`; it then refuses to start on a GPU without float render targets instead of rendering garbage.
 - **Shader licensing:** this repo is MIT. Do not paste code from GPL/LGPL shaders (CRT-Royale, CRT-Guest-Advanced, CRT-Geom, Easymode, zfast, Themaister/NTSC-Adaptive, blargg, Patchy NTSC). Permissive sources may be adapted with a credit in the file and in `THIRD_PARTY_NOTICES.md`.
@@ -116,7 +119,7 @@ SVP_CAPTURE_KEYS=shift+E SVP_CAPTURE_EVAL='document.querySelector("canvas")?.wid
 2. Add it to `effects/registry.ts`. The panel, persistence and shortcuts pick it up from there.
 3. Add tests for `derive.ts` and preset validity (see `tests/effects/crt.test.ts`, which also checks that shaders only use known `p_`/`d_` names); `pnpm check:shaders` covers compilation.
 
-For VHS, reuse the composite signal code instead of copying it: `glsl/common/subcarrier`, `composite-encode` and `composite-decode` (pure functions; the CRT `signal-encode/decode.frag` passes are thin wrappers that supply the `p_`/`d_` values) and `effects/shared/signal.ts` for the frequencies. An effect chunk with the same name as a common chunk silently shadows it (`tests/effects/chunks.test.ts` guards this).
+For VHS, reuse the composite signal code instead of copying it: `glsl/common/subcarrier`, `composite-encode` and `composite-decode` (pure functions; the CRT `signal-encode/decode.frag` passes are thin wrappers that supply the `p_`/`d_` values) and `effects/shared/signal.ts` for the frequencies. For the optional TV stage, use `effects/shared/tube/` (`tubeParams`, `deriveTube`, `tubePasses`, `tubeChunks`, `display.glsl`). An effect chunk with the same name as a common or tube chunk silently shadows it (`tests/effects/chunks.test.ts` guards this).
 
 ## Known gaps
 

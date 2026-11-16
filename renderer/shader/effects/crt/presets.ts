@@ -1,5 +1,6 @@
 import type { Preset } from "../types";
-import { MASK, SIGNAL } from "./params";
+import { SIGNAL } from "./params";
+import { MASK } from "../shared/tube/params";
 
 /**
  * Starting points; each lists only what differs from the defaults. Beam widths are in scanlines:

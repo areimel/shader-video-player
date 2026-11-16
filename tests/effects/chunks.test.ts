@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { EFFECTS } from "../../renderer/shader/effects/registry";
+import { tubeChunks } from "../../renderer/shader/effects/shared/tube/chunks";
 import { commonChunks } from "../../renderer/shader/gl/commonChunks";
 import { pdNames, shaderFiles } from "./shaderNames";
 
@@ -21,5 +22,10 @@ describe("shared GLSL chunks", () => {
   it.each(EFFECTS.map((e) => [e.id, e] as const))("effect %s has no chunk shadowing a common chunk", (_id, effect) => {
     const common = new Set(Object.keys(commonChunks));
     expect(Object.keys(effect.chunks).filter((k) => common.has(k))).toEqual([]);
+  });
+
+  it("tube chunks do not shadow common chunks", () => {
+    const common = new Set(Object.keys(commonChunks));
+    expect(Object.keys(tubeChunks).filter((k) => common.has(k))).toEqual([]);
   });
 });

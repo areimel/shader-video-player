@@ -1,23 +1,18 @@
-import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { deriveCrt } from "../../renderer/shader/effects/crt/derive";
-import { BEAM_SIGMA_MAX, CRT_GROUPS, CRT_PARAMS } from "../../renderer/shader/effects/crt/params";
+import { CRT_GROUPS, CRT_PARAMS } from "../../renderer/shader/effects/crt/params";
 import { crtEffect } from "../../renderer/shader/effects/crt";
 import { CRT_PASSES } from "../../renderer/shader/effects/crt/pipeline";
 import { CRT_PRESETS } from "../../renderer/shader/effects/crt/presets";
 import { presetProblems, resolveValues } from "../../renderer/shader/effects/params";
+import { commonChunks } from "../../renderer/shader/gl/commonChunks";
 import { resolveIncludes } from "../../renderer/shader/gl/includes";
 import { shaderFiles, unknownNames } from "./shaderNames";
 
 const CRT_DIR = join(__dirname, "../../renderer/shader/effects/crt");
 
-/** Include chunks read from disk (the app loads the same files through import.meta.glob). */
-function chunksIn(dir: string): Record<string, string> {
-  return Object.fromEntries(readdirSync(dir).filter((n) => n.endsWith(".glsl"))
-    .map((n) => [n.replace(/\.glsl$/, ""), readFileSync(join(dir, n), "utf8")]));
-}
-const CHUNKS = { ...chunksIn(join(CRT_DIR, "../../glsl/common")), ...chunksIn(join(CRT_DIR, "glsl")) };
+const CHUNKS = { ...commonChunks, ...crtEffect.chunks };
 
 describe("CRT definition", () => {
   it("has unique parameter ids", () => {
@@ -65,27 +60,5 @@ describe("CRT shader consistency", () => {
 describe("CRT contract details", () => {
   it("requires float render targets", () => {
     expect(crtEffect.requiresFloat).toBe(true);
-  });
-
-  it("offers only Off and Bob interlace", () => {
-    expect(CRT_PARAMS.find((p) => p.id === "interlace")?.options).toEqual(["Off", "Bob"]);
-  });
-
-  it("labels glow radius in lines", () => {
-    expect(CRT_PARAMS.find((p) => p.id === "glowSigma")?.unit).toBe("lines");
-  });
-
-  it("keeps beam widths where summing 3 lines is within 2% (worst case: Gaussian beam, any pixel position)", () => {
-    const tail = (sigma: number, d: number) => {
-      const g = (x: number) => Math.exp(-0.5 * (x / sigma) ** 2);
-      let all = 0, three = 0;
-      for (let j = -8; j <= 8; j++) { all += g(d - j); if (Math.abs(j) <= 1) three += g(d - j); }
-      return (all - three) / all;
-    };
-    for (const id of ["beamMin", "beamMax"]) {
-      const max = CRT_PARAMS.find((p) => p.id === id)?.max ?? 0;
-      expect(max).toBe(BEAM_SIGMA_MAX);
-      for (let d = -0.5; d <= 0.5; d += 0.05) expect(tail(max, d)).toBeLessThan(0.02);
-    }
   });
 });

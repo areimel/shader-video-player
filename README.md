@@ -64,7 +64,7 @@ The video is not simply overlaid with lines. Each frame goes through a chain of 
 
 Only the last step runs at screen resolution; the rest work on the small raster, which keeps the effect affordable. Scanlines fade out automatically when the window is too small to show them cleanly (below about 2.5 screen pixels per line), so they are most visible at 1080p and above.
 
-Every parameter is declared once in `renderer/shader/effects/crt/params.ts`; the settings panel, shader uniforms, presets and saved settings are all generated from that table.
+Every parameter is declared once in `renderer/shader/effects/<effect>/params.ts` (tube parameters in `effects/shared/tube/params.ts`); the settings panel, shader uniforms, presets and saved settings are all generated from that table.
 
 ## Project layout
 
