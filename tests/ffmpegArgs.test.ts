@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ENCODER_FALLBACKS, buildStreamArgs, buildSubtitleArgs, targetBitrate } from "../electron/media/ffmpegArgs";
+import { ENCODER_FALLBACKS, buildStreamArgs, buildSubtitleArgs, streamStartSec, targetBitrate } from "../electron/media/ffmpegArgs";
 import { makeInfo } from "./fixtures";
 
 const base = { input: "/v/a.mkv", output: "/tmp/o.mp4", startSec: 0, audioOrdinal: 0 };
@@ -74,5 +74,18 @@ describe("protocol whitelist", () => {
       expect(a[a.indexOf("-protocol_whitelist") + 1]).toBe("file,crypto,data");
       expect(a.indexOf("-protocol_whitelist")).toBeLessThan(a.indexOf("-i"));
     }
+  });
+});
+
+describe("streamStartSec", () => {
+  it("keeps a stream from starting within 3 s of the end", () => {
+    expect(streamStartSec(20, 20)).toBe(17);
+    expect(streamStartSec(18.5, 20)).toBe(17);
+    expect(streamStartSec(10, 20)).toBe(10);
+  });
+  it("handles short, unknown and negative cases", () => {
+    expect(streamStartSec(2, 2)).toBe(0);
+    expect(streamStartSec(50, 0)).toBe(50);
+    expect(streamStartSec(-1, 20)).toBe(0);
   });
 });

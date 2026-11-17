@@ -26,6 +26,19 @@ export const KEYFRAME_SEC = 2;
 /** Longest fragment in microseconds: bounds a remux too, whose GOP is the source's (often 3–7 s). */
 export const FRAGMENT_MAX_US = 1_000_000;
 
+/** A stream never starts closer than this to the end of the file (seconds). */
+export const STREAM_END_GUARD_SEC = 3;
+
+/**
+ * Where a stream may start: a seek at or near the end would make ffmpeg write a stream with no
+ * complete fragment, which Chromium fails to open ("demuxer seek failed"). Unknown durations pass.
+ */
+export function streamStartSec(startSec: number, durationSec: number): number {
+  const t = Math.max(0, startSec);
+  if (!(durationSec > 0)) return t;
+  return Math.min(t, Math.max(0, durationSec - STREAM_END_GUARD_SEC));
+}
+
 export function isRemuxOnly(info: MediaInfo): boolean {
   return canRemuxVideo(info);
 }

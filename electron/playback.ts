@@ -3,7 +3,7 @@ import type { MediaInfo, PlaybackPlan } from "../shared/types";
 import { isSuperseded, supersededError } from "../shared/superseded";
 import { allowOnly, clearAllowed } from "./allowlist";
 import { addRecent } from "./recents";
-import { isRemuxOnly } from "./media/ffmpegArgs";
+import { isRemuxOnly, streamStartSec } from "./media/ffmpegArgs";
 import { nativeMime } from "./media/formats";
 import { keyframeBefore, probeFile } from "./media/probe";
 import { StreamSession } from "./media/session";
@@ -28,10 +28,11 @@ function disposeSession(): void {
 }
 
 async function transcodePlan(
-  gen: number, media: MediaInfo, startSec: number, audioOrdinal: number,
+  gen: number, media: MediaInfo, requestedSec: number, audioOrdinal: number,
 ): Promise<PlaybackPlan> {
   disposeSession();
   const remux = isRemuxOnly(media);
+  const startSec = streamStartSec(requestedSec, media.durationSec);
   const start = remux && startSec > 0 ? await keyframeBefore(media, startSec) : startSec;
   stillCurrent(gen);
   const next = new StreamSession(media, start, audioOrdinal);
