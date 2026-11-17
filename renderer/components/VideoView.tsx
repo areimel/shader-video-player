@@ -15,7 +15,8 @@ interface Props {
   hidden?: boolean;
   onToggle: () => void;
   onFullscreen: () => void;
-  onError: (absTime: number) => void;
+  /** `detail` is Chromium's MediaError message, when there is one. */
+  onError: (absTime: number, detail?: string) => void;
 }
 
 export function VideoView({ videoRef, plan, initialTime, subtitleUrl, controlsVisible, subtitleDelay, subtitleSize, hidden = false, onToggle, onFullscreen, onError }: Props) {
@@ -28,7 +29,7 @@ export function VideoView({ videoRef, plan, initialTime, subtitleUrl, controlsVi
         crossOrigin="anonymous"
         onClick={onToggle} onDoubleClick={onFullscreen}
         onLoadedMetadata={(e) => { if (initialTime > 0) e.currentTarget.currentTime = initialTime; }}
-        onError={(e) => onError(plan.startOffset + e.currentTarget.currentTime)}
+        onError={(e) => onError(plan.startOffset + e.currentTarget.currentTime, e.currentTarget.error?.message)}
       >
         {subtitleUrl && <track key={subtitleUrl} kind="subtitles" src={subtitleUrl} />}
       </video>

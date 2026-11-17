@@ -8,6 +8,7 @@ import { supersededError } from "../../shared/superseded";
 import { ENCODER_FALLBACKS, buildStreamArgs } from "./ffmpegArgs";
 import { ffmpegPath } from "./binaries";
 import { killProcess, spawnTracked } from "./processes";
+import { mediaDebug } from "./debug";
 
 export const CACHE_ROOT = join(tmpdir(), "svp-media-cache");
 
@@ -47,7 +48,11 @@ export class StreamSession {
         const child = spawnTracked(ffmpegPath(), args);
         this.proc = child;
         this.stderr = "";
-        child.stderr?.on("data", (d) => (this.stderr += String(d)));
+        child.stderr?.on("data", (d) => {
+          this.stderr += String(d);
+          mediaDebug(`[ffmpeg] ${String(d).trim()}`);
+        });
+        mediaDebug(`[ffmpeg args] ${args.join(" ")}`);
         const poll = setInterval(() => {
           if (this.bytesWritten() > 0) { clearInterval(poll); resolve(); }
         }, 40);
@@ -55,8 +60,13 @@ export class StreamSession {
         child.on("error", (e) => { clearInterval(poll); this.done = true; reject(e); });
         child.on("exit", (code) => {
           clearInterval(poll);
+          mediaDebug(`[ffmpeg exit] code=${code} bytes=${this.bytesWritten()} stopped=${this.stopped}`);
           if (this.stopped) return;
           const ok = code === 0;
+          // After data has flowed a failure only shows as the stream ending early; say why.
+          if (!ok && this.bytesWritten() > 0) {
+            console.warn(`[ffmpeg] stream ended early (exit ${code}): ${this.stderr.trim().split("\n").pop() ?? ""}`);
+          }
           if (!ok && this.bytesWritten() === 0 && this.encoderIdx < ENCODER_FALLBACKS.length - 1) {
             this.encoderIdx++;
             return launch();

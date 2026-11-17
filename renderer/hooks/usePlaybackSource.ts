@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isSuperseded } from "../../shared/superseded";
 import type { OpenResult, PlaybackPlan, QueueItem, ToastKind } from "../types/player";
-import { friendlyError } from "../utils/format";
+import { friendlyError, mediaErrorText } from "../utils/format";
 import { loadPosition } from "../utils/storage";
 
 type Notify = (kind: ToastKind, msg: string) => void;
@@ -99,11 +99,13 @@ export function usePlaybackSource(notify: Notify, onQueue: OnQueue) {
   );
 
   /** Called when <video> errors: native files fall back to ffmpeg once. */
-  const onVideoError = useCallback((absTime: number) => {
+  const onVideoError = useCallback((absTime: number, detail?: string) => {
     if (plan?.mode === "native") {
+      console.warn(`[playback] native playback failed, falling back to ffmpeg: ${detail ?? "no detail"}`);
       void run(() => window.player.forceTranscode(absTime), false);
     } else {
-      notify("error", "This file couldn't be played. It may be corrupt or unsupported.");
+      console.error(`[playback] stream playback failed at ${absTime.toFixed(2)} s: ${detail ?? "no detail"}`);
+      notify("error", mediaErrorText(detail));
     }
   }, [plan, run, notify]);
 

@@ -4,6 +4,7 @@ import { Readable } from "node:stream";
 import { allowedRealPath } from "./allowlist";
 import { mimeForPath } from "./media/formats";
 import { streamHead, streamRangeStart } from "./media/streamRange";
+import { mediaDebug } from "./media/debug";
 import { getStream } from "./playback";
 import type { StreamSession } from "./media/session";
 
@@ -126,7 +127,7 @@ function route(req: Request): Response | Promise<Response> {
     });
   }
   const url = new URL(req.url);
-  if (process.env.SVP_DEBUG_MEDIA) console.log(`[media] ${req.method} ${url.hostname}${url.pathname.slice(0, 12)} range=${req.headers.get("range")}`);
+  mediaDebug(`[media] ${req.method} ${url.hostname}${url.pathname.slice(0, 12)} range=${req.headers.get("range")}`);
   if (url.hostname === "file") {
     return serveFile(decodeURIComponent(url.pathname.slice(1)), req.headers.get("range"));
   }
