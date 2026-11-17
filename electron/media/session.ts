@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, statSync } from "node:fs";
+import { mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -11,10 +11,15 @@ import { killProcess, spawnTracked } from "./processes";
 import { mediaDebug } from "./debug";
 
 export const CACHE_ROOT = join(tmpdir(), "svp-media-cache");
+/**
+ * This process's sessions. Per process, so one instance's startup cleanup (a dev build next to the
+ * installed app, or parallel test runs) never deletes another's live stream under ffmpeg.
+ */
+export const PROCESS_ROOT = join(CACHE_ROOT, String(process.pid));
 
 export class StreamSession {
   readonly id = randomUUID();
-  readonly dir = join(CACHE_ROOT, this.id);
+  readonly dir = join(PROCESS_ROOT, this.id);
   readonly file = join(this.dir, "out.mp4");
   done = false;
   private proc: ChildProcess | null = null;
@@ -91,6 +96,18 @@ export class StreamSession {
   }
 }
 
+function processAlive(pid: number): boolean {
+  try { process.kill(pid, 0); return true; } catch (e) { return (e as NodeJS.ErrnoException).code === "EPERM"; }
+}
+
+/** Removes this process's cache and caches left by processes that are gone (and pre-per-process leftovers); a live instance's stays. */
 export function cleanCacheRoot(): void {
-  rmSync(CACHE_ROOT, { recursive: true, force: true });
+  let entries: string[];
+  try { entries = readdirSync(CACHE_ROOT); } catch { return; }
+  for (const name of entries) {
+    const pid = /^\d+$/.test(name) ? Number(name) : NaN;
+    if (pid === process.pid || !(pid > 0) || !processAlive(pid)) {
+      rmSync(join(CACHE_ROOT, name), { recursive: true, force: true });
+    }
+  }
 }

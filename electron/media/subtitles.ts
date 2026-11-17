@@ -4,7 +4,7 @@ import { supersededError } from "../../shared/superseded";
 import { buildExternalSubtitleArgs, buildSubtitleArgs } from "./ffmpegArgs";
 import { ffmpegPath } from "./binaries";
 import { killProcess, spawnTracked } from "./processes";
-import { CACHE_ROOT } from "./session";
+import { PROCESS_ROOT } from "./session";
 
 /** The one embedded-track extraction in flight; it reads the whole file, so a newer request or a close kills it. */
 let active: { cancel(): void } | null = null;
@@ -15,8 +15,8 @@ export function cancelSubtitleExtraction(): void {
 
 /** Runs ffmpeg with the args built for a temp output path and returns the WebVTT text. */
 function runToVtt(buildArgs: (out: string) => string[], cancellable = false): Promise<string> {
-  mkdirSync(CACHE_ROOT, { recursive: true });
-  const dir = mkdtempSync(join(CACHE_ROOT, "sub-"));
+  mkdirSync(PROCESS_ROOT, { recursive: true });
+  const dir = mkdtempSync(join(PROCESS_ROOT, "sub-"));
   const out = join(dir, "sub.vtt");
   return new Promise((resolve, reject) => {
     const child = spawnTracked(ffmpegPath(), buildArgs(out));
