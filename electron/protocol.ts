@@ -3,6 +3,7 @@ import { createReadStream, openSync, readSync, closeSync, statSync } from "node:
 import { Readable } from "node:stream";
 import { allowedRealPath } from "./allowlist";
 import { mimeForPath } from "./media/formats";
+import { streamHead, streamRangeStart } from "./media/streamRange";
 import { getStream } from "./playback";
 import type { StreamSession } from "./media/session";
 
@@ -50,11 +51,22 @@ function serveFile(path: string, rangeHeader: string | null): Response {
   return new Response(body, { status: range ? 206 : 200, headers });
 }
 
-/** Tails the growing fragmented MP4 until ffmpeg finishes. The fd is opened on first pull and closed exactly once. */
-function serveStream(s: StreamSession, signal: AbortSignal): Response {
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Tails the growing fragmented MP4 from the requested offset until ffmpeg finishes (heads and the
+ * reasons for them: `streamRange.ts`). The fd is opened on first pull and closed exactly once.
+ */
+async function serveStream(s: StreamSession, signal: AbortSignal, rangeHeader: string | null): Promise<Response> {
+  const want = streamRangeStart(rangeHeader);
+  // A start past the bytes written so far waits for ffmpeg: ending early would read as end of file.
+  while (want !== null && !s.done && !signal.aborted && s.bytesWritten() <= want) await sleep(40);
+  const head = streamHead(want, s.bytesWritten(), s.done);
+  if (head.status === 416) return new Response(null, { status: 416, headers: head.headers });
+
   let fd: number | null = null;
   let closed = false;
-  let pos = 0;
+  let pos = head.start;
   const close = () => {
     closed = true;
     if (fd === null) return;
@@ -76,7 +88,7 @@ function serveStream(s: StreamSession, signal: AbortSignal): Response {
             return controller.enqueue(new Uint8Array(buf.subarray(0, n)));
           }
           if (s.done) { close(); return controller.close(); }
-          await new Promise((r) => setTimeout(r, 40));
+          await sleep(40);
         }
       } catch (e) {
         const wasClosed = closed;
@@ -86,7 +98,7 @@ function serveStream(s: StreamSession, signal: AbortSignal): Response {
     },
     cancel() { close(); },
   });
-  return new Response(body, { status: 200, headers: { "Content-Type": "video/mp4" } });
+  return new Response(body, { status: head.status, headers: head.headers });
 }
 
 /**
@@ -106,7 +118,7 @@ function withCors(res: Response, origin: string | null): Response {
   return res;
 }
 
-function route(req: Request): Response {
+function route(req: Request): Response | Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
@@ -114,20 +126,21 @@ function route(req: Request): Response {
     });
   }
   const url = new URL(req.url);
+  if (process.env.SVP_DEBUG_MEDIA) console.log(`[media] ${req.method} ${url.hostname}${url.pathname.slice(0, 12)} range=${req.headers.get("range")}`);
   if (url.hostname === "file") {
     return serveFile(decodeURIComponent(url.pathname.slice(1)), req.headers.get("range"));
   }
   if (url.hostname === "stream") {
     const s = getStream(url.pathname.slice(1));
-    return s ? serveStream(s, req.signal) : deny();
+    return s ? serveStream(s, req.signal, req.headers.get("range")) : deny();
   }
   return deny();
 }
 
 export function registerProtocol(): void {
-  protocol.handle(SCHEME, (req) => {
+  protocol.handle(SCHEME, async (req) => {
     let res: Response;
-    try { res = route(req); } catch { res = new Response("Server error", { status: 500 }); }
+    try { res = await route(req); } catch { res = new Response("Server error", { status: 500 }); }
     return withCors(res, req.headers.get("origin"));
   });
 }
