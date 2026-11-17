@@ -27,7 +27,7 @@ interface Props {
   panels: Panels;
   onAudio: (ordinal: number) => void;
   onPip: () => void;
-  onVideoError: (absTime: number) => void;
+  onVideoError: (absTime: number, detail?: string) => void;
   onHome: () => void;
   notify: (kind: ToastKind, msg: string) => void;
   remaining: boolean;

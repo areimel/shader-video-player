@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type RefObject } from "react";
 import type { PlaybackPlan } from "../types/player";
 import { clamp } from "../utils/format";
+import { inSeekable } from "../utils/seekRange";
 
 export const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3];
 
@@ -43,16 +44,18 @@ export function usePlayerState(
     };
   }, [ref, plan, offset]);
 
-  /** Seeks inside the produced range, otherwise restarts ffmpeg at the target. */
+  /**
+   * Seeks inside the stream when Chromium can, otherwise restarts ffmpeg at the target. A growing
+   * stream has no known length, so Chromium reports it as unseekable (`seekable` 0–0) even where it
+   * is buffered, and setting currentTime there lands at the stream's start: check `seekable`.
+   */
   const seek = useCallback((target: number) => {
     const v = ref.current;
     if (!v || !plan) return;
     const t = clamp(target, 0, duration || target);
     if (plan.mode === "native") { v.currentTime = t; return; }
     const rel = t - offset;
-    const b = v.buffered;
-    const inRange = rel >= 0 && b.length > 0 && rel <= b.end(b.length - 1) - 0.25;
-    if (inRange) v.currentTime = rel;
+    if (inSeekable(v.seekable, rel)) v.currentTime = rel;
     else restart(t);
   }, [ref, plan, duration, offset, restart]);
 

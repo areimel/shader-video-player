@@ -32,11 +32,23 @@ const AUDIO_CODEC_TAGS: Record<string, string> = {
 };
 
 const NATIVE_CONTAINERS = ["mp4", "m4v", "mov", "webm"];
+const WEBM_VIDEO = ["vp8", "vp9", "av1"];
+const WEBM_AUDIO = ["opus", "vorbis"];
+
+/**
+ * Matroska that carries only WebM codecs (what yt-dlp writes for VP9/AV1 + Opus) is WebM to
+ * Chromium's demuxer, so it plays directly instead of through a live transcode.
+ */
+export function isWebmCompatibleMkv(info: MediaInfo): boolean {
+  return extensionOf(info.path) === "mkv" && WEBM_VIDEO.includes(info.videoCodec)
+    && info.audioTracks.every((t) => WEBM_AUDIO.includes(t.codec));
+}
 
 /** MIME string (with codecs) handed to canPlayType; "" if not a native candidate. */
 export function nativeMime(info: MediaInfo): string {
   const ext = extensionOf(info.path);
-  if (!NATIVE_CONTAINERS.includes(ext)) return "";
+  const webmMkv = isWebmCompatibleMkv(info);
+  if (!NATIVE_CONTAINERS.includes(ext) && !webmMkv) return "";
   if (info.audioTracks.length > 1) return "";
   const v = VIDEO_CODEC_TAGS[info.videoCodec];
   if (!v) return "";
@@ -48,7 +60,7 @@ export function nativeMime(info: MediaInfo): string {
     codecs.push(a);
   }
   if (info.pixFmt && info.pixFmt !== "yuv420p") return "";
-  return `${mimeForPath(info.path)}; codecs="${codecs.join(", ")}"`;
+  return `${webmMkv ? "video/webm" : mimeForPath(info.path)}; codecs="${codecs.join(", ")}"`;
 }
 
 /** H.264 8-bit 4:2:0 can be remuxed with -c copy and still play in Chromium. */

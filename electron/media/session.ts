@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, statSync } from "node:fs";
+import { mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -8,12 +8,18 @@ import { supersededError } from "../../shared/superseded";
 import { ENCODER_FALLBACKS, buildStreamArgs } from "./ffmpegArgs";
 import { ffmpegPath } from "./binaries";
 import { killProcess, spawnTracked } from "./processes";
+import { mediaDebug } from "./debug";
 
 export const CACHE_ROOT = join(tmpdir(), "svp-media-cache");
+/**
+ * This process's sessions. Per process, so one instance's startup cleanup (a dev build next to the
+ * installed app, or parallel test runs) never deletes another's live stream under ffmpeg.
+ */
+export const PROCESS_ROOT = join(CACHE_ROOT, String(process.pid));
 
 export class StreamSession {
   readonly id = randomUUID();
-  readonly dir = join(CACHE_ROOT, this.id);
+  readonly dir = join(PROCESS_ROOT, this.id);
   readonly file = join(this.dir, "out.mp4");
   done = false;
   private proc: ChildProcess | null = null;
@@ -47,7 +53,11 @@ export class StreamSession {
         const child = spawnTracked(ffmpegPath(), args);
         this.proc = child;
         this.stderr = "";
-        child.stderr?.on("data", (d) => (this.stderr += String(d)));
+        child.stderr?.on("data", (d) => {
+          this.stderr += String(d);
+          mediaDebug(`[ffmpeg] ${String(d).trim()}`);
+        });
+        mediaDebug(`[ffmpeg args] ${args.join(" ")}`);
         const poll = setInterval(() => {
           if (this.bytesWritten() > 0) { clearInterval(poll); resolve(); }
         }, 40);
@@ -55,8 +65,13 @@ export class StreamSession {
         child.on("error", (e) => { clearInterval(poll); this.done = true; reject(e); });
         child.on("exit", (code) => {
           clearInterval(poll);
+          mediaDebug(`[ffmpeg exit] code=${code} bytes=${this.bytesWritten()} stopped=${this.stopped}`);
           if (this.stopped) return;
           const ok = code === 0;
+          // After data has flowed a failure only shows as the stream ending early; say why.
+          if (!ok && this.bytesWritten() > 0) {
+            console.warn(`[ffmpeg] stream ended early (exit ${code}): ${this.stderr.trim().split("\n").pop() ?? ""}`);
+          }
           if (!ok && this.bytesWritten() === 0 && this.encoderIdx < ENCODER_FALLBACKS.length - 1) {
             this.encoderIdx++;
             return launch();
@@ -81,6 +96,18 @@ export class StreamSession {
   }
 }
 
+function processAlive(pid: number): boolean {
+  try { process.kill(pid, 0); return true; } catch (e) { return (e as NodeJS.ErrnoException).code === "EPERM"; }
+}
+
+/** Removes this process's cache and caches left by processes that are gone (and pre-per-process leftovers); a live instance's stays. */
 export function cleanCacheRoot(): void {
-  rmSync(CACHE_ROOT, { recursive: true, force: true });
+  let entries: string[];
+  try { entries = readdirSync(CACHE_ROOT); } catch { return; }
+  for (const name of entries) {
+    const pid = /^\d+$/.test(name) ? Number(name) : NaN;
+    if (pid === process.pid || !(pid > 0) || !processAlive(pid)) {
+      rmSync(join(CACHE_ROOT, name), { recursive: true, force: true });
+    }
+  }
 }

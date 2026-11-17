@@ -29,6 +29,19 @@ describe("nativeMime", () => {
     });
     expect(nativeMime(info)).toContain("video/webm");
   });
+  it("plays mkv with only WebM codecs as webm (yt-dlp downloads)", () => {
+    const opus = { ordinal: 0, codec: "opus", language: "und", title: "", channels: 2 };
+    expect(nativeMime(makeInfo({ path: "/v/a.mkv", videoCodec: "vp9", audioTracks: [opus] })))
+      .toBe('video/webm; codecs="vp09.00.10.08, opus"');
+    expect(nativeMime(makeInfo({ path: "/v/a.MKV", videoCodec: "av1", audioTracks: [] })))
+      .toBe('video/webm; codecs="av01.0.05M.08"');
+  });
+  it("keeps mkv with non-WebM codecs on the ffmpeg path", () => {
+    const opus = { ordinal: 0, codec: "opus", language: "und", title: "", channels: 2 };
+    expect(nativeMime(makeInfo({ path: "/v/a.mkv", videoCodec: "vp9" }))).toBe(""); // vp9 + aac
+    expect(nativeMime(makeInfo({ path: "/v/a.mkv", audioTracks: [opus] }))).toBe(""); // h264 + opus
+    expect(nativeMime(makeInfo({ path: "/v/a.mkv", videoCodec: "vp9", audioTracks: [opus, { ...opus, ordinal: 1 }] }))).toBe("");
+  });
 });
 
 describe("canRemuxVideo", () => {

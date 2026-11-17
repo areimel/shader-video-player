@@ -40,6 +40,20 @@ export function friendlyError(e: unknown): string {
   return msg || "Something went wrong.";
 }
 
+/**
+ * Toast text for a <video> error, from Chromium's MediaError message (e.g.
+ * "PipelineStatus::PIPELINE_ERROR_DECODE: video decode error!"). The raw message goes to the console.
+ */
+export function mediaErrorText(detail?: string): string {
+  const d = detail ?? "";
+  const reason = /DEMUXER_ERROR|FFmpegDemuxer/.test(d) ? "its data couldn't be read"
+    : /audio/i.test(d) && /DECODE/.test(d) ? "audio decoding failed"
+    : /DECODE/.test(d) ? "video decoding failed"
+    : /NETWORK|network/.test(d) ? "loading it failed"
+    : "";
+  return reason ? `This file couldn't be played: ${reason}.` : "This file couldn't be played. It may be corrupt or unsupported.";
+}
+
 export function trackLabel(t: { language: string; title: string; codec: string }, n: number): string {
   const lang = t.language && t.language !== "und" ? t.language.toUpperCase() : "";
   return [`Track ${n}`, t.title, lang, t.codec].filter(Boolean).join(" · ");

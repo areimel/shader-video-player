@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ENCODER_FALLBACKS, buildStreamArgs, buildSubtitleArgs, targetBitrate } from "../electron/media/ffmpegArgs";
+import { ENCODER_FALLBACKS, buildStreamArgs, buildSubtitleArgs, streamStartSec, targetBitrate } from "../electron/media/ffmpegArgs";
 import { makeInfo } from "./fixtures";
 
 const base = { input: "/v/a.mkv", output: "/tmp/o.mp4", startSec: 0, audioOrdinal: 0 };
@@ -23,6 +23,14 @@ describe("buildStreamArgs", () => {
     const sw = buildStreamArgs(info, { ...base, encoder: "libx264" });
     expect(sw).toContain("libx264");
     expect(sw).toContain("yuv420p");
+    expect(sw.join(" ")).toContain("-force_key_frames expr:gte(t,n_forced*2)");
+  });
+  it("bounds fragments by duration in both modes, and copy never forces keyframes", () => {
+    const remux = buildStreamArgs(makeInfo(), { ...base, encoder: "libx264" }).join(" ");
+    const enc = buildStreamArgs(makeInfo({ videoCodec: "hevc" }), { ...base, encoder: "libx264" }).join(" ");
+    expect(remux).toContain("-frag_duration 1000000");
+    expect(enc).toContain("-frag_duration 1000000");
+    expect(remux).not.toContain("-force_key_frames");
   });
   it("re-encodes non-aac audio to stereo aac", () => {
     const info = makeInfo({ audioTracks: [{ ordinal: 0, codec: "ac3", language: "und", title: "", channels: 6 }] });
@@ -66,5 +74,18 @@ describe("protocol whitelist", () => {
       expect(a[a.indexOf("-protocol_whitelist") + 1]).toBe("file,crypto,data");
       expect(a.indexOf("-protocol_whitelist")).toBeLessThan(a.indexOf("-i"));
     }
+  });
+});
+
+describe("streamStartSec", () => {
+  it("keeps a stream from starting within 3 s of the end", () => {
+    expect(streamStartSec(20, 20)).toBe(17);
+    expect(streamStartSec(18.5, 20)).toBe(17);
+    expect(streamStartSec(10, 20)).toBe(10);
+  });
+  it("handles short, unknown and negative cases", () => {
+    expect(streamStartSec(2, 2)).toBe(0);
+    expect(streamStartSec(50, 0)).toBe(50);
+    expect(streamStartSec(-1, 20)).toBe(0);
   });
 });

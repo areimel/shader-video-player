@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatRemaining, formatTime } from "../renderer/utils/format";
+import { formatRemaining, formatTime, mediaErrorText } from "../renderer/utils/format";
 
 describe("formatRemaining", () => {
   it("shows the time left with a leading minus", () => {
@@ -14,5 +14,20 @@ describe("formatRemaining", () => {
     expect(formatRemaining(61, NaN)).toBe("1:01");
     expect(formatRemaining(61, Infinity)).toBe("1:01");
     expect(formatRemaining(61, -5)).toBe("1:01");
+  });
+});
+
+describe("mediaErrorText", () => {
+  it("names the failing stage from Chromium's message", () => {
+    expect(mediaErrorText("PipelineStatus::DEMUXER_ERROR_COULD_NOT_OPEN: FFmpegDemuxer: open context failed"))
+      .toBe("This file couldn't be played: its data couldn't be read.");
+    expect(mediaErrorText("PipelineStatus::PIPELINE_ERROR_DECODE: Failed to send audio packet for decoding: {}"))
+      .toBe("This file couldn't be played: audio decoding failed.");
+    expect(mediaErrorText("PipelineStatus::PIPELINE_ERROR_DECODE: video decode error!"))
+      .toBe("This file couldn't be played: video decoding failed.");
+  });
+  it("falls back to the generic text", () => {
+    expect(mediaErrorText()).toContain("may be corrupt or unsupported");
+    expect(mediaErrorText("something new")).toContain("may be corrupt or unsupported");
   });
 });
