@@ -101,7 +101,8 @@ website/                  Astro 7 static site (CRT-TV), own package.json, pnpm-w
 
 ## How it fits together
 
-- **Playback:** ffprobe every file. Native when Chromium can decode it; otherwise ffmpeg remuxes or transcodes live into a growing fragmented MP4 served at `svp-media://stream/<id>`. Seeking or switching audio in that mode restarts ffmpeg (`restartStream`).
+- **Playback:** ffprobe every file. Native when Chromium can decode it (including `.mkv` with only WebM codecs, offered as `video/webm`: `isWebmCompatibleMkv`); otherwise ffmpeg remuxes or transcodes live into a growing fragmented MP4 served at `svp-media://stream/<id>` (2 s keyframes on transcodes, fragments of at most 1 s). Seeking or switching audio in that mode restarts ffmpeg (`restartStream`). Chromium reports a growing stream as unseekable, so `seek()` checks `video.seekable`, not `buffered`. A stream never starts in the last 3 s (`streamStartSec`): ffmpeg would write no complete fragment and Chromium fails to open it. Session and subtitle temp files live in `<tmp>/svp-media-cache/<pid>/`, so one instance's startup cleanup never deletes another's.
+- **Stream ranges:** Chromium re-requests the stream mid-playback with `Range: bytes=N-`; the answer must start at N (`streamHead` in `electron/media/streamRange.ts`): an open-ended 206 (`bytes N-<far>/*`) whose body stays open until ffmpeg is done, because Chromium takes the end of any body of unknown length as the end of the file. Ignoring the Range was the "may be corrupt" bug. `SVP_DEBUG_MEDIA=1` logs requests, Range headers and ffmpeg.
 - **Effect on:** the `<video>` stays in the DOM but hidden (`.video-hidden`, never `display:none`). `videoInput` wraps it as a `FrameInput`; `VideoSource` uploads frames from that input (on `requestVideoFrameCallback` for a video), `PassGraph` runs the effect's passes, the last pass draws to the canvas. `EffectRenderer` renders only when a frame, parameter or size changed, or while an `animated` parameter is non-zero during playback.
 - **Effect off:** the plain `<video>` is shown, the canvas is unmounted and its WebGL context released.
 - **Home screen:** shown whenever no plan is open (`App.tsx`). `useHomeMenu` holds the model (rows from `utils/home/model.ts`, library rows from `libraryRows.ts`) and the cursor; `layout()` is pure and turns state into a draw list in logical units (320×240, 40×30 cells of 8 px, 2-cell inset). `useHomePaint` paints it with `painter.ts` onto the 640×480 2D canvas, which is the effect's input through `canvasInput` (`FrameInput`). The effect draws it; the 2D canvas itself is kept 1 px and invisible as the source.
@@ -174,7 +175,7 @@ SVP_CAPTURE_KEYS=shift+E SVP_CAPTURE_EVAL='document.querySelector("canvas")?.wid
   pnpm exec electron --no-sandbox . "$PWD/fixtures/clip.mp4"
 ```
 
-- Keep test windows out of the way: `SVP_WINDOW_BOUNDS=x,y,w,h` sets the window's bounds and `SVP_WINDOW_INACTIVE=1` shows it without focus (`devWindowPlacement` in `devCapture.ts`, dev only). GNOME on Wayland ignores client positioning, so add `--ozone-platform=x11`. Coordinates are the `xrandr --listmonitors` layout; the user's test monitor is DP-1 (a 640x400 window in its bottom-right corner).
+- Keep test windows out of the way: `SVP_WINDOW_BOUNDS=x,y,w,h` sets the window's bounds and `SVP_WINDOW_INACTIVE=1` shows it without focus (`devWindowPlacement` in `devCapture.ts`, dev only). GNOME on Wayland ignores client positioning, so add `--ozone-platform=x11`, and with it `--disable-gpu-compositing`: under XWayland the GPU process crashes (`exit_code=8704`) as soon as a video plays, and every video then fails with decode errors that are not the app's. Coordinates are the `xrandr --listmonitors` layout; the user's test monitor is DP-1 (a 640x400 window in its bottom-right corner).
 - `SVP_CAPTURE_KEYS` presses keys one second after load (`e`, `n`, `shift+E`, `ArrowRight`, …); `SVP_CAPTURE_EVAL` logs the result of a page expression as `[eval] …`; renderer console output is echoed.
 - Effect state persists between runs, so `e` toggles whatever the last run left. Set state explicitly with an `SVP_CAPTURE_EVAL` that writes or clears `localStorage` in a short first run.
 - Scanlines fade out below 2.5 output pixels per line by design; capture at 1080p or larger to see them, and crop/zoom with ffmpeg to inspect the mask.
@@ -219,6 +220,7 @@ A new effect can reuse `glsl/common/` (subcarrier, composite encode/decode, blur
 - Not measured: 4K frame time, whether hardware video decode engages (`chrome://gpu`).
 - The horizontal filter in `beam.glsl` does not widen when the raster is minified (windows narrower than the raster width may alias).
 - Phosphor persistence treats a re-render of the same paused frame as a new frame.
+- A `.mkv` with WebM codecs plays natively but is served as `application/octet-stream` (`mimeForPath`); Chromium sniffs it. Matroska with H.264/HEVC still goes through ffmpeg.
 - No HDR, no image-based subtitles (PGS/VobSub), ASS styling is dropped on conversion.
 - Home screen: thumbnails and a tape-shelf view are not built (`thumb` is reserved in the library item and always null). Search, per-folder sort options and an online update check are out of scope (per the spec).
 - Home screen: directory drop and the Add folder dialog are not exercised interactively (`partitionDrop` is unit-tested only).

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+- Fix "corrupt file" errors when seeking
+- YouTube .mkv downloads play directly
+- Faster seeking in converted videos
+- Playback errors say what failed
+
 ## 0.3.0 - 2026-11-16
 - First public beta
 - One-command install for Debian, Ubuntu and Pop!_OS
