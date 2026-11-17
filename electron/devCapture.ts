@@ -46,3 +46,25 @@ export function setupDevCapture(win: BrowserWindow): void {
     }, delay);
   });
 }
+
+export interface DevPlacement {
+  bounds?: { x: number; y: number; width: number; height: number };
+  /** Show without taking focus, so a test run never lands on top of the person's work. */
+  inactive: boolean;
+}
+
+/**
+ * Dev-only window placement for unattended runs (null in packaged builds or when unset):
+ *   SVP_WINDOW_BOUNDS=x,y,w,h   initial window bounds in screen coordinates
+ *   SVP_WINDOW_INACTIVE=1       show the window without focusing it
+ * GNOME on Wayland ignores client positioning; launch with --ozone-platform=x11 (XWayland) for bounds to apply.
+ */
+export function devWindowPlacement(): DevPlacement | null {
+  if (app.isPackaged) return null;
+  const nums = (process.env.SVP_WINDOW_BOUNDS ?? "").split(",").map(Number);
+  const bounds = nums.length === 4 && nums.every(Number.isFinite) && nums[2] > 0 && nums[3] > 0
+    ? { x: nums[0], y: nums[1], width: nums[2], height: nums[3] }
+    : undefined;
+  const inactive = process.env.SVP_WINDOW_INACTIVE === "1";
+  return bounds || inactive ? { bounds, inactive } : null;
+}

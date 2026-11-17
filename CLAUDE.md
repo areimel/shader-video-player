@@ -174,6 +174,7 @@ SVP_CAPTURE_KEYS=shift+E SVP_CAPTURE_EVAL='document.querySelector("canvas")?.wid
   pnpm exec electron --no-sandbox . "$PWD/fixtures/clip.mp4"
 ```
 
+- Keep test windows out of the way: `SVP_WINDOW_BOUNDS=x,y,w,h` sets the window's bounds and `SVP_WINDOW_INACTIVE=1` shows it without focus (`devWindowPlacement` in `devCapture.ts`, dev only). GNOME on Wayland ignores client positioning, so add `--ozone-platform=x11`. Coordinates are the `xrandr --listmonitors` layout; the user's test monitor is DP-1 (a 640x400 window in its bottom-right corner).
 - `SVP_CAPTURE_KEYS` presses keys one second after load (`e`, `n`, `shift+E`, `ArrowRight`, …); `SVP_CAPTURE_EVAL` logs the result of a page expression as `[eval] …`; renderer console output is echoed.
 - Effect state persists between runs, so `e` toggles whatever the last run left. Set state explicitly with an `SVP_CAPTURE_EVAL` that writes or clears `localStorage` in a short first run.
 - Scanlines fade out below 2.5 output pixels per line by design; capture at 1080p or larger to see them, and crop/zoom with ffmpeg to inspect the mask.
