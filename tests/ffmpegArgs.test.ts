@@ -23,6 +23,14 @@ describe("buildStreamArgs", () => {
     const sw = buildStreamArgs(info, { ...base, encoder: "libx264" });
     expect(sw).toContain("libx264");
     expect(sw).toContain("yuv420p");
+    expect(sw.join(" ")).toContain("-force_key_frames expr:gte(t,n_forced*2)");
+  });
+  it("bounds fragments by duration in both modes, and copy never forces keyframes", () => {
+    const remux = buildStreamArgs(makeInfo(), { ...base, encoder: "libx264" }).join(" ");
+    const enc = buildStreamArgs(makeInfo({ videoCodec: "hevc" }), { ...base, encoder: "libx264" }).join(" ");
+    expect(remux).toContain("-frag_duration 1000000");
+    expect(enc).toContain("-frag_duration 1000000");
+    expect(remux).not.toContain("-force_key_frames");
   });
   it("re-encodes non-aac audio to stereo aac", () => {
     const info = makeInfo({ audioTracks: [{ ordinal: 0, codec: "ac3", language: "und", title: "", channels: 6 }] });
