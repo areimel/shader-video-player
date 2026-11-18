@@ -31,7 +31,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
     .filter((g) => g.rows.length);
 
   return (
-    <div className="help-backdrop" ref={ref}>
+    <div className="backdrop" ref={ref}>
       <Panel className="shortcut-help" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts"
         tabIndex={-1} onDismiss={onClose} dismissOutside>
         <PanelHeader title="Keyboard shortcuts">

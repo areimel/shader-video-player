@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { looksLikeUrl } from "../utils/urlInput";
 import { Button } from "./common/Button";
-import { Panel, PanelHeader } from "./common/Panel";
+import { Dialog } from "./common/Dialog";
 
 interface Props {
   /** Starts the download; rejects with a readable message on failure. */
@@ -18,7 +18,6 @@ export function OpenUrlDialog({ onSubmit, onClose }: Props) {
   const valid = looksLikeUrl(value);
 
   useEffect(() => {
-    input.current?.focus();
     let live = true;
     // Prefill from the clipboard when it is readable without a prompt; any failure just skips it.
     navigator.clipboard?.readText?.().then((t) => {
@@ -27,8 +26,8 @@ export function OpenUrlDialog({ onSubmit, onClose }: Props) {
     return () => { live = false; };
   }, []);
 
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
+  const submit = async (e?: FormEvent) => {
+    e?.preventDefault();
     if (!valid || busy) return;
     setBusy(true);
     setError(null);
@@ -41,21 +40,18 @@ export function OpenUrlDialog({ onSubmit, onClose }: Props) {
   };
 
   return (
-    <div className="help-backdrop">
-      <Panel className="open-url" role="dialog" aria-modal="true" aria-label="Open URL" onDismiss={onClose} dismissOutside>
-        <form onSubmit={submit}>
-          <PanelHeader title="Open URL" />
-          <input ref={input} className="open-url-input" type="text" inputMode="url" spellCheck={false} autoComplete="off"
-            placeholder="https://www.youtube.com/watch?v=…" aria-label="Video URL" value={value}
-            onChange={(e) => { setValue(e.target.value); setError(null); }} />
-          <p className="open-url-note">Downloads with yt-dlp to Videos/Shader Video Player</p>
-          {error && <p className="open-url-error" role="alert">{error}</p>}
-          <div className="open-url-actions">
-            <Button variant="quiet" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={!valid || busy}>{busy ? "Starting…" : "Download and play"}</Button>
-          </div>
-        </form>
-      </Panel>
-    </div>
+    <Dialog title="Open URL" onDismiss={onClose} width="520px"
+      actions={<>
+        <Button variant="quiet" onClick={onClose}>Cancel</Button>
+        <Button disabled={!valid || busy} onClick={() => submit()}>{busy ? "Starting…" : "Download and play"}</Button>
+      </>}>
+      <form className="dialog-field" onSubmit={submit}>
+        <input ref={input} className="dialog-input" type="text" inputMode="url" spellCheck={false} autoComplete="off"
+          placeholder="https://www.youtube.com/watch?v=…" aria-label="Video URL" value={value}
+          onChange={(e) => { setValue(e.target.value); setError(null); }} />
+      </form>
+      <p className="dialog-note">Downloads with yt-dlp to Videos/Shader Video Player</p>
+      {error && <p className="dialog-error" role="alert">{error}</p>}
+    </Dialog>
   );
 }

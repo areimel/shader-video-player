@@ -3,7 +3,7 @@ export type {
   QueueItem, OpenResult,
 } from "../../shared/types";
 
-export type ToastKind = "success" | "error";
+export type ToastKind = "success" | "error" | "info";
 
 export interface ToastAction {
   label: string;

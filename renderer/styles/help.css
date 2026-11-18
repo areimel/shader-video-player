@@ -1,6 +1,4 @@
 /* Shortcut-help overlay, time button, subtitle menu. */
-.help-backdrop { position: absolute; inset: 0; z-index: var(--z-panel); display: grid; place-items: center; padding: var(--sp-4);
-  background: color-mix(in srgb, var(--bezel-deep) 55%, transparent); }
 .shortcut-help { position: static; width: min(900px, 100%); max-height: 100%; overflow-y: auto; outline: none; }
 .help-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--sp-4); }
 .help-group h3 { margin: 0 0 var(--sp-1); font-size: var(--fs-sm); font-weight: 600; color: var(--dim); }

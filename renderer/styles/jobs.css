@@ -1,26 +1,28 @@
-.progress { height: 4px; overflow: hidden; }
-.progress-fill { transition: width 0.2s var(--ease); }
-.progress.is-indeterminate .progress-fill { width: 40%; animation: progress-slide 1.2s var(--ease) infinite; }
-@keyframes progress-slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+/* Progress bar: VCR blocks like the volume bar (slider.css), flexible width. */
+.progress { display: flex; gap: 2px; align-items: center; height: 16px; }
+.progress-block { flex: 1; min-width: 0; height: 2px; background: var(--osd-ink); opacity: 0.7; }
+.progress-block.on { height: 12px; opacity: 1; box-shadow: var(--osd-fringe); }
+.progress.is-indeterminate .progress-block { animation: progress-scan 1.2s steps(2, jump-none) infinite; }
+@keyframes progress-scan { 0%, 100% { height: 2px; opacity: 0.7; } 50% { height: 12px; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .progress.is-indeterminate .progress-block { animation: none; } }
 
-.job-card { pointer-events: auto; display: flex; flex-direction: column; gap: var(--sp-2); width: 320px; max-width: 100%;
-  padding: var(--sp-3); border-radius: var(--r-ctl); background: var(--panel-glass); color: var(--phosphor); font-size: var(--fs-md);
-  border: 1px solid var(--line); }
-.job-failed { border-color: var(--tally); }
-.job-head { display: flex; align-items: center; gap: var(--sp-2); }
-.job-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.job-meta, .job-actions { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); }
+/* Job cards: siblings of the toasts (solid blue VCR box, pixel text), stacked above them. */
+.job-card { pointer-events: auto; display: flex; flex-direction: column; gap: var(--px-sm); width: 320px; max-width: 100%;
+  padding: var(--px-sm); border-radius: 0; background: var(--osd-panel-solid); color: var(--osd-ink);
+  border: var(--osd-rule) solid var(--osd-ink); font-family: var(--font-pixel); font-size: var(--px-sm); line-height: var(--px-md);
+  text-transform: uppercase; text-shadow: var(--osd-fringe); }
+.job-failed { border-color: var(--osd-alert); }
+.job-head { display: flex; align-items: center; gap: var(--px-sm); }
+.job-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: normal; }
+.job-meta, .job-actions { display: flex; align-items: center; gap: var(--px-sm); }
 .job-meta { justify-content: space-between; }
-.job-label, .job-eta { color: var(--dim); font-variant-numeric: tabular-nums; }
+.job-label, .job-eta { color: var(--osd-dim); font-variant-numeric: tabular-nums; }
 .job-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.job-error { color: var(--tally); font-size: var(--fs-sm); overflow-wrap: anywhere; }
-.job-head .icon-btn { width: 28px; height: 28px; flex: none; }
-
-/* Export dialog (reuses .help-backdrop and .panel). */
-.export-dialog { position: static; width: min(460px, 100%); }
-.export-body { display: flex; flex-direction: column; gap: var(--sp-2); }
-.export-body:focus-visible { box-shadow: none; }
-.export-look, .export-note { margin: 0; font-size: var(--fs-md); }
-.export-note { color: var(--dim); font-size: var(--fs-sm); }
-.export-size { display: flex; flex-direction: column; gap: var(--sp-1); }
-.export-actions { display: flex; justify-content: flex-end; gap: var(--sp-2); margin-top: var(--sp-1); }
+.job-error { color: var(--osd-ink); padding-left: var(--px-md); position: relative; overflow-wrap: anywhere; }
+.job-error::before { content: ""; position: absolute; left: 0; top: 4px; width: var(--px-sm); height: var(--px-sm); background: var(--osd-alert); }
+.job-head .icon-btn { width: 24px; height: 24px; flex: none; color: var(--osd-ink); border-radius: 0; }
+.job-head .icon-btn:hover, .job-head .icon-btn:focus-visible { background: var(--osd-hi); color: var(--osd-hi-ink); }
+.job-card .btn { font: inherit; text-transform: inherit; text-shadow: inherit; color: inherit; border-radius: 0; background: none;
+  border: var(--osd-rule) solid currentColor; padding: 0 var(--sp-1); }
+.job-card .btn:hover, .job-card .btn:focus-visible { background: var(--osd-hi); color: var(--osd-hi-ink); border-color: var(--osd-hi);
+  text-shadow: none; outline: none; }

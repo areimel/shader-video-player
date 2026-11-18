@@ -12,7 +12,7 @@ export function useConvert(deps: FeatureDeps): FeatureCommand {
   const run = useCallback(() => {
     const p = planRef.current;
     if (!p) return notify("error", "Open a video first");
-    if (p.mode !== "transcode") return notify("success", "This file already plays natively");
+    if (p.mode !== "transcode") return notify("info", "This file already plays natively");
     window.player.convertCurrent(p.audioOrdinal).then(
       () => undefined, (e) => notify("error", friendlyError(e)),
     );
@@ -24,7 +24,7 @@ export function useConvert(deps: FeatureDeps): FeatureCommand {
   useEffect(() => {
     if (!path || !transcoding || hinted.current.has(path)) return;
     hinted.current.add(path);
-    notify("success", "Seeking may stutter", { label: "Convert for smooth playback", run });
+    notify("info", "Seeking may stutter", { label: "Convert for smooth playback", run });
   }, [path, transcoding, notify, run]);
 
   return { run, overlay: null };
