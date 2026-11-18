@@ -45,7 +45,7 @@
 
   /* misc */
   --focus-ring: 0 0 0 2px var(--lamp);
-  --controls-h: 88px;
+  --controls-h: 84px;
   --ease: cubic-bezier(.2, .7, .2, 1);
   --dur: 160ms;
 }
