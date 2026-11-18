@@ -61,4 +61,16 @@ describe("registry", () => {
     expect(j.state).toBe("cancelled");
     off();
   });
+  it("runs a cleanup registered after the job was cancelled, but not after it finished", () => {
+    const j = new Job("download", "a");
+    j.cancel();
+    const late = vi.fn();
+    j.onCancel(late);
+    expect(late).toHaveBeenCalledTimes(1);
+    const k = new Job("download", "b");
+    k.succeed("/x", []);
+    const never = vi.fn();
+    k.onCancel(never);
+    expect(never).not.toHaveBeenCalled();
+  });
 });

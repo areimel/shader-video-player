@@ -28,8 +28,17 @@ export class Job {
     return () => { this.listeners.delete(cb); };
   }
 
-  /** Runs when the job is cancelled (kill a child, delete a .part file). Not run on success or failure. */
+  /**
+   * Runs when the job is cancelled (kill a child, delete a .part file). Not run on success or failure.
+   * Registered after the cancel already happened (a job cancelled while awaiting), it runs at once,
+   * so a child spawned late is never left running.
+   */
   onCancel(fn: () => void): void {
+    if (this.state === "cancelled") {
+      try { fn(); } catch { /* cleanup is best effort */ }
+      return;
+    }
+    if (this.finished) return;
     this.cleanups.push(fn);
   }
 
