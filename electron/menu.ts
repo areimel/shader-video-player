@@ -5,6 +5,7 @@ import { showOpenDialog } from "./ipc";
 import { getRecents, onRecentsChanged } from "./recents";
 import { getWindow } from "./window";
 import { openLink, setAboutPanel } from "./links";
+import { checkFromMenu } from "./update/menuCheck";
 
 async function openFromMenu(): Promise<void> {
   try {
@@ -63,6 +64,7 @@ function build(): void {
       { type: "separator" },
       { label: "Website", click: () => openLink("website") },
       { label: "Report an Issue", click: () => openLink("issues") },
+      { label: "Check for updates…", click: () => void checkFromMenu(app.getVersion()) },
       { type: "separator" },
       { role: "about", label: "About Shader Video Player" },
     ] },

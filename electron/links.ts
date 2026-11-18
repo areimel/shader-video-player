@@ -4,6 +4,7 @@ import { app, shell } from "electron";
 export const LINKS = {
   website: "https://areimel.github.io/shader-video-player/",
   issues: "https://github.com/areimel/shader-video-player/issues",
+  releases: "https://github.com/areimel/shader-video-player/releases",
 } as const;
 
 export function openLink(key: keyof typeof LINKS): void {
