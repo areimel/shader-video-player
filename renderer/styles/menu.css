@@ -1,3 +1,9 @@
+.dropdown { position: relative; }
+.dropdown-menu { position: absolute; bottom: 40px; right: 0; margin: 0; padding: var(--sp-1); list-style: none;
+  background: var(--panel-raised); border-radius: var(--r-ctl); min-width: 130px; max-height: 260px; overflow-y: auto;
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--bezel-deep) 80%, transparent); }
+.dropdown-menu .list-row { white-space: nowrap; }
+
 /* Control-bar popups (speed, audio, subtitles, queue): 90s VCR on-screen-menu look.
    Every selector is scoped under .controls so the effects and info panels keep their own style. */
 

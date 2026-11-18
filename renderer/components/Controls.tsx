@@ -56,7 +56,7 @@ export function Controls({ plan, player: p, visible, fullscreen, subs, onAudio, 
           <TrackMenus plan={plan} subs={subs} onAudio={onAudio} />
           <Dropdown
             icon="speed" label="Speed ([ and ])" selected={p.rate} onSelect={p.setRate}
-            buttonText={`${p.rate}×`} options={SPEEDS.map((s) => ({ value: s, label: `${s}×` }))}
+            buttonText={`${p.rate}X`} options={SPEEDS.map((s) => ({ value: s, label: `${s}X` }))}
           />
           <IconButton icon="effects" label={hint("toggleEffectsPanel", mac)} active={effectsActive} onClick={onEffects} />
           <IconButton icon="info" label={hint("info", mac)} onClick={onInfo} />
