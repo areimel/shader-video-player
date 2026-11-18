@@ -15,6 +15,7 @@ export function buildExportRequest(
   fx: ExportFx,
   size: ExportSize,
   windowSize: { width: number; height: number },
+  audioOrdinal = 0,
 ): ExportRequest | null {
   if (!fx.effect) return null;
   const req: ExportRequest = {
@@ -22,6 +23,7 @@ export function buildExportRequest(
     presetId: fx.presetId === CUSTOM ? null : fx.presetId,
     values: { ...fx.values },
     size,
+    audioOrdinal,
   };
   if (size === "window") {
     req.windowSize = { width: Math.max(1, Math.round(windowSize.width)), height: Math.max(1, Math.round(windowSize.height)) };

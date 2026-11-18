@@ -30,6 +30,7 @@ function runCommand(parsed: Exclude<ParsedCli, { kind: "gui" }>): void {
     registerScheme();
   } else if (!command?.needsGpu) {
     app.disableHardwareAcceleration();
+    app.commandLine.appendSwitch("disable-gpu-shader-disk-cache"); // the GPU process still starts and logs a persistent-cache error
   }
   app.on("window-all-closed", () => undefined); // a hidden worker window closing must not quit us
   process.on("SIGTERM", () => { cancelAll(); app.exit(143); });

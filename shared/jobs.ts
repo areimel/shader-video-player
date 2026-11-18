@@ -28,6 +28,8 @@ export interface ExportRequest {
   presetId: string | null;
   values: Record<string, number>;
   size: "source" | "1080p" | "window";
+  /** The audio track to mux (the player's current one); main checks it against the file. */
+  audioOrdinal: number;
   windowSize?: { width: number; height: number };
 }
 

@@ -18,7 +18,7 @@ const windowPixels = () => ({
 });
 
 /** Modal for "Export with effect": shows the look that will be baked in and the output size. */
-export function ExportDialog({ fx, onClose }: { fx: FeatureDeps["fx"]; onClose: () => void }) {
+export function ExportDialog({ fx, audioOrdinal, onClose }: { fx: FeatureDeps["fx"]; audioOrdinal: number; onClose: () => void }) {
   const [size, setSize] = useState<ExportSize>("source");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export function ExportDialog({ fx, onClose }: { fx: FeatureDeps["fx"]; onClose: 
   const look = fx.effect ? `${fx.effect.label} · ${fx.presetId === CUSTOM || !preset ? "Custom" : preset.label}` : null;
 
   const start = async () => {
-    const req = buildExportRequest(fx, size, windowPixels());
+    const req = buildExportRequest(fx, size, windowPixels(), audioOrdinal);
     if (!req) return;
     setBusy(true);
     setError(null);

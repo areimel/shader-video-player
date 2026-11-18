@@ -4,6 +4,7 @@ import { nativeMime } from "../../media/formats";
 import { probeFile } from "../../media/probe";
 import { EXIT_CANCELLED, EXIT_FAIL, EXIT_OK, EXIT_USAGE, type CliCommand } from "../router";
 import { COMMAND_SPECS } from "../args";
+import { watchJob } from "../watchJob";
 
 export const convertCommand: CliCommand = {
   name: "convert",
@@ -20,22 +21,10 @@ export const convertCommand: CliCommand = {
     }
     const out = typeof ctx.flags.output === "string" ? resolve(ctx.flags.output) : undefined;
     const job = startConvert(info, info.audioTracks[0]?.ordinal ?? 0, out);
-    const onAbort = () => job.cancel();
-    ctx.signal.addEventListener("abort", onAbort);
-    return new Promise<number>((done) => {
-      const update = () => {
-        if (job.state === "running") {
-          ctx.reporter.update({ ...job.progress, label: `Converting ${info.name}` });
-          return;
-        }
-        ctx.signal.removeEventListener("abort", onAbort);
-        ctx.reporter.finish();
-        if (job.state === "done") { ctx.log(job.outputPath ?? ""); done(EXIT_OK); }
-        else if (job.state === "cancelled") done(EXIT_CANCELLED);
-        else { ctx.error(`convert: ${job.error ?? "failed"}`); done(EXIT_FAIL); }
-      };
-      job.onChange(update);
-      update();
-    });
+    await watchJob(job, ctx.reporter, ctx.signal, `Converting ${info.name}`);
+    if (job.state === "done") { ctx.log(job.outputPath ?? ""); return EXIT_OK; }
+    if (job.state === "cancelled") return EXIT_CANCELLED;
+    ctx.error(`convert: ${job.error ?? "failed"}`);
+    return EXIT_FAIL;
   },
 };

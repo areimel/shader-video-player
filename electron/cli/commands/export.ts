@@ -4,6 +4,7 @@ import { basename, dirname, extname, resolve } from "node:path";
 import type { CliCommand } from "../router";
 import { EXIT_CANCELLED, EXIT_FAIL, EXIT_OK, EXIT_USAGE } from "../router";
 import { COMMAND_SPECS } from "../args";
+import { watchJob } from "../watchJob";
 import { defaultSize, parseSize } from "../../export/exportArgs";
 import { startExport } from "../../export/exportJob";
 import { uniqueName } from "../../media/outputName";
@@ -75,17 +76,7 @@ export const exportCommand: CliCommand = {
       path: input, info, settings: { effectId: effect, presetId: preset, raw }, size,
       audioOrdinal: info.audioTracks[0]?.ordinal ?? 0, out,
     });
-    const onAbort = () => job.cancel();
-    ctx.signal.addEventListener("abort", onAbort);
-    await new Promise<void>((done) => {
-      const check = () => {
-        if (job.finished) done();
-        else ctx.reporter.update(job.progress);
-      };
-      job.onChange(check);
-      check();
-    });
-    ctx.signal.removeEventListener("abort", onAbort);
+    await watchJob(job, ctx.reporter, ctx.signal);
 
     if (job.state === "done") {
       ctx.reporter.finish(`Wrote ${out} (${size.width}x${size.height})`);

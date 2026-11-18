@@ -9,8 +9,8 @@ describe("buildExportRequest", () => {
   });
   it("copies values and keeps a preset id", () => {
     const values = { a: 1 };
-    const r = buildExportRequest({ effect: { id: "crt" }, values, presetId: "p" }, "1080p", win)!;
-    expect(r).toEqual({ effectId: "crt", presetId: "p", values: { a: 1 }, size: "1080p" });
+    const r = buildExportRequest({ effect: { id: "crt" }, values, presetId: "p" }, "1080p", win, 2)!;
+    expect(r).toEqual({ effectId: "crt", presetId: "p", values: { a: 1 }, size: "1080p", audioOrdinal: 2 });
     expect(r.values).not.toBe(values);
   });
   it("uses a null preset when edited", () => {
