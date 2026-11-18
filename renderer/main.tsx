@@ -4,6 +4,7 @@ import "@fontsource-variable/archivo/wdth.css";
 import "@fontsource/press-start-2p/400.css";
 import "./styles/tokens.css";
 import "./styles/base.css";
+import "./styles/vcr.css";
 import "./styles/panel.css";
 import "./styles/widgets.css";
 import "./styles/controls.css";
