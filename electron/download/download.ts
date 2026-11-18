@@ -1,9 +1,10 @@
+import { readdirSync, rmSync } from "node:fs";
 import { readdir, realpath, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { ffmpegPath, ytDlpPath } from "../media/binaries";
 import { isSupportedExtension } from "../media/formats";
 import { appVideosDir } from "../media/outputDir";
-import { spawnTracked, tailLines } from "../media/processes";
+import { killProcess, spawnTracked, tailLines } from "../media/processes";
 import { isInside } from "../library/ids";
 import { startJob } from "../jobs/registry";
 import type { Job } from "../jobs/job";
@@ -28,6 +29,15 @@ async function removeLeftovers(dir: string, before: Set<string>): Promise<void> 
   }
 }
 
+/** Same, synchronous: the CLI exits right after a cancel, before the child's "close" event can run the async pass. */
+function removeLeftoversSync(dir: string, before: Set<string>): void {
+  try {
+    for (const name of readdirSync(dir)) {
+      if (!before.has(name) && LEFTOVER.test(name)) rmSync(join(dir, name), { force: true });
+    }
+  } catch { /* best effort */ }
+}
+
 /** Starts a yt-dlp download of `rawUrl` into the app's videos folder. Throws synchronously on a bad URL. */
 export function startDownload(rawUrl: unknown): Job {
   const url = parseVideoUrl(rawUrl);
@@ -36,9 +46,10 @@ export function startDownload(rawUrl: unknown): Job {
     const outDir = await appVideosDir();
     const before = await listDir(outDir);
     const args = buildYtDlpArgs(url, outDir, process.env.SVP_FFMPEG_PATH ? ffmpegPath() : undefined);
-    const child = spawnTracked(ytDlpPath(), args, { stdout: true });
+    const child = spawnTracked(ytDlpPath(), args, { stdout: true, group: true });
     job.onCancel(() => {
-      child.kill("SIGKILL");
+      killProcess(child); // the whole group: yt-dlp's merge ffmpeg dies with it
+      removeLeftoversSync(outDir, before);
       // The kill is asynchronous; yt-dlp may still be writing until it is gone.
       child.once("close", () => void removeLeftovers(outDir, before));
     });

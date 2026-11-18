@@ -2,13 +2,17 @@ import { spawn, type ChildProcess } from "node:child_process";
 import type { Readable } from "node:stream";
 
 const tracked = new Set<ChildProcess>();
+/** Children spawned with `group: true`: they lead their own process group, which is killed as a whole. */
+const grouped = new WeakSet<ChildProcess>();
 
 /**
  * `stdout: true` pipes stdout for callers that read the output (library metadata probes, ffmpeg progress);
- * `stdin: true` pipes stdin (frames fed to an encoder). stderr is always piped: drain it (see `tailLines`).
+ * `stdin: true` pipes stdin (frames fed to an encoder). `group: true` makes the child a process-group leader
+ * (`detached`; stdio and ref-counting are unchanged) so killProcess also reaches what it spawned (yt-dlp's ffmpeg). stderr is always piped: drain it (see `tailLines`).
  */
-export function spawnTracked(cmd: string, args: string[], opts: { stdin?: boolean; stdout?: boolean } = {}): ChildProcess {
-  const child = spawn(cmd, args, { stdio: [opts.stdin ? "pipe" : "ignore", opts.stdout ? "pipe" : "ignore", "pipe"] });
+export function spawnTracked(cmd: string, args: string[], opts: { stdin?: boolean; stdout?: boolean; group?: boolean } = {}): ChildProcess {
+  const child = spawn(cmd, args, { stdio: [opts.stdin ? "pipe" : "ignore", opts.stdout ? "pipe" : "ignore", "pipe"], detached: opts.group === true });
+  if (opts.group) grouped.add(child);
   tracked.add(child);
   child.on("exit", () => tracked.delete(child));
   // A child that failed to spawn (binary not installed) emits "error", has no pid and never emits "exit".
@@ -18,7 +22,13 @@ export function spawnTracked(cmd: string, args: string[], opts: { stdin?: boolea
 }
 
 export function killProcess(child: ChildProcess | null): void {
-  if (child && child.exitCode === null) child.kill("SIGKILL");
+  if (!child || child.exitCode !== null) return;
+  if (grouped.has(child) && child.pid !== undefined) {
+    try { process.kill(-child.pid, "SIGKILL"); return; } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "ESRCH") throw e;
+    }
+  }
+  child.kill("SIGKILL");
 }
 
 export function killAll(): void {
