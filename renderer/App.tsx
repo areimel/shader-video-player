@@ -7,6 +7,7 @@ import { useAppCommands } from "./hooks/useAppCommands";
 import { useEffectSettings } from "./hooks/useEffectSettings";
 import { useFullscreen } from "./hooks/useFullscreen";
 import { useIdleControls } from "./hooks/useIdleControls";
+import { useOsd, useOsdControls } from "./hooks/useOsd";
 import { useLibrary } from "./hooks/useLibrary";
 import { usePanels } from "./hooks/usePanels";
 import { usePlayQueue } from "./hooks/usePlayQueue";
@@ -39,11 +40,13 @@ export function App() {
   const fs = useFullscreen(stageRef);
   // The end screen keeps the controls up so the seek bar stays reachable.
   const visible = useIdleControls(!!plan && !player.paused && !panels.showEffects && !queue.ended);
+  const osd = useOsd();
+  const osdControls = useOsdControls(player, queue, osd.show);
   const subs = useSubtitles(plan, useCallback((m: string) => push("error", m), [push]));
   const captureRef = useRef<(() => Promise<Blob>) | null>(null);
   const screenshot = useScreenshot({ videoRef, captureRef, plan, timeSec: player.time, notify: push });
   const { commands, goHome } = useAppCommands({
-    screenshot, toggleRemaining, toggleShortcuts, videoRef, plan, player, fs, fx, subs, queue, panels, notify: push, closeMedia: close, openDialog: () => void openDialog(),
+    showOsd: osd.show, screenshot, toggleRemaining, toggleShortcuts, videoRef, plan, player, fs, fx, subs, queue, panels, notify: push, closeMedia: close, openDialog: () => void openDialog(),
     addFolder: library.addFolder,
   });
   usePlayerShortcuts(true, commands);
@@ -83,8 +86,8 @@ export function App() {
       {plan && <div className="drag-region" />}
       {plan ? (
         <PlayerStage
-          videoRef={videoRef} captureRef={captureRef} plan={plan} initialTime={initialTime} visible={visible} player={player} fullscreen={fs}
-          subs={subs} fx={fx} queue={queue} panels={panels} notify={push} onHome={goHome} onVideoError={onVideoError}
+          videoRef={videoRef} captureRef={captureRef} plan={plan} initialTime={initialTime} visible={visible} player={osdControls.player} fullscreen={fs}
+          subs={subs} fx={fx} queue={osdControls.queue} osd={osd.state} panels={panels} notify={push} onHome={goHome} onSeekStep={(dir) => (dir < 0 ? commands.seekBack : commands.seekForward)?.()} onVideoError={onVideoError}
           onAudio={(o) => restartAt(player.time, o)} onPip={() => togglePip(videoRef.current, push)}
           remaining={remaining} onToggleRemaining={toggleRemaining}
         />

@@ -1,0 +1,13 @@
+/* Transient VCR OSD: status top-left, tape counter top-right, volume bar bottom-centre. */
+.osd { position: absolute; inset: 8%; z-index: var(--z-overlay); pointer-events: none; }
+.osd-status, .osd-counter { position: absolute; top: 0; display: flex; align-items: center; gap: var(--sp-2); }
+.osd-chrome .osd-status, .osd-chrome .osd-counter { top: 48px; }
+.osd-status { left: 0; }
+.osd-counter { right: 0; font-variant-numeric: tabular-nums; }
+.osd-level { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); display: flex; align-items: center; gap: var(--sp-3); white-space: nowrap; }
+.osd-chrome .osd-level { bottom: calc(var(--controls-h) + var(--sp-2) - 8%); }
+.osd-bar { display: flex; gap: 2px; padding: 3px; width: 220px; height: 22px; box-sizing: border-box; background: var(--osd-panel); }
+.osd-bar i { flex: 1; background: transparent; }
+.osd-bar i.on { background: var(--osd-fill); }
+.osd-num { min-width: 3ch; text-align: right; }
+.osd-mute { padding: var(--sp-1) var(--sp-2); }
