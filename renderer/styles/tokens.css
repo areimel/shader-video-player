@@ -41,7 +41,7 @@
   --r-ctl: 6px; --r-panel: 10px; --r-pill: 999px;
 
   /* layers */
-  --z-video: 0; --z-chrome: 10; --z-panel: 20; --z-overlay: 30; --z-toast: 40;
+  --z-video: 0; --z-chrome: 10; --z-panel: 20; --z-overlay: 30; --z-toast: 40; --z-modal: 50;
 
   /* misc */
   --focus-ring: 0 0 0 2px var(--lamp);

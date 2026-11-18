@@ -13,6 +13,6 @@
 .list-row.is-selected { background: var(--selected); }
 .list-row.is-current { color: var(--lamp); }
 
-/* Dimmed full-area backdrop that centres a modal (shortcut help, Dialog). */
-.backdrop { position: absolute; inset: 0; z-index: var(--z-panel); display: grid; place-items: center; padding: var(--sp-4);
+/* Dimmed full-area backdrop that centres a modal (shortcut help, Dialog), above toasts and job cards so it never hides the action row. */
+.backdrop { position: absolute; inset: 0; z-index: var(--z-modal); display: grid; place-items: center; padding: var(--sp-4);
   background: color-mix(in srgb, var(--bezel-deep) 55%, transparent); }
