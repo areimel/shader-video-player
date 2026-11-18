@@ -2,7 +2,7 @@
 
 Desktop video player (Electron) that draws the video through multi-pass WebGL2 shader effects. Two effects: CRT television (`crt/`, first in the registry) and VHS tape (`vhs/`), both built on `effects/shared/`. With no file open, the home screen (video library, TV preset picker, latest updates) is painted on a 2D canvas and drawn through the same effects. Personal daily-use player, Linux/Wayland first. The repo also holds `website/`, a separate Astro product site (see [Website](#website)).
 
-Design specs in `docs/superpowers/specs/`: `2026-11-15-shader-video-player-design.md` (read before changing the shader layer), `2026-11-15-vhs-effect-design.md`, `2026-11-16-home-screen-design.md`.
+Design specs in `docs/superpowers/specs/`: `2026-11-15-shader-video-player-design.md` (read before changing the shader layer), `2026-11-15-vhs-effect-design.md`, `2026-11-16-home-screen-design.md`, `2026-11-18-vcr-osd-ui-design.md` (player chrome and OSD). Plan for drawing the player UI through the shader: `docs/2026-11-18-osd-through-shader-plan.md`.
 
 ## Commands
 
@@ -50,19 +50,21 @@ shared/                   types.ts (PlayerBridge IPC contract, library types), s
   commands.ts             every command: id, label, group, keys, accelerator (single source)
 renderer/
   App.tsx                 thin composition; keep it that way
-  components/             Controls, VideoView, ShaderCanvas, SubtitleOverlay, QueuePanel, ...
+  components/             Controls, VideoView, ShaderCanvas, SubtitleOverlay, QueuePanel, VcrOsd (transient OSD), ...
   components/common/      Button, Panel (+PanelHeader), Kbd, Segmented, Switch, Slider, Dropdown,
-                          IconButton, Icon, Toast
+                          IconButton, Icon, Toast, iconGlyphs (12x12 pixel glyphs behind Icon)
   components/effects/     EffectsPanel, PresetPicker, ParamGroup, ParamControl
   components/home/        HomeScreen (2D canvas + pointer), HomeMirror (visually hidden text for
                           assistive tech and tests), painter.ts (draws a home frame on the canvas)
-  styles/tokens.css       colour (incl. the --tv-* home palette), type, spacing, radius, layer and focus tokens
+  styles/tokens.css       colour (incl. the --tv-* home palette and derived --osd-*), type, spacing, radius, layer and focus tokens
   styles/home.css         home screen canvas and its source placement
+  styles/vcr.css          shared VCR pieces: .vcr-text, .vcr-text-md, .vcr-box, .vcr-panel, .vcr-inverted, .vcr-rule
+  styles/osd.css          the transient OSD (status and level slots)
   hooks/                  usePlaybackSource, usePlayQueue, usePlayerState, usePlayerShortcuts,
-                          useAppCommands (command id → handler), useDismiss, useScreenshot,
+                          useAppCommands (command id → handler), useOsd (+ useOsdControls), useDismiss, useScreenshot,
                           useSubtitles, useEffectSettings, useEffectChain, useHomeMenu (rows,
                           cursor, actions), useHomePaint (layout → canvas), useLibrary, ...
-  utils/                  queue (reducer), effectSettings (reducer), effectStorage, cueText, step,
+  utils/                  queue (reducer), osd (OSD reducer and text formatting), effectSettings (reducer), effectStorage, cueText, step,
                           changelog, credits (bundled CHANGELOG.md and THIRD_PARTY_NOTICES.md headings), dropItems
   utils/home/             types (the 40x30-cell contract), model, libraryRows, layout, layoutRows,
                           state (reducer, keyToAction), hit, pointer, text, frame, effectValues (homeValues)
@@ -119,6 +121,7 @@ website/                  Astro 7 static site (CRT-TV), own package.json, pnpm-w
 - **VHS pipeline:** `frame → tapeH → tapeV → signalEncode → signalDecode → linearize → glowH → glowV → diffuseDown → diffuseUp → main`. The signal pair runs only when `connection` is Composite; the tube passes only when `tv` is on (glow needs `glow > 0`, diffusion needs `halation` or `diffusion > 0`). A disabled pass forwards its first input. `main.frag` draws flat with the TV off and calls the tube display with it on. The tape passes run on the tape raster (`d_tapeWidth` × `d_tapeLines`).
 - **Settings:** `localStorage` keys `svp.effect.active` and `svp.effect.<id>`; loaded through `resolveValues`, so stale or out-of-range values heal. First run (nothing stored): the first registered effect (CRT, the fallback in `effectSettings.ts`) with its first preset selected, and the effect is on. An existing saved state is kept; a stored `active: null` stays off.
 - **Subtitles** are always drawn by `SubtitleOverlay` (track kept in `hidden` mode) so they look the same with the effect on or off.
+- **Player OSD:** `VcrOsd` (DOM, over the picture, `aria-hidden`, same with the effect on or off) shows two independent slots: status (play/pause, seek, speed, repeat, subtitle delay) and level (volume). `utils/osd.ts` is the pure reducer; `useOsd` arms one timeout for the earliest expiry. Keyboard shortcuts show it from `useAppCommands`; clicks on the bar go through `useOsdControls`. The back/forward buttons call the `seekBack`/`seekForward` commands, not a separate path.
 
 ## Rules
 
@@ -132,8 +135,8 @@ website/                  Astro 7 static site (CRT-TV), own package.json, pnpm-w
 - **Float targets:** an effect that stores signed or >1 values sets `requiresFloat`; it then refuses to start on a GPU without float render targets instead of rendering garbage.
 - **Shader licensing:** this repo is MIT. Do not paste code from GPL/LGPL shaders (CRT-Royale, CRT-Guest-Advanced, CRT-Geom, Easymode, zfast, Themaister/NTSC-Adaptive, blargg, Patchy NTSC). Permissive sources may be adapted with a credit in the file and in `THIRD_PARTY_NOTICES.md`.
 - **Commands are declared once** in `shared/commands.ts` (id, label, group, keys, accelerator). Keyboard shortcuts, the native menu, tooltips (`hint()`) and the `?` overlay are generated from it; add a handler in `renderer/hooks/useAppCommands.ts`. Never hard-code a shortcut hint.
-- **Styling uses tokens** from `renderer/styles/tokens.css` (colour, type scale, spacing, radii, layers); no raw hex/rgba outside it. Shared UI primitives live in `renderer/components/common/` (Button, Panel/PanelHeader, Kbd, Segmented, Switch, Slider, Dropdown, IconButton, Toast), and `useDismiss` handles Escape and outside-click for every overlay.
-- **Fonts:** Archivo is bundled via `@fontsource-variable/archivo` and Press Start 2P (the home screen's pixel face) via `@fontsource/press-start-2p`, both imported in `renderer/main.tsx`, so the UI works offline. Don't load fonts from a CDN. Font files are never inlined as `data:` URIs: the CSP has no `font-src` (`img-src` alone allows `data:`), so `vite.config.ts` sets `build.assetsInlineLimit` to return false for `.woff2`, `.ttf` and `.otf`.
+- **Styling uses tokens** from `renderer/styles/tokens.css` (colour, type scale, spacing, radii, layers); no raw hex/rgba outside it. Player chrome uses `--font-pixel` at `--px-sm`/`--px-md` (8/16 px) only, and the `--osd-*` roles (derived from `--tv-*`); shared VCR pieces live in `styles/vcr.css`. Press Start 2P has no `×` or `➤`: use `X` or a CSS/pixel-glyph shape. Shared UI primitives live in `renderer/components/common/` (Button, Panel/PanelHeader, Kbd, Segmented, Switch, Slider, Dropdown, IconButton, Toast), and `useDismiss` handles Escape and outside-click for every overlay.
+- **Fonts:** Archivo is bundled via `@fontsource-variable/archivo` and Press Start 2P (the home screen's pixel face and the player chrome's face) via `@fontsource/press-start-2p`, both imported in `renderer/main.tsx`, so the UI works offline. Don't load fonts from a CDN. Font files are never inlined as `data:` URIs: the CSP has no `font-src` (`img-src` alone allows `data:`), so `vite.config.ts` sets `build.assetsInlineLimit` to return false for `.woff2`, `.ttf` and `.otf`.
 - **Home keys:** home screen keys are widget keys handled in `utils/home/state.ts` (`keyToAction`), not `COMMANDS`; the `?` and `l` keys stay reserved.
 - **Effect off means off.** Don't add per-frame work to the bypass path.
 - **DRY:** reuse `renderer/components/common/*` and existing hooks before writing new ones; extract a shared piece once something appears three times. Pure state logic goes in a reducer-style module under `utils/` with tests; hooks stay thin.

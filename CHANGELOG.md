@@ -1,6 +1,12 @@
 # Changelog
 
 ## Unreleased
+- Control bar in a 90s VCR on-screen-display look
+- Seek bar is a tape position bar with BEGIN and END
+- Volume is a segmented bar, with MUTE shown when muted
+- Pixel-style icons on the controls
+- Speed, audio, subtitle and queue menus and toasts in the VCR style
+- On-screen display for play/pause, seeking, volume, speed, repeat and subtitle delay
 - Fix "corrupt file" errors when seeking
 - YouTube .mkv downloads play directly
 - Faster seeking in converted videos
