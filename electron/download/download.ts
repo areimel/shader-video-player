@@ -81,6 +81,7 @@ export function startDownload(rawUrl: unknown): Job {
     }
     if (!isInside(await realpath(outDir), real)) throw new Error("The download ended up outside the videos folder");
     if (!isSupportedExtension(real)) throw new Error("The downloaded file is not a supported video format");
+    job.report(1, "done"); // an already-downloaded file never reported a stage: do not leave "starting" on the finished card
     job.succeed(real, ["open", "reveal"]);
   });
 }

@@ -24,11 +24,13 @@ function runCommand(parsed: Exclude<ParsedCli, { kind: "gui" }>): void {
   }
   const command = parsed.kind === "command" ? findCommand(parsed.name) : undefined;
   app.commandLine.appendSwitch("log-level", "3"); // Chromium noise would drown the progress bar
-  if (command?.mayOpenGui) {
+  // `download --no-play` never reaches the GUI, so it is headless too.
+  const headless = !command?.needsGpu && (!command?.mayOpenGui || (parsed.kind === "command" && parsed.flags["no-play"] === true));
+  if (!headless && command?.mayOpenGui) {
     // A handoff may continue into the normal GUI start in this process.
     applyGpuFlags();
     registerScheme();
-  } else if (!command?.needsGpu) {
+  } else if (headless) {
     app.disableHardwareAcceleration();
     app.commandLine.appendSwitch("disable-gpu-shader-disk-cache"); // the GPU process still starts and logs a persistent-cache error
   }

@@ -11,7 +11,8 @@
 .toast-error { border-color: var(--osd-alert); }
 .toast-error::before { content: ""; flex: none; width: var(--px-sm); height: var(--px-sm); background: var(--osd-alert); }
 .toast-list { display: contents; }
-.toast:has(.toast-action) { pointer-events: auto; }
-.toast-action { flex: none; color: inherit; font: inherit; text-transform: inherit; border-radius: 0;
+.toast:has(.toast-action) { pointer-events: auto; flex-wrap: wrap; }
+.toast:has(.toast-action) > span:not(.toast-action) { flex: 1 1 120px; min-width: 0; }
+.toast-action { flex: 1 1 100%; color: inherit; font: inherit; text-transform: inherit; border-radius: 0;
   border: var(--osd-rule) solid currentColor; background: none; }
 .toast-action:hover, .toast-action:focus-visible { background: var(--osd-hi); color: var(--osd-hi-ink); border-color: var(--osd-hi); text-shadow: none; }

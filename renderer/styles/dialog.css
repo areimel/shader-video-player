@@ -28,3 +28,4 @@
   border-color: var(--osd-hi); text-shadow: none; outline: none; }
 .dialog .segmented button.is-selected { background: var(--osd-ink); color: var(--osd-panel-solid); text-shadow: none; }
 .dialog .segmented button.is-selected:hover, .dialog .segmented button.is-selected:focus-visible { background: var(--osd-hi); color: var(--osd-hi-ink); }
+.dialog:focus-visible { outline: none; }
