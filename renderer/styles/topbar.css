@@ -1,7 +1,7 @@
 .topbar { position: absolute; top: 0; left: 0; right: 0; z-index: var(--z-chrome); display: flex; align-items: center; gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-4) var(--sp-5) var(--sp-3); -webkit-app-region: drag;
-  background: linear-gradient(var(--scrim), transparent); transition: opacity var(--dur) var(--ease); }
+  padding: var(--sp-1) var(--sp-4) var(--sp-1) var(--sp-2); border-bottom: var(--osd-rule) solid var(--osd-ink); -webkit-app-region: drag;
+  background: var(--osd-panel); transition: opacity var(--dur) var(--ease); }
 .topbar.is-hidden { opacity: 0; pointer-events: none; }
 .topbar .icon-btn { -webkit-app-region: no-drag; }
-.topbar-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-lg); }
-.topbar-pos { color: var(--dim); font-size: var(--fs-md); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.topbar-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topbar-pos { color: var(--osd-dim); white-space: nowrap; text-shadow: none; }

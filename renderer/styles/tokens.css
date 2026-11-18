@@ -12,10 +12,27 @@
   /* colour: the home screen's VCR on-screen display (plain colours: the canvas painter reads them) */
   --tv-blue: #0b1cb0; --tv-navy: #050a4a; --tv-white: #f2f2e8; --tv-yellow: #ffd200; --tv-cyan: #3fe0e0; --tv-red: #ff3b30;
 
+  /* colour: the player's VCR on-screen display, derived from the --tv-* palette (no new hex) */
+  --osd-panel: color-mix(in srgb, var(--tv-blue) 90%, transparent);
+  --osd-panel-solid: var(--tv-blue);
+  --osd-ink: var(--tv-white);
+  --osd-fill: color-mix(in srgb, var(--tv-white) 78%, var(--tv-blue));
+  --osd-dim: var(--tv-cyan);
+  --osd-buffered: color-mix(in srgb, var(--tv-cyan) 35%, transparent);
+  --osd-hi: var(--tv-yellow); --osd-hi-ink: var(--tv-navy);
+  --osd-alert: var(--tv-red);
+  --osd-rule: 2px;
+  /* faint composite fringe (magenta left, cyan right) plus a one-pixel navy drop shadow */
+  --osd-fringe: -1px 0 color-mix(in srgb, var(--tv-red) 45%, transparent),
+    1px 0 color-mix(in srgb, var(--tv-cyan) 45%, transparent), 2px 2px 0 var(--tv-navy);
+
   /* type */
   --font: "Archivo Variable", system-ui, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --fs-xs: 11px; --fs-sm: 12px; --fs-md: 13px; --fs-lg: 15px; --fs-xl: 20px; --fs-2xl: 28px;
   --wdth-expanded: 118;
+  /* the VCR pixel face; crisp only at multiples of 8px */
+  --font-pixel: "Press Start 2P", ui-monospace, monospace;
+  --px-sm: 8px; --px-md: 16px;
 
   /* space */
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px;
@@ -28,7 +45,7 @@
 
   /* misc */
   --focus-ring: 0 0 0 2px var(--lamp);
-  --controls-h: 88px;
+  --controls-h: 86px;
   --ease: cubic-bezier(.2, .7, .2, 1);
   --dur: 160ms;
 }

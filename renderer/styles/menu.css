@@ -3,3 +3,42 @@
   background: var(--panel-raised); border-radius: var(--r-ctl); min-width: 130px; max-height: 260px; overflow-y: auto;
   box-shadow: 0 6px 24px color-mix(in srgb, var(--bezel-deep) 80%, transparent); }
 .dropdown-menu .list-row { white-space: nowrap; }
+
+/* Control-bar popups (speed, audio, subtitles, queue): 90s VCR on-screen-menu look.
+   Every selector is scoped under .controls so the effects and info panels keep their own style. */
+
+/* Speed/audio listbox. Shell + row rules; the subtitle and queue panels reuse the row rules below. */
+.controls .dropdown-menu { min-width: 120px; max-height: 260px; padding: var(--px-sm); border-radius: 0;
+  background: var(--osd-panel-solid); border: var(--osd-rule) solid var(--osd-ink); box-shadow: none;
+  font-family: var(--font-pixel); font-size: var(--px-sm); line-height: var(--px-md); text-transform: uppercase;
+  color: var(--osd-ink); text-shadow: var(--osd-fringe); }
+
+/* Shared menu rows (.list-row from panel.css, restyled here only). */
+.controls .list-row { padding: var(--sp-1) var(--px-sm); gap: var(--px-sm); border-radius: 0; background: none;
+  font-family: var(--font-pixel); font-size: var(--px-sm); line-height: var(--px-md); text-transform: uppercase;
+  color: var(--osd-ink); text-shadow: var(--osd-fringe); white-space: nowrap; }
+.controls .list-row:hover, .controls .list-row:focus, .controls .list-row:focus-visible {
+  background: var(--osd-hi); color: var(--osd-hi-ink); text-shadow: none; outline: none; box-shadow: none; }
+/* The cursor: a right-pointing chevron before the current row, drawn in currentColor so it inverts with the row. */
+.controls .list-row::before { content: ""; flex: none; width: 10px; height: 10px; background: transparent;
+  clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.controls .list-row.is-current { color: var(--osd-ink); }
+.controls .list-row.is-current::before { background: currentColor; }
+.controls .list-row.is-current:hover, .controls .list-row.is-current:focus, .controls .list-row.is-current:focus-visible {
+  color: var(--osd-hi-ink); }
+
+/* Subtitle popover (markup and layout in help.css). */
+.controls .sub-menu.panel { background: var(--osd-panel-solid); border: var(--osd-rule) solid var(--osd-ink);
+  border-radius: 0; box-shadow: none; color: var(--osd-ink); padding: var(--px-sm); color-scheme: dark; }
+.controls .sub-menu .sub-label, .controls .sub-menu .sub-delay-value { font-family: var(--font-pixel); font-size: var(--px-sm);
+  line-height: var(--px-md); text-transform: uppercase; color: var(--osd-dim); text-shadow: var(--osd-fringe); }
+.controls .sub-menu .sub-delay-value { color: var(--osd-ink); }
+.controls .sub-menu .sub-setting { padding: var(--sp-1) var(--px-sm); }
+.controls .sub-menu .sub-delay .icon-btn { font-family: var(--font-pixel); font-size: var(--px-sm); color: var(--osd-ink);
+  background: none; border: var(--osd-rule) solid var(--osd-ink); border-radius: 0; min-width: 24px; height: 24px; padding: 0;
+  text-shadow: var(--osd-fringe); }
+.controls .sub-menu .sub-delay .icon-btn:hover, .controls .sub-menu .sub-delay .icon-btn:focus-visible {
+  background: var(--osd-hi); color: var(--osd-hi-ink); border-color: var(--osd-hi); text-shadow: none; }
+.controls .sub-menu .sub-delay button.list-row { width: auto; }
+.controls .sub-menu .sub-tracks { margin-bottom: var(--px-sm); padding-bottom: var(--px-sm);
+  background: linear-gradient(90deg, var(--osd-ink) 0 6px, transparent 6px 10px) bottom / 100% var(--osd-rule) no-repeat; }

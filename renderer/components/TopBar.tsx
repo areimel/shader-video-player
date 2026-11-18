@@ -15,8 +15,8 @@ export function TopBar({ visible, name, position, onBack }: Props) {
   return (
     <div className={`topbar ${visible ? "" : "is-hidden"}`} onDoubleClick={(e) => e.stopPropagation()}>
       <IconButton icon="back" label={hint("close", IS_MAC)} onClick={onBack} />
-      <span className="topbar-name" title={name}>{name}</span>
-      {position && <span className="topbar-pos">{position.index + 1} of {position.total}</span>}
+      <span className="topbar-name vcr-text vcr-text-md" title={name}>{name}</span>
+      {position && <span className="topbar-pos vcr-text">{position.index + 1}/{position.total}</span>}
     </div>
   );
 }

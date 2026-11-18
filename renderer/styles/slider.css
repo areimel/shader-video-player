@@ -12,3 +12,35 @@
   pointer-events: none; white-space: nowrap; }
 .slider:focus-visible { border-radius: var(--r-ctl); outline: none; }
 .slider:focus-visible .slider-thumb { transform: scale(1); }
+
+/* ---- VCR tape position bar (SeekBar): BEGIN/END box. Height 32px. ---- */
+.slider-tape { height: 32px; display: block; }
+.slider-tape .slider-track { position: absolute; left: 0; right: 0; top: 10px; width: auto; height: 12px; box-sizing: border-box;
+  border: var(--osd-rule) solid var(--osd-ink); border-radius: 0; background: transparent; overflow: hidden; }
+.slider-tape:hover .slider-track { height: 12px; }
+.slider-tape .slider-buffered, .slider-tape .slider-fill { border-radius: 0; }
+.slider-tape .slider-buffered { background: var(--osd-buffered); }
+.slider-tape .slider-fill { background: var(--osd-fill); }
+.slider-tape .slider-track::after { content: ""; position: absolute; inset: auto 0 0 0; height: 4px; pointer-events: none;
+  background: linear-gradient(90deg, transparent calc(100% - 2px), var(--osd-ink) 0) 0 0 / 10% 100% repeat-x; }
+.slider-tape .slider-thumb { display: none; }
+.slider-tape .tape-marker, .slider-tape .tape-label { position: absolute; font-family: var(--font-pixel); font-size: var(--px-sm);
+  line-height: 1; color: var(--osd-ink); text-shadow: var(--osd-fringe); -webkit-font-smoothing: none; pointer-events: none; }
+.slider-tape .tape-marker { top: 0; transform: translateX(-50%); }
+.slider-tape .tape-label { bottom: 0; }
+.slider-tape .tape-begin { left: 0; }
+.slider-tape .tape-end { right: 0; }
+.slider-tape .slider-tooltip { bottom: 36px; padding: 2px 4px; border-radius: 0; background: var(--osd-hi); color: var(--osd-hi-ink);
+  font-family: var(--font-pixel); font-size: var(--px-sm); line-height: 1; text-shadow: none; -webkit-font-smoothing: none; }
+.slider-tape:focus-visible { outline: var(--osd-rule) solid var(--osd-hi); outline-offset: 2px; border-radius: 0; }
+
+/* ---- segmented volume bar (VolumeControl): 16 blocks of 6px + 2px gap = 126px wide, 16px tall ---- */
+.slider.slider-segments { width: 126px; height: 16px; }
+.slider-segments .slider-track, .slider-segments .slider-thumb { display: none; }
+.vol-blocks { display: flex; gap: 2px; align-items: center; height: 100%; pointer-events: none; }
+.vol-block { width: 6px; height: 2px; background: var(--osd-ink); opacity: 0.7; }
+.vol-block.on { height: 12px; opacity: 1; box-shadow: var(--osd-fringe); }
+.vol-mute { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;
+  font-family: var(--font-pixel); font-size: var(--px-sm); line-height: 1; background: var(--osd-hi); color: var(--osd-hi-ink);
+  -webkit-font-smoothing: none; }
+.slider-segments:focus-visible { outline: var(--osd-rule) solid var(--osd-hi); outline-offset: 2px; border-radius: 0; }

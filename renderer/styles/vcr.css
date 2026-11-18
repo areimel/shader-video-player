@@ -1,0 +1,11 @@
+/* Shared VCR on-screen-display primitives for the player chrome (tokens in tokens.css). */
+.vcr-text { font-family: var(--font-pixel); font-size: var(--px-sm); line-height: 1; text-transform: uppercase;
+  color: var(--osd-ink); text-shadow: var(--osd-fringe); letter-spacing: 0; -webkit-font-smoothing: none; }
+.vcr-text-md { font-size: var(--px-md); }
+.vcr-box { border: var(--osd-rule) solid var(--osd-ink); border-radius: 0; }
+.vcr-panel { background: var(--osd-panel); border: var(--osd-rule) solid var(--osd-ink); border-radius: 0; }
+.vcr-inverted { background: var(--osd-hi); color: var(--osd-hi-ink); text-shadow: none; }
+/* ---- TITLE ---- : a dashed rule either side of a centred title */
+.vcr-rule { display: flex; align-items: center; gap: var(--sp-2); }
+.vcr-rule::before, .vcr-rule::after { content: ""; flex: 1; height: var(--osd-rule);
+  background: repeating-linear-gradient(90deg, var(--osd-ink) 0 6px, transparent 6px 10px); }

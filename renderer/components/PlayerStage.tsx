@@ -6,11 +6,13 @@ import type { PlayQueue } from "../hooks/usePlayQueue";
 import type { SubtitleState } from "../hooks/useSubtitles";
 import { videoInput } from "../shader/gl/videoInput";
 import type { PlaybackPlan, ToastKind } from "../types/player";
+import type { OsdState } from "../utils/osd";
 import { Controls } from "./Controls";
 import { EndScreen } from "./EndScreen";
 import { InfoPanel } from "./InfoPanel";
 import { ShaderCanvas } from "./ShaderCanvas";
 import { TopBar } from "./TopBar";
+import { VcrOsd } from "./VcrOsd";
 import { VideoView } from "./VideoView";
 import { EffectsPanel } from "./effects/EffectsPanel";
 
@@ -25,10 +27,12 @@ interface Props {
   fx: EffectSettings;
   queue: PlayQueue;
   panels: Panels;
+  osd: OsdState;
   onAudio: (ordinal: number) => void;
   onPip: () => void;
   onVideoError: (absTime: number, detail?: string) => void;
   onHome: () => void;
+  onSeekStep: (dir: -1 | 1) => void;
   notify: (kind: ToastKind, msg: string) => void;
   remaining: boolean;
   onToggleRemaining: () => void;
@@ -59,9 +63,10 @@ export function PlayerStage(p: Props) {
       <Controls
         plan={plan} player={player} visible={visible} fullscreen={fs.active} subs={p.subs}
         onAudio={p.onAudio} onFullscreen={fs.toggle} onPip={p.onPip}
-        onInfo={panels.toggleInfo} effectsActive={!!fx.effect} onEffects={panels.toggleEffects} queue={queue}
+        onInfo={panels.toggleInfo} effectsActive={!!fx.effect} onEffects={panels.toggleEffects} queue={queue} onSeekStep={p.onSeekStep}
         remaining={p.remaining} onToggleRemaining={p.onToggleRemaining}
       />
+      <VcrOsd state={p.osd} time={player.time} chromeVisible={visible} />
       {panels.showInfo && <InfoPanel plan={plan} onClose={panels.closeInfo} />}
       {panels.showEffects && <EffectsPanel fx={fx} onClose={panels.closeEffects} />}
     </>
