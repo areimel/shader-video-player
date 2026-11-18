@@ -21,9 +21,6 @@
 .job-error { color: var(--osd-ink); padding-left: var(--px-md); position: relative; overflow-wrap: anywhere;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
 .job-error::before { content: ""; position: absolute; left: 0; top: 4px; width: var(--px-sm); height: var(--px-sm); background: var(--osd-alert); }
-.job-head .icon-btn { width: 24px; height: 24px; flex: none; color: var(--osd-ink); border-radius: 0; }
-.job-head .icon-btn:hover, .job-head .icon-btn:focus-visible { background: var(--osd-hi); color: var(--osd-hi-ink); }
-.job-card .btn { font: inherit; text-transform: inherit; text-shadow: inherit; color: inherit; border-radius: 0; background: none;
-  border: var(--osd-rule) solid currentColor; padding: 0 var(--sp-1); }
-.job-card .btn:hover, .job-card .btn:focus-visible { background: var(--osd-hi); color: var(--osd-hi-ink); border-color: var(--osd-hi);
-  text-shadow: none; outline: none; }
+/* The close button is outlined like the card's text buttons (shared look in vcr.css); only its size is local. */
+.job-head .icon-btn { width: 24px; height: 24px; flex: none; }
+.job-card .btn { padding: 0 var(--sp-1); }

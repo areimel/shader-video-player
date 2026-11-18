@@ -15,11 +15,8 @@
 .dialog-input:focus-visible { outline: var(--osd-rule) solid var(--osd-hi); outline-offset: 2px; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: var(--px-sm); margin-top: var(--sp-1); }
 /* Buttons and the size selector inside a dialog: ink outlines that invert to yellow on hover/focus. */
-.dialog .btn { font: inherit; text-transform: inherit; text-shadow: inherit; border-radius: 0; padding: var(--sp-1) var(--px-sm);
-  background: none; color: var(--osd-ink); border: var(--osd-rule) solid var(--osd-ink); filter: none; }
-.dialog .btn-primary { background: var(--osd-ink); color: var(--osd-panel-solid); text-shadow: none; }
-.dialog .btn:hover:not(:disabled), .dialog .btn:focus-visible { background: var(--osd-hi); color: var(--osd-hi-ink); border-color: var(--osd-hi);
-  text-shadow: none; outline: none; }
+.dialog .btn { padding: var(--sp-1) var(--px-sm); filter: none; }
+.dialog .btn-primary { border-color: var(--osd-ink); background: var(--osd-ink); color: var(--osd-panel-solid); text-shadow: none; }
 .dialog .btn:disabled { opacity: 0.45; cursor: default; }
 .dialog .segmented { gap: var(--sp-1); padding: 0; background: none; border-radius: 0; }
 .dialog .segmented button { font: inherit; text-transform: inherit; text-shadow: inherit; color: var(--osd-ink); border-radius: 0;
@@ -28,4 +25,4 @@
   border-color: var(--osd-hi); text-shadow: none; outline: none; }
 .dialog .segmented button.is-selected { background: var(--osd-ink); color: var(--osd-panel-solid); text-shadow: none; }
 .dialog .segmented button.is-selected:hover, .dialog .segmented button.is-selected:focus-visible { background: var(--osd-hi); color: var(--osd-hi-ink); }
-.dialog:focus-visible { outline: none; }
+.dialog:focus-visible { outline: none; box-shadow: none; }

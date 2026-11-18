@@ -9,3 +9,9 @@
 .vcr-rule { display: flex; align-items: center; gap: var(--sp-2); }
 .vcr-rule::before, .vcr-rule::after { content: ""; flex: 1; height: var(--osd-rule);
   background: repeating-linear-gradient(90deg, var(--osd-ink) 0 6px, transparent 6px 10px); }
+/* ---- BUTTON ---- : outlined text button (dialog actions, job-card actions and close, toast action) that inverts to yellow on hover/focus */
+.dialog .btn, .job-card .btn, .job-card .icon-btn, .toast .toast-action { font: inherit; text-transform: inherit; text-shadow: inherit;
+  color: inherit; border-radius: 0; background: none; border: var(--osd-rule) solid currentColor; }
+.dialog .btn:hover:not(:disabled), .dialog .btn:focus-visible, .job-card .btn:hover, .job-card .btn:focus-visible,
+.job-card .icon-btn:hover, .job-card .icon-btn:focus-visible, .toast .toast-action:hover, .toast .toast-action:focus-visible {
+  background: var(--osd-hi); color: var(--osd-hi-ink); border-color: var(--osd-hi); text-shadow: none; outline: none; }
