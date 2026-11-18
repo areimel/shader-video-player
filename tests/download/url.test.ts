@@ -26,13 +26,14 @@ describe("parseVideoUrl", () => {
     "http://192.168.1.1/", "http://169.254.169.254/latest", "http://100.64.0.1/", "http://0.0.0.0/",
     "http://2130706433/", "http://0x7f000001/", "http://127.1/", "http://0177.0.0.1/", "http://017700000001/",
     "http://[::1]/", "http://[::]/", "http://[fc00::1]/", "http://[fd12:3456::1]/", "http://[fe80::1]/", "http://[febf::1]/",
-    "http://[::ffff:127.0.0.1]/", "http://[::ffff:10.1.2.3]/", "http://[::ffff:c0a8:0101]/",
+    "http://[::ffff:127.0.0.1]/", "http://[::127.0.0.1]/", "http://[::7f00:1]/", "http://[::10.0.0.1]/", "http://[0:0:0:0:0:ffff:7f00:1]/",
+    "http://[64:ff9b::127.0.0.1]/", "http://[64:ff9b::a00:1]/", "http://[2002:7f00:1::]/", "http://[2002:c0a8:101::1]/", "http://[2002:a9fe:a9fe::1]/", "http://[::ffff:10.1.2.3]/", "http://[::ffff:c0a8:0101]/",
   ])("rejects local or private host %s", (u) => {
     expect(() => parseVideoUrl(u)).toThrow(/private network/);
   });
   it.each([
     "http://8.8.8.8/", "http://172.32.0.1/", "http://172.15.0.1/", "http://100.128.0.1/", "http://169.253.0.1/", "http://192.169.0.1/",
-    "https://[2606:4700::1111]/", "http://[::ffff:8.8.8.8]/", "https://localhost.example.com/", "https://notlocal.com/", "http://fe.example/",
+    "https://[2606:4700::1111]/", "http://[::ffff:8.8.8.8]/", "http://[::8.8.8.8]/", "http://[64:ff9b::808:808]/", "http://[2002:808:808::1]/", "http://[2001:db8::1]/", "https://localhost.example.com/", "https://notlocal.com/", "http://fe.example/",
   ])("allows public host %s", (u) => {
     expect(() => parseVideoUrl(u)).not.toThrow();
   });
