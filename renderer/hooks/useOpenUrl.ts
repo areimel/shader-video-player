@@ -1,7 +1,17 @@
+import { createElement, useCallback, useState } from "react";
+import { OpenUrlDialog } from "../components/OpenUrlDialog";
 import type { FeatureCommand, FeatureDeps } from "./featureTypes";
 
-/** Stub for the Open URL command: the feature team replaces the body, keeping this signature. */
-export function useOpenUrl(deps: FeatureDeps): FeatureCommand {
-  const { notify } = deps;
-  return { run: () => notify("error", "Open URL is coming soon"), overlay: null };
+/** Open URL: a dialog that hands the URL to main, which downloads it as a job. */
+export function useOpenUrl(_deps: FeatureDeps): FeatureCommand {
+  const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
+  const submit = useCallback(async (url: string) => {
+    await window.player.downloadUrl(url);
+    setOpen(false);
+  }, []);
+  return {
+    run: () => setOpen(true),
+    overlay: open ? createElement(OpenUrlDialog, { key: "open-url", onSubmit: submit, onClose: close }) : null,
+  };
 }

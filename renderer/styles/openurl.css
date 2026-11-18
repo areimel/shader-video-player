@@ -1,0 +1,9 @@
+/* Open URL dialog (backdrop shared with the shortcut help). */
+.open-url { position: static; width: min(520px, 100%); }
+.open-url-input { width: 100%; box-sizing: border-box; padding: var(--sp-2); border-radius: var(--r-ctl); border: 1px solid var(--line);
+  background: var(--bezel-deep); color: var(--phosphor); font: inherit; font-size: var(--fs-md); }
+.open-url-input:focus-visible { outline: 2px solid var(--lamp); outline-offset: 1px; }
+.open-url-note { margin: var(--sp-1) 0 0; color: var(--dim); font-size: var(--fs-xs); }
+.open-url-error { margin: var(--sp-2) 0 0; color: var(--tally); font-size: var(--fs-sm); }
+.open-url-actions { display: flex; justify-content: flex-end; gap: var(--sp-2); margin-top: var(--sp-3); }
+.open-url-actions .btn:disabled { opacity: 0.45; cursor: default; filter: none; }
