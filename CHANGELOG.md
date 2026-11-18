@@ -11,6 +11,11 @@
 - YouTube .mkv downloads play directly
 - Faster seeking in converted videos
 - Playback errors say what failed
+- Open a YouTube or other video link (Ctrl+U) and play it
+- Convert files that stutter when seeking into smooth-playing MP4
+- Export a video with the effect baked in (Ctrl+E)
+- Command line: `download`, `convert`, `export` with a progress bar and time left, and `update`
+- Help → Check for updates
 
 ## 0.3.0 - 2026-11-16
 - First public beta

@@ -2,7 +2,7 @@
 
 Desktop video player (Electron) that draws the video through multi-pass WebGL2 shader effects. Two effects: CRT television (`crt/`, first in the registry) and VHS tape (`vhs/`), both built on `effects/shared/`. With no file open, the home screen (video library, TV preset picker, latest updates) is painted on a 2D canvas and drawn through the same effects. Personal daily-use player, Linux/Wayland first. The repo also holds `website/`, a separate Astro product site (see [Website](#website)).
 
-Design specs in `docs/superpowers/specs/`: `2026-11-15-shader-video-player-design.md` (read before changing the shader layer), `2026-11-15-vhs-effect-design.md`, `2026-11-16-home-screen-design.md`, `2026-11-18-vcr-osd-ui-design.md` (player chrome and OSD). Plan for drawing the player UI through the shader: `docs/2026-11-18-osd-through-shader-plan.md`.
+Design specs in `docs/superpowers/specs/`: `2026-11-15-shader-video-player-design.md` (read before changing the shader layer), `2026-11-15-vhs-effect-design.md`, `2026-11-16-home-screen-design.md`, `2026-11-18-vcr-osd-ui-design.md` (player chrome and OSD), `2026-11-18-extra-features-design.md` (download, convert, export, update). Plan for drawing the player UI through the shader: `docs/2026-11-18-osd-through-shader-plan.md`.
 
 ## Commands
 
@@ -28,6 +28,23 @@ pnpm --dir website test:browser       # Playwright, two builds (mocked key, no k
 
 Stack: Electron 45, React 19, TypeScript 7 (strict), Vite 8, esbuild for the main process, vitest, pnpm 11. Build-script approval for dependencies lives in `pnpm-workspace.yaml` (`allowBuilds`).
 
+## Command line
+
+Subcommands are dispatched in `main.ts` before the single-instance lock (`cli/args.ts` is the pure parser). Only an exact first word dispatches, so `./update` or an absolute path still opens a file called "update".
+
+```bash
+shader-video-player download <url> [--no-play]
+shader-video-player convert <file> [-o <out>] [--force]
+shader-video-player export <file> [--effect <id>] [--preset <name>] [--settings <json>] [--size WxH] [-o <out>]
+shader-video-player update [--check]
+shader-video-player help [command]     # also --help, --version
+```
+
+- Exit codes: 0 ok, 1 failure, 2 usage, 130 cancelled (SIGINT). SIGTERM cancels all jobs and exits 143.
+- Stdout is for results; progress (bar and time left) goes to stderr (`cli/progressBar.ts`).
+- Headless commands (`convert`, `update`, `download --no-play`) disable hardware acceleration and the GPU shader disk cache. `export` needs a GPU and a display session (it renders in a hidden window).
+- `download` without `--no-play` hands the file to a running instance through `requestSingleInstanceLock` `additionalData` (the GUI opens it and registers the downloads folder), or becomes the GUI itself.
+
 ## Layout
 
 ```
@@ -45,14 +62,30 @@ electron/                 main process
   devCapture.ts                        screenshot harness (dev only)
   screenshot.ts pngName.ts             save-PNG dialog and IPC; validates the PNG and file name
   media/                               probe, formats, ffmpegArgs, session (transcode),
-                                       subtitles, externalSubtitles, processes, binaries
+                                       subtitles, externalSubtitles, processes, binaries,
+                                       outputDir (Videos folder, writable fallback), outputName, audioOrdinal
+  gui.ts                               GUI start, cliFiles, shutdown (main.ts only dispatches)
+  jobs/                                job (state, cancel hook), registry, eta, ffmpegProgress,
+                                       runFfmpeg (child + -progress), jobsIpc
+  cli/                                 args (pure), progressBar (pure), router (exit codes),
+                                       watchJob (the one job→reporter subscription), commands/{download,convert,export,update}
+  download/                            url (SSRF guard), ytdlpArgs, ytdlpProgress, download, downloadIpc
+  convert/                             convertArgs, convert, convertIpc
+  export/                              exportArgs, exportRequest (pure validator + sizing), frameChunker,
+                                       exportWindow (hidden window), exportJob, exportIpc
+  exportPreload.ts                     preload for the hidden export page only
+  update/                              semver, releases, check, install (verified .deb), run, menuCheck
 shared/                   types.ts (PlayerBridge IPC contract, library types), subtitleFiles.ts, superseded.ts
   commands.ts             every command: id, label, group, keys, accelerator (single source)
+  jobs.ts                 job states and the job:changed push shape; exportPage.ts: the export page's contract
 renderer/
   App.tsx                 thin composition; keep it that way
-  components/             Controls, VideoView, ShaderCanvas, SubtitleOverlay, QueuePanel, VcrOsd (transient OSD), ...
+  export.html export/main.ts   hidden export page (second Vite entry): offline render, frame pipeline
+  components/             Controls, VideoView, ShaderCanvas, SubtitleOverlay, QueuePanel, VcrOsd (transient OSD),
+                          JobHost (job panel), OpenUrlDialog, ExportDialog, ...
   components/common/      Button, Panel (+PanelHeader), Kbd, Segmented, Switch, Slider, Dropdown,
-                          IconButton, Icon, Toast, iconGlyphs (12x12 pixel glyphs behind Icon)
+                          IconButton, Icon, Toast, iconGlyphs (12x12 pixel glyphs behind Icon),
+                          Dialog (shell for every modal), ProgressBar
   components/effects/     EffectsPanel, PresetPicker, ParamGroup, ParamControl
   components/home/        HomeScreen (2D canvas + pointer), HomeMirror (visually hidden text for
                           assistive tech and tests), painter.ts (draws a home frame on the canvas)
@@ -60,18 +93,22 @@ renderer/
   styles/home.css         home screen canvas and its source placement
   styles/vcr.css          shared VCR pieces: .vcr-text, .vcr-text-md, .vcr-box, .vcr-panel, .vcr-inverted, .vcr-rule
   styles/osd.css          the transient OSD (status and level slots)
+  styles/dialog.css, styles/jobs.css   the shared dialog shell; job panel and progress bars
   hooks/                  usePlaybackSource, usePlayQueue, usePlayerState, usePlayerShortcuts,
                           useAppCommands (command id → handler), useOsd (+ useOsdControls), useDismiss, useScreenshot,
                           useSubtitles, useEffectSettings, useEffectChain, useHomeMenu (rows,
-                          cursor, actions), useHomePaint (layout → canvas), useLibrary, ...
+                          cursor, actions), useHomePaint (layout → canvas), useLibrary, useJobs,
+                          useFeatureCommands, useOpenUrl, useConvert, useExport (+ featureTypes.ts: FeatureDeps), ...
   utils/                  queue (reducer), osd (OSD reducer and text formatting), effectSettings (reducer), effectStorage, cueText, step,
-                          changelog, credits (bundled CHANGELOG.md and THIRD_PARTY_NOTICES.md headings), dropItems
+                          changelog, credits (bundled CHANGELOG.md and THIRD_PARTY_NOTICES.md headings), dropItems,
+                          jobs, urlInput, exportRequest, exportSettings, pendingStart
   utils/home/             types (the 40x30-cell contract), model, libraryRows, layout, layoutRows,
                           state (reducer, keyToAction), hit, pointer, text, frame, effectValues (homeValues)
   shader/gl/              context, program, shaderError, target, quad, includes, commonChunks,
                           passTypes, passPlan (pure), passGraph, videoSource, renderPolicy (pure),
                           frameInput (the FrameInput contract), videoInput (<video>), canvasInput (2D canvas),
-                          inputClock (pure), effectRenderer
+                          inputClock (pure), effectRenderer, effectUniforms and effectPipeline (setup shared by the
+                          live and offline renderers), bufferInput, offlineRenderer (export frames)
   shader/glsl/common/     color, yiq, noise, gaussian, sampling, blur, resample, subcarrier,
                           composite-encode, composite-decode  (#include "name"; pure, no p_/d_ names)
   shader/effects/         types.ts, params.ts (generic helpers), registry.ts
@@ -122,6 +159,11 @@ website/                  Astro 7 static site (CRT-TV), own package.json, pnpm-w
 - **Settings:** `localStorage` keys `svp.effect.active` and `svp.effect.<id>`; loaded through `resolveValues`, so stale or out-of-range values heal. First run (nothing stored): the first registered effect (CRT, the fallback in `effectSettings.ts`) with its first preset selected, and the effect is on. An existing saved state is kept; a stored `active: null` stays off.
 - **Subtitles** are always drawn by `SubtitleOverlay` (track kept in `hidden` mode) so they look the same with the effect on or off.
 - **Player OSD:** `VcrOsd` (DOM, over the picture, `aria-hidden`, same with the effect on or off) shows two independent slots: status (play/pause, seek, speed, repeat, subtitle delay) and level (volume). `utils/osd.ts` is the pure reducer; `useOsd` arms one timeout for the earliest expiry. Keyboard shortcuts show it from `useAppCommands`; clicks on the bar go through `useOsdControls`. The back/forward buttons call the `seekBack`/`seekForward` commands, not a separate path.
+- **Jobs:** main owns every background job (download, convert, export) in `jobs/registry.ts`; the renderer holds only job ids and gets `job:changed` pushes (`shared/jobs.ts`). ffmpeg jobs run through `runFfmpeg`, which parses `-progress` output (`ffmpegProgress`, `eta`). stderr is always drained so a full pipe cannot stall ffmpeg. A job's cancel hook kills its child and deletes its `.part` file; success and failure do not run it. A `.part` file is renamed to its final name only on success.
+- **Download:** system `yt-dlp` with `--ignore-config`, so a user's yt-dlp.conf cannot change output or run exec hooks; `--` before the URL; no `INPUT_PROTOCOLS` (yt-dlp fetches by design). Output goes to `<Videos>/Shader Video Player`, which the GUI registers as a library folder (`ensureLibraryFolder`). The CLI must never call `addFolders`. The file plays when done unless `--no-play`.
+- **Convert:** offered only for transcode plans. One audio track (native playback needs at most one; `audioOrdinal`). Output is `<name>.svp.mp4` beside the source, or in the Videos folder when that is read-only. Playback reopens at the playhead through `pendingStart`.
+- **Export:** ffmpeg decodes the source to raw RGBA. The hidden export window (`export.html`, `exportPreload.ts`) renders each frame with `OfflineRenderer` at a fixed time step of 1/fps, frame number `n` giving the time, so output does not depend on wall-clock speed. `readPixels` returns rows bottom-up, and the encoder runs `-vf vflip`. At most 2 frames are in flight. Default size is the source scaled up to at least 1080 tall. About 11 fps at 1080p with CRT, bound by IPC.
+- **Update:** `update/` checks the newest GitHub release (pre-releases included) with a semver compare. Asset URLs are pinned to this repo's `releases/download` path. `SHA256SUMS` is verified in Node, then `sudo apt-get install -y` runs in the terminal (sudo may prompt). Help → Check for updates only points at the CLI and the releases page (`menuCheck`).
 
 ## Rules
 
@@ -142,6 +184,10 @@ website/                  Astro 7 static site (CRT-TV), own package.json, pnpm-w
 - **DRY:** reuse `renderer/components/common/*` and existing hooks before writing new ones; extract a shared piece once something appears three times. Pure state logic goes in a reducer-style module under `utils/` with tests; hooks stay thin.
 - **File size:** keep files under ~300 lines; split by responsibility when they grow.
 - **Media:** system `ffmpeg`/`ffprobe` from `PATH` (override with `SVP_FFMPEG_PATH` / `SVP_FFPROBE_PATH`). Nothing is bundled. All ffmpeg/ffprobe inputs carry `INPUT_PROTOCOLS` (`-protocol_whitelist`) so a playlist-format file cannot make ffmpeg fetch URLs.
+- **Modal dialogs** use `common/Dialog`. Toast kinds are `success|error|info`.
+- **Feature hooks** take one `FeatureDeps` object (`renderer/hooks/featureTypes.ts`), so `App.tsx` stays thin.
+- **CLI commands** report through `watchJob` only, never by subscribing to a job themselves.
+- **ExportRequest** is validated in main (`validateExportRequest`). Effect healing happens in the export page, because main cannot import the effect registry.
 
 ## Security model
 
@@ -154,6 +200,9 @@ The renderer is sandboxed with context isolation and is treated as untrusted.
 - **Subtitles:** the renderer holds opaque ids; the main process approves files (picked, dropped, or siblings of the open video), checks extension and size, and converts with a forced demuxer.
 - **Library:** the renderer holds opaque ids only (item = 16 hex of sha1 of the realpath, folder = `f-` plus 8 hex). Folders are added only by the main-process folder dialog or by a real directory drop, and a dropped path is re-resolved and re-`stat`ed in main. `library:open` re-resolves the item's realpath, checks that it is inside a registered folder's realpath, is still a video and still has the same id. Queued siblings are realpaths.
 - **New IPC** goes `shared/types.ts` → `preload.ts` → `ipc.ts` and validates every argument in the main process.
+- **Download:** `download:start` takes the URL through `parseVideoUrl` (`download/url.ts`): http/https only, no credentials, local and private literal hosts refused.
+- **Convert and export:** `convert:start` and `export:start` act on the main-side current path, never on a renderer-supplied path. `job:open` and `job:reveal` use output paths held in main.
+- **Export page:** its channels are accepted only from the export window.
 
 ## Concurrency rules
 
@@ -231,6 +280,9 @@ A new effect can reuse `glsl/common/` (subcarrier, composite encode/decode, blur
 - Home screen: the VHS "Third-generation dub" label is cut to `THIRD-GENERATION` in the TV column unless the cursor is on it, when it scrolls.
 - Website: real Web3Forms delivery is unverified (needs a live key and inbox).
 - Home screen: context-loss recovery on the GL path is untested. The effect-off path still runs the paint timers (see How it fits together).
+- Download: the SSRF guard checks literal hosts only; DNS rebinding and redirects are accepted. A real cancel of a download is untested.
+- Export: uses the first frame's size, so rotated phone video is not handled. Export from the app is untested end-to-end through the native save dialog.
+- Release assets (`.deb` and `SHA256SUMS`) are still made by hand.
 
 ## Commits
 

@@ -10,8 +10,8 @@
 
 Features that would be great to have, but are not mission critical.
 
-1. Download from Youtube and watch in player
-2. Convert video file format to usable format (probably mp4)
-3. Export video with shader effects baked in
-  3a. if possible, include a CLI command to do this in the background and/or in "headless" mode. Include progress bar and estimated time left.
-4. CLI command: "update" - updates app
+- [x] 1. Download from Youtube and watch in player
+- [x] 2. Convert video file format to usable format (probably mp4)
+- [x] 3. Export video with shader effects baked in
+  - [x] 3a. if possible, include a CLI command to do this in the background and/or in "headless" mode. Include progress bar and estimated time left.
+- [x] 4. CLI command: "update" - updates app
