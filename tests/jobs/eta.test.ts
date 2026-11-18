@@ -24,4 +24,41 @@ describe("EtaEstimator", () => {
     expect(e.update(1, 4000)).toBe(0);
     expect(e.update(0.9, 5000)).toBeGreaterThanOrEqual(0);
   });
+  it("returns null before 2 s even with a large fraction", () => {
+    const e = new EtaEstimator();
+    e.update(0, 0);
+    expect(e.update(0.9, 1999)).toBeNull();
+  });
+  it("never produces negative, Infinity or NaN when the fraction goes backwards or stays flat", () => {
+    const e = new EtaEstimator();
+    e.update(0, 0);
+    const seq: [number, number][] = [
+      [0.2, 1000], [0.2, 2500], [0.2, 4000], [0.1, 5000], [0.1, 6000], [0.3, 7000], [0.3, 8000],
+    ];
+    for (const [f, t] of seq) {
+      const eta = e.update(f, t);
+      if (eta !== null) {
+        expect(Number.isFinite(eta)).toBe(true);
+        expect(eta).toBeGreaterThanOrEqual(0);
+      }
+    }
+  });
+  it("stays null when progress never advances", () => {
+    const e = new EtaEstimator();
+    e.update(0.5, 0);
+    expect(e.update(0.5, 10000)).toBeNull();
+  });
+  it("returns 0 at fraction 1", () => {
+    const e = new EtaEstimator();
+    e.update(0, 0);
+    e.update(0.2, 1000);
+    expect(e.update(1, 2000)).toBe(0);
+  });
+  it("clamps out-of-range fractions", () => {
+    const e = new EtaEstimator();
+    e.update(0, 0);
+    e.update(0.5, 1000);
+    expect(e.update(7, 3000)).toBe(0);
+    expect(e.update(-3, 4000)).toBeNull(); // clamped to 0, below the 1% floor
+  });
 });
