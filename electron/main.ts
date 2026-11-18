@@ -35,7 +35,8 @@ function runCommand(parsed: Exclude<ParsedCli, { kind: "gui" }>): void {
     app.commandLine.appendSwitch("disable-gpu-shader-disk-cache"); // the GPU process still starts and logs a persistent-cache error
   }
   app.on("window-all-closed", () => undefined); // a hidden worker window closing must not quit us
-  process.on("SIGTERM", () => { cancelAll(); app.exit(143); });
+  const onSigterm = () => { cancelAll(); app.exit(143); };
+  process.on("SIGTERM", onSigterm);
 
   void app.whenReady().then(async () => {
     const result = await runCli(parsed);
@@ -44,6 +45,7 @@ function runCommand(parsed: Exclude<ParsedCli, { kind: "gui" }>): void {
       return;
     }
     // Handoff: the running instance gets the files, or this process becomes the GUI.
+    process.off("SIGTERM", onSigterm); // the GUI's own handler runs the full shutdown
     const files = existingVideoFiles(result.handoff);
     const registerDownloads = result.registerDownloads === true;
     if (!app.requestSingleInstanceLock({ files, registerDownloads })) app.exit(0);

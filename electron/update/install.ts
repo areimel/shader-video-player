@@ -19,15 +19,18 @@ export async function cleanup(dir: string): Promise<void> {
 export async function downloadAndVerify(
   release: Release,
   onProgress?: (fraction: number | null) => void,
+  signal?: AbortSignal,
 ): Promise<{ dir: string; debPath: string }> {
   const dir = await mkdtemp(join(tmpdir(), "svp-update-"));
   try {
-    const sumsRes = await fetch(release.sumsUrl, { headers, signal: AbortSignal.timeout(30_000) });
+    const limit = (ms: number) => (signal ? AbortSignal.any([signal, AbortSignal.timeout(ms)]) : AbortSignal.timeout(ms));
+    const sumsRes = await fetch(release.sumsUrl, { headers, signal: limit(30_000) });
     if (!sumsRes.ok) throw new Error(`Could not download SHA256SUMS (HTTP ${sumsRes.status}).`);
     const expected = parseSums(await sumsRes.text(), release.debName);
     if (!expected) throw new Error(`SHA256SUMS has no valid entry for ${release.debName}.`);
 
-    const res = await fetch(release.debUrl, { headers });
+    // A stalled connection must not hang forever: the timeout covers the whole transfer.
+    const res = await fetch(release.debUrl, { headers, signal: limit(10 * 60_000) });
     if (!res.ok || !res.body) throw new Error(`Could not download ${release.debName} (HTTP ${res.status}).`);
     const total = Number(res.headers.get("content-length")) || 0;
     const hash = createHash("sha256");

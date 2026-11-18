@@ -19,6 +19,7 @@ export const updateCommand: CliCommand = {
     };
     const code = await runUpdate({
       current: app.getVersion(),
+      signal: ctx.signal,
       checkOnly: ctx.flags.check === true,
       log,
       progress: (fraction, label) => ctx.reporter.update({ fraction, etaSec: null, label }),

@@ -11,12 +11,12 @@ export interface UpdateCheck {
 }
 
 /** Node-only (no electron): the CLI can call this before the app is ready. */
-export async function checkForUpdate(currentVersion: string): Promise<UpdateCheck> {
+export async function checkForUpdate(currentVersion: string, signal?: AbortSignal): Promise<UpdateCheck> {
   let res: Response;
   try {
     res = await fetch(RELEASES_API, {
       headers: { Accept: "application/vnd.github+json", "User-Agent": USER_AGENT },
-      signal: AbortSignal.timeout(10_000),
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10_000)]) : AbortSignal.timeout(10_000),
     });
   } catch (e) {
     const timeout = e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError");
