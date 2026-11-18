@@ -3,3 +3,7 @@
 .toast { padding: 9px 14px; border-radius: var(--r-ctl); max-width: 320px; font-size: var(--fs-md); color: var(--bezel-deep); }
 .toast-success { background: var(--signal); }
 .toast-error { background: var(--tally); color: var(--phosphor); }
+.toast-list { display: contents; }
+.toast:has(.toast-action) { display: flex; align-items: center; gap: var(--sp-3); pointer-events: auto; }
+.toast-action { flex: none; color: inherit; border: 1px solid color-mix(in srgb, currentColor 40%, transparent); }
+.toast-action:hover { background: color-mix(in srgb, currentColor 16%, transparent); }

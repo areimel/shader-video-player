@@ -1,4 +1,5 @@
 import type { CommandId } from "./commands";
+import type { ExportRequest, JobOpened, JobSnapshot } from "./jobs";
 export interface AudioTrack {
   ordinal: number;
   codec: string;
@@ -148,6 +149,20 @@ export interface PlayerBridge {
   onLibrary(cb: (s: LibrarySnapshot) => void): () => void;
   /** Metadata arriving from background probes, batched. Does not change the snapshot revision. */
   onLibraryMeta(cb: (p: LibraryMetaPatch[]) => void): () => void;
+  /** Background job updates (download, convert, export): every state or progress change of one job. */
+  onJob(cb: (s: JobSnapshot) => void): () => void;
+  /** Every known job, for a renderer that (re)loads while jobs exist. */
+  listJobs(): Promise<JobSnapshot[]>;
+  cancelJob(id: string): void;
+  /** Opens a finished job's file and plays it (plan and queue arrive via onPlan/onQueue). */
+  openJobResult(id: string, startSec?: number): Promise<JobOpened>;
+  revealJobResult(id: string): void;
+  /** Starts a download; the job id, or null when cancelled. */
+  downloadUrl(url: string): Promise<string | null>;
+  /** Converts the open file for smooth playback with the given audio track; the job id, or null when cancelled. */
+  convertCurrent(audioOrdinal: number): Promise<string | null>;
+  /** Exports the open file through the effect; the job id, or null when the save dialog was cancelled. */
+  exportCurrent(req: ExportRequest): Promise<string | null>;
   /** process.platform of the host. */
   platform: string;
   ready(): void;

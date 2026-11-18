@@ -3,6 +3,7 @@ import { SEEK_LONG_SEC, SEEK_STEP_SEC } from "../../shared/commands";
 import type { ToastKind } from "../types/player";
 import { exitPip, togglePip } from "../utils/pip";
 import { formatDelay } from "../utils/subtitleTiming";
+import type { FeatureCommands } from "./useFeatureCommands";
 import type { EffectSettings } from "./useEffectSettings";
 import type { Panels } from "./usePanels";
 import type { PlayerState } from "./usePlayerState";
@@ -30,6 +31,8 @@ interface Deps {
   toggleRemaining: () => void;
   toggleShortcuts: () => void;
   notify: (kind: ToastKind, msg: string) => void;
+  /** Open URL, convert and export handlers from useFeatureCommands. */
+  feature: FeatureCommands["commands"];
 }
 
 /**
@@ -63,6 +66,8 @@ export function useAppCommands(d: Deps): { commands: CommandHandlers; goHome: ()
     pip: () => togglePip(videoRef.current, notify),
     loadSubtitle: () => void subs.pickFile(),
     close: goHome,
+    convert: d.feature.convert,
+    exportVideo: d.feature.exportVideo,
     screenshot: () => void d.screenshot(),
     toggleRemaining: d.toggleRemaining,
     subtitleDelayDown: () => notify("success", `Subtitle delay ${formatDelay(subs.stepDelay(-1))}`),
@@ -71,6 +76,7 @@ export function useAppCommands(d: Deps): { commands: CommandHandlers; goHome: ()
   const commands: CommandHandlers = {
     ...media,
     open: d.openDialog,
+    openUrl: d.feature.openUrl,
     addFolder: d.addFolder,
     // These two also work on the home screen (it is drawn through the effect).
     toggleEffect: fx.toggle,

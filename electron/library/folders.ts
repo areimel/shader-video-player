@@ -20,3 +20,16 @@ export function folderConflict(existing: ReadonlyArray<{ real: string; name: str
   }
   return null;
 }
+
+/**
+ * How a candidate folder relates to the registered ones (by realpath): "covered" when it equals or lies
+ * inside one (its files are already indexed), "contains" when a registered folder lies inside it, else "free".
+ */
+export function folderCoverage(existingRealPaths: readonly string[], real: string): "covered" | "contains" | "free" {
+  let contains = false;
+  for (const e of existingRealPaths) {
+    if (isInside(e, real)) return "covered";
+    if (isInside(real, e)) contains = true;
+  }
+  return contains ? "contains" : "free";
+}

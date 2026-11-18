@@ -33,7 +33,14 @@ export interface ExportRequest {
 
 export const JOB_CHANNELS = {
   changed: "job:changed",
+  list: "job:list",
   cancel: "job:cancel",
   open: "job:open",
   reveal: "job:reveal",
 } as const;
+
+/** Result of `job:open`: the file was opened (the plan and queue arrive as the usual pushes). */
+export interface JobOpened {
+  /** The validated resume position the caller asked for, for the renderer to seek to; null when none. */
+  startSec: number | null;
+}

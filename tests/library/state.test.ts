@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { folderConflict } from "../../electron/library/folders";
+import { folderConflict, folderCoverage } from "../../electron/library/folders";
 import { itemIdFor } from "../../electron/library/ids";
 import { applyMeta, buildItems, metaWork, newFolder, publicItem } from "../../electron/library/state";
 
@@ -58,5 +58,20 @@ describe("folderConflict", () => {
   it("accepts siblings that only share a prefix", () => {
     expect(folderConflict(existing, "/media/videos2")).toBeNull();
     expect(folderConflict([], "/home/me/Videos")).toBeNull();
+  });
+});
+
+describe("folderCoverage", () => {
+  const existing = ["/media/videos", "/media/other"];
+  it("is covered for the same folder or one inside it", () => {
+    expect(folderCoverage(existing, "/media/videos")).toBe("covered");
+    expect(folderCoverage(existing, "/media/videos/sub/deeper")).toBe("covered");
+  });
+  it("contains when an existing folder is inside the candidate", () => {
+    expect(folderCoverage(existing, "/media")).toBe("contains");
+  });
+  it("is free for unrelated folders, including a sibling with a shared name prefix", () => {
+    expect(folderCoverage(existing, "/media/videos2")).toBe("free");
+    expect(folderCoverage([], "/anything")).toBe("free");
   });
 });

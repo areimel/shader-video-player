@@ -25,6 +25,9 @@ export const COMMANDS = [
   { id: "open", label: "Open…", group: "File", accelerator: "CmdOrCtrl+O" },
   { id: "addToQueue", label: "Add to Queue…", group: "File", accelerator: "CmdOrCtrl+Shift+O" },
   { id: "addFolder", label: "Add library folder…", group: "File" },
+  { id: "openUrl", label: "Open URL…", group: "File", accelerator: "CmdOrCtrl+U" },
+  { id: "convert", label: "Convert for smooth playback", group: "File" },
+  { id: "exportVideo", label: "Export with effect…", group: "File", accelerator: "CmdOrCtrl+E" },
   { id: "close", label: "Close", group: "File", accelerator: "CmdOrCtrl+W" },
   { id: "screenshot", label: "Screenshot", group: "File", keys: ["s"], accelerator: "CmdOrCtrl+Shift+S" },
 

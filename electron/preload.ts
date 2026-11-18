@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
+import { JOB_CHANNELS, type JobSnapshot } from "../shared/jobs";
 import { isCommandId } from "../shared/commands";
 import type { LibraryMetaPatch, LibrarySnapshot, PlayerBridge, PlaybackPlan, QueueItem } from "../shared/types";
 
@@ -54,6 +55,14 @@ const bridge: PlayerBridge = {
   openLibraryItem: (id) => ipcRenderer.invoke("library:open", id),
   onLibrary: (cb) => listen<LibrarySnapshot>("library:changed", cb),
   onLibraryMeta: (cb) => listen<LibraryMetaPatch[]>("library:meta", cb),
+  onJob: (cb) => listen<JobSnapshot>(JOB_CHANNELS.changed, cb),
+  listJobs: () => ipcRenderer.invoke(JOB_CHANNELS.list),
+  cancelJob: (id) => ipcRenderer.send(JOB_CHANNELS.cancel, id),
+  openJobResult: (id, startSec) => ipcRenderer.invoke(JOB_CHANNELS.open, id, startSec),
+  revealJobResult: (id) => ipcRenderer.send(JOB_CHANNELS.reveal, id),
+  downloadUrl: (url) => ipcRenderer.invoke("download:start", url),
+  convertCurrent: (audioOrdinal) => ipcRenderer.invoke("convert:start", audioOrdinal),
+  exportCurrent: (req) => ipcRenderer.invoke("export:start", req),
   platform: process.platform,
   ready: () => ipcRenderer.send("app:ready"),
 };

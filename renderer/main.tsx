@@ -10,6 +10,7 @@ import "./styles/controls.css";
 import "./styles/slider.css";
 import "./styles/menu.css";
 import "./styles/toast.css";
+import "./styles/jobs.css";
 import "./styles/info.css";
 import "./styles/home.css";
 import "./styles/queue.css";
