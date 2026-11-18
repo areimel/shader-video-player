@@ -18,7 +18,8 @@
 .job-meta { justify-content: space-between; }
 .job-label, .job-eta { color: var(--osd-dim); font-variant-numeric: tabular-nums; }
 .job-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.job-error { color: var(--osd-ink); padding-left: var(--px-md); position: relative; overflow-wrap: anywhere; }
+.job-error { color: var(--osd-ink); padding-left: var(--px-md); position: relative; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
 .job-error::before { content: ""; position: absolute; left: 0; top: 4px; width: var(--px-sm); height: var(--px-sm); background: var(--osd-alert); }
 .job-head .icon-btn { width: 24px; height: 24px; flex: none; color: var(--osd-ink); border-radius: 0; }
 .job-head .icon-btn:hover, .job-head .icon-btn:focus-visible { background: var(--osd-hi); color: var(--osd-hi-ink); }

@@ -34,7 +34,7 @@ function JobCard({ job, jobs, resumeAt }: { job: JobSnapshot; jobs: Jobs; resume
           {actions.includes("reveal") && <Button variant="quiet" onClick={() => jobs.reveal(job.id)}>Show in folder</Button>}
         </div>
       )}
-      {state === "failed" && <div className="job-error" role="alert">{job.error || "Something went wrong"}</div>}
+      {state === "failed" && <div className="job-error" role="alert" title={job.error}>{job.error || "Something went wrong"}</div>}
       {state === "cancelled" && <div className="job-label">Cancelled</div>}
     </div>
   );

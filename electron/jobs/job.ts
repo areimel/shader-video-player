@@ -3,6 +3,7 @@ import type { ChildProcess } from "node:child_process";
 import type { JobAction, JobKind, JobProgress, JobSnapshot, JobState } from "../../shared/jobs";
 import { killProcess } from "../media/processes";
 import { EtaEstimator } from "./eta";
+import { normalizeJobError } from "./errorText";
 
 /** At most this many change events per second while progress is reported. */
 const MAX_EVENTS_PER_SEC = 10;
@@ -73,7 +74,7 @@ export class Job {
 
   fail(message: string): void {
     if (this.finished) return;
-    this.error = message;
+    this.error = normalizeJobError(message);
     this.finish("failed");
   }
 
