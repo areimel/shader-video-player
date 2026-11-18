@@ -1,5 +1,10 @@
+/* Toasts: solid blue VCR message boxes. Error toasts carry an --osd-alert square; success toasts stay ink. */
 .toast-host { position: absolute; right: var(--sp-4); bottom: calc(var(--controls-h) + 2px); display: flex; flex-direction: column;
   gap: var(--sp-2); z-index: var(--z-toast); pointer-events: none; }
-.toast { padding: 9px 14px; border-radius: var(--r-ctl); max-width: 320px; font-size: var(--fs-md); color: var(--bezel-deep); }
-.toast-success { background: var(--signal); }
-.toast-error { background: var(--tally); color: var(--phosphor); }
+.toast { display: flex; align-items: center; gap: var(--px-sm); padding: var(--px-sm); max-width: 320px; border-radius: 0;
+  background: var(--osd-panel-solid); border: var(--osd-rule) solid var(--osd-ink); color: var(--osd-ink);
+  font-family: var(--font-pixel); font-size: var(--px-sm); line-height: var(--px-md); text-transform: uppercase;
+  text-shadow: var(--osd-fringe); }
+.toast-success { border-color: var(--osd-ink); }
+.toast-error { border-color: var(--osd-alert); }
+.toast-error::before { content: ""; flex: none; width: var(--px-sm); height: var(--px-sm); background: var(--osd-alert); }
