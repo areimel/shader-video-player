@@ -36,6 +36,7 @@ async function run(job: Job, { path, info, settings, size, audioOrdinal, out }: 
   const part = partPath(out);
   const source: Size = { width: info.width, height: info.height };
   const frameBytes = source.width * source.height * 4;
+  const outBytes = size.width * size.height * 4;
 
   const page = createExportPage();
   const children: ChildProcess[] = [];
@@ -92,6 +93,7 @@ async function run(job: Job, { path, info, settings, size, audioOrdinal, out }: 
       page.onError((m) => reject(new Error(m)));
       page.onPixels((n, bytes) => {
         if (n !== returned) return reject(new Error("Export frames came back out of order"));
+        if (bytes.byteLength !== outBytes) return reject(new Error("The export page returned a frame of the wrong size"));
         returned++;
         job.report(Math.min(0.99, returned / total), "rendering");
         if (!stdin.write(bytes)) {

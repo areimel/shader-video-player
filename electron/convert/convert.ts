@@ -10,11 +10,17 @@ import { appVideosDir, writableDirOr } from "../media/outputDir";
 import { partPath, uniqueName } from "../media/outputName";
 import { buildConvertArgs } from "./convertArgs";
 
+/** Outputs of running converts: the file only exists once ffmpeg has started, so two starts could pick the same name. */
+const reserved = new Set<string>();
+
 /** Default output: `<name>.svp.mp4` beside the source, or in the app's Videos folder when that is read-only. */
 async function defaultOutput(info: MediaInfo): Promise<string> {
   const dir = await writableDirOr(dirname(info.path), await appVideosDir());
   const base = `${basename(info.path, extname(info.path))}.svp`;
-  return uniqueName(dir, base, "mp4", existsSync);
+  const taken = (p: string) => reserved.has(p) || existsSync(p) || existsSync(partPath(p));
+  const out = uniqueName(dir, base, "mp4", taken);
+  reserved.add(out); // no await between the check and this line
+  return out;
 }
 
 /** Writes a smooth-playback MP4 as a job. The `.part` file is renamed on success and removed otherwise. */
@@ -22,6 +28,9 @@ export function startConvert(info: MediaInfo, audioOrdinal: number, outPath?: st
   return startJob("convert", info.name, async (job) => {
     const out = outPath ?? await defaultOutput(info);
     const part = partPath(out);
+    const release = () => { if (job.finished) reserved.delete(out); };
+    job.onChange(release);
+    release(); // cancelled while the name was being picked
     job.onCancel(() => void rm(part, { force: true }));
     try {
       let lastError: unknown;
