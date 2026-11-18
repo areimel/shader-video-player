@@ -1,87 +1,57 @@
-import { app, ipcMain } from "electron";
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { app } from "electron";
 import { applyGpuFlags } from "./gpuFlags";
-import { registerIpc } from "./ipc";
-import { buildMenu } from "./menu";
-import { isSupportedExtension } from "./media/formats";
-import { cleanCacheRoot } from "./media/session";
-import { killAll } from "./media/processes";
-import type { OpenResult } from "../shared/types";
-import { closeMedia } from "./playback";
-import { openSelection, pushSelection } from "./selection";
-import { setPreventSleep } from "./powerSave";
-import { registerProtocol, registerScheme } from "./protocol";
-import { setupDevCapture } from "./devCapture";
-import { refreshIfStale, startLibrary, stopLibrary } from "./library/service";
-import { createWindow, getWindow } from "./window";
+import { registerScheme } from "./protocol";
+import { parseCli, type ParsedCli } from "./cli/args";
+import { findCommand, runCli } from "./cli/router";
+import { cancelAll } from "./jobs/registry";
+import { existingVideoFiles, startGui } from "./gui";
 
-applyGpuFlags();
-registerScheme();
-
-let rendererReady = false;
-// Only the most recent request matters; probing starts right away so it overlaps window load.
-let queued: { result: Promise<OpenResult> } | null = null;
-
-function openInWindow(paths: string[]): void {
-  const win = getWindow();
-  const result = openSelection(paths);
-  if (!win || !rendererReady) {
-    result.catch(() => undefined);
-    queued = { result };
+/** Starts the GUI if this process gets the single-instance lock; otherwise the running one is told. */
+function startGuiOrForward(files: string[]): void {
+  if (!app.requestSingleInstanceLock({ files })) {
+    app.quit();
     return;
   }
-  if (win.isMinimized()) win.restore();
-  win.focus();
-  pushSelection(result);
+  startGui(files);
 }
 
-function cliFiles(argv: string[]): string[] {
-  const args = argv.slice(app.isPackaged ? 1 : 2);
-  return args.filter((a) => !a.startsWith("-") && existsSync(a) && isSupportedExtension(a))
-    .map((a) => resolve(a));
-}
-
-function shutdown(): void {
-  stopLibrary(); // before killAll: stops watchers and the probe queue, and writes the metadata cache
-  closeMedia();
-  setPreventSleep(false);
-  killAll();
-  cleanCacheRoot();
-}
-
-if (!app.requestSingleInstanceLock()) {
-  app.quit();
-} else {
-  // open-file can fire before ready; it is queued until the renderer asks.
-  app.on("open-file", (e, path) => { e.preventDefault(); openInWindow([path]); });
-  app.on("second-instance", (_e, argv) => {
-    const files = cliFiles(argv);
-    if (files.length) openInWindow(files);
-  });
-  app.on("before-quit", shutdown);
-  app.on("window-all-closed", () => app.quit());
-  for (const sig of ["SIGINT", "SIGTERM"] as const) {
-    process.on(sig, () => { shutdown(); app.exit(0); });
+/** Headless subcommand: no lock, no window, no library. Exits with the command's code. */
+function runCommand(parsed: Exclude<ParsedCli, { kind: "gui" }>): void {
+  if (parsed.kind === "command" && parsed.name === "version") {
+    process.stdout.write(`${app.getVersion()}\n`);
+    app.exit(0);
+    return;
   }
+  const command = parsed.kind === "command" ? findCommand(parsed.name) : undefined;
+  app.commandLine.appendSwitch("log-level", "3"); // Chromium noise would drown the progress bar
+  if (command?.mayOpenGui) {
+    // A handoff may continue into the normal GUI start in this process.
+    applyGpuFlags();
+    registerScheme();
+  } else if (!command?.needsGpu) {
+    app.disableHardwareAcceleration();
+  }
+  app.on("window-all-closed", () => undefined); // a hidden worker window closing must not quit us
+  process.on("SIGTERM", () => { cancelAll(); app.exit(143); });
 
-  cleanCacheRoot();
-  const launchFiles = cliFiles(process.argv);
-  if (launchFiles.length) openInWindow(launchFiles);
-
-  void app.whenReady().then(() => {
-    registerProtocol();
-    registerIpc();
-    startLibrary();
-    const win = createWindow(() => { rendererReady = false; });
-    // Folders whose watcher failed (or that were missing) are rescanned when the user comes back.
-    win.on("focus", refreshIfStale);
-    setupDevCapture(win);
-    ipcMain.on("app:ready", () => {
-      rendererReady = true;
-      if (queued) pushSelection(queued.result);
-      queued = null;
-    });
-    buildMenu();
+  void app.whenReady().then(async () => {
+    const result = await runCli(parsed);
+    if (typeof result === "number") {
+      app.exit(result);
+      return;
+    }
+    // Handoff: the running instance gets the files, or this process becomes the GUI.
+    const files = existingVideoFiles(result.handoff);
+    if (!app.requestSingleInstanceLock({ files })) app.exit(0);
+    else startGui(files);
   });
+}
+
+const parsed = parseCli(process.argv, app.isPackaged);
+if (parsed.kind === "gui") {
+  applyGpuFlags();
+  registerScheme();
+  startGuiOrForward(existingVideoFiles(parsed.files));
+} else {
+  runCommand(parsed);
 }
