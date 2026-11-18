@@ -1,4 +1,4 @@
-import { BrowserWindow, session } from "electron";
+import { BrowserWindow, session, type WebContents } from "electron";
 import { join } from "node:path";
 import { devWindowPlacement } from "./devCapture";
 
@@ -8,11 +8,15 @@ export function getWindow(): BrowserWindow | null {
   return win && !win.isDestroyed() ? win : null;
 }
 
-export function createWindow(onClosed: () => void): BrowserWindow {
-  // Only fullscreen is granted; camera, mic and everything else stay denied.
+/** Every window's page: no new windows, no navigation away, and only fullscreen granted (camera, mic and the rest stay denied). */
+export function hardenContents(wc: WebContents): void {
   session.defaultSession.setPermissionRequestHandler((_wc, perm, cb) => cb(perm === "fullscreen"));
   session.defaultSession.setPermissionCheckHandler((_wc, perm) => perm === "fullscreen");
+  wc.setWindowOpenHandler(() => ({ action: "deny" }));
+  wc.on("will-navigate", (e) => e.preventDefault());
+}
 
+export function createWindow(onClosed: () => void): BrowserWindow {
   const placement = devWindowPlacement();
   win = new BrowserWindow({
     width: 1100, height: 680, minWidth: 480, minHeight: 320,
@@ -23,8 +27,7 @@ export function createWindow(onClosed: () => void): BrowserWindow {
       contextIsolation: true, nodeIntegration: false, sandbox: true,
     },
   });
-  win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
-  win.webContents.on("will-navigate", (e) => e.preventDefault());
+  hardenContents(win.webContents);
   win.on("closed", () => { win = null; onClosed(); });
   if (placement) {
     const w = win;

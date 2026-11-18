@@ -1,7 +1,7 @@
 import { build, context } from "esbuild";
 
 const options = {
-  entryPoints: { main: "electron/main.ts", preload: "electron/preload.ts" },
+  entryPoints: { main: "electron/main.ts", preload: "electron/preload.ts", exportPreload: "electron/exportPreload.ts" },
   outdir: "dist-electron",
   bundle: true,
   platform: "node",
