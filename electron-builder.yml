@@ -64,4 +64,8 @@ deb:
     - libatspi2.0-0
     - libuuid1
     - libsecret-1-0
+  # Setting recommends replaces electron-builder's default (libappindicator3-1), so it is repeated here.
+  recommends:
+    - libappindicator3-1
+    - yt-dlp
 artifactName: shader-video-player_${version}_${arch}.${ext}

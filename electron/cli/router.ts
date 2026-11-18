@@ -29,10 +29,10 @@ export interface CliCommand {
   /** May hand a file to the GUI, so the process keeps GPU access and the app scheme. */
   mayOpenGui?: boolean;
   /** Exit code, or `{ handoff }` to open these files in the GUI (a running instance, or this one). */
-  run(ctx: CliContext): Promise<number | { handoff: string[] }>;
+  run(ctx: CliContext): Promise<number | { handoff: string[]; registerDownloads?: boolean }>;
 }
 
-export type CliResult = number | { handoff: string[] };
+export type CliResult = number | { handoff: string[]; registerDownloads?: boolean };
 
 export const EXIT_OK = 0;
 export const EXIT_FAIL = 1;

@@ -42,8 +42,9 @@ function runCommand(parsed: Exclude<ParsedCli, { kind: "gui" }>): void {
     }
     // Handoff: the running instance gets the files, or this process becomes the GUI.
     const files = existingVideoFiles(result.handoff);
-    if (!app.requestSingleInstanceLock({ files })) app.exit(0);
-    else startGui(files);
+    const registerDownloads = result.registerDownloads === true;
+    if (!app.requestSingleInstanceLock({ files, registerDownloads })) app.exit(0);
+    else startGui(files, { registerDownloads });
   });
 }
 

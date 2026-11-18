@@ -12,9 +12,10 @@ import { openSelection, pushSelection } from "./selection";
 import { setPreventSleep } from "./powerSave";
 import { registerProtocol } from "./protocol";
 import { setupDevCapture } from "./devCapture";
-import { refreshIfStale, startLibrary, stopLibrary } from "./library/service";
+import { ensureLibraryFolder, refreshIfStale, startLibrary, stopLibrary } from "./library/service";
 import { createWindow, getWindow } from "./window";
 import { cancelAll } from "./jobs/registry";
+import { appVideosDir } from "./media/outputDir";
 import { parseCli } from "./cli/args";
 
 let rendererReady = false;
@@ -53,6 +54,15 @@ function handoffFiles(data: unknown): string[] | null {
   return existingVideoFiles(files as string[]);
 }
 
+/** A CLI download hands over with this flag so its folder is in the library (the CLI itself never touches it). */
+function wantsDownloadsFolder(data: unknown): boolean {
+  return typeof data === "object" && data !== null && (data as { registerDownloads?: unknown }).registerDownloads === true;
+}
+
+function registerDownloadsFolder(): void {
+  void appVideosDir().then(ensureLibraryFolder).catch(() => undefined);
+}
+
 export function shutdown(): void {
   stopLibrary(); // before killAll: stops watchers and the probe queue, and writes the metadata cache
   closeMedia();
@@ -63,12 +73,13 @@ export function shutdown(): void {
 }
 
 /** Normal start. The caller already holds the single-instance lock and applied the GPU flags. */
-export function startGui(launchFiles: string[]): void {
+export function startGui(launchFiles: string[], opts: { registerDownloads?: boolean } = {}): void {
   // open-file can fire before ready; it is queued until the renderer asks.
   app.on("open-file", (e, path) => { e.preventDefault(); openInWindow([path]); });
   app.on("second-instance", (_e, argv, _cwd, additionalData) => {
     const files = handoffFiles(additionalData) ?? cliFiles(argv);
     if (files.length) openInWindow(files);
+    if (wantsDownloadsFolder(additionalData)) registerDownloadsFolder();
   });
   app.on("before-quit", shutdown);
   app.on("window-all-closed", () => app.quit());
@@ -83,6 +94,7 @@ export function startGui(launchFiles: string[]): void {
     registerProtocol();
     registerIpc();
     startLibrary();
+    if (opts.registerDownloads) registerDownloadsFolder();
     const win = createWindow(() => { rendererReady = false; });
     // Folders whose watcher failed (or that were missing) are rescanned when the user comes back.
     win.on("focus", refreshIfStale);
