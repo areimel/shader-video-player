@@ -90,6 +90,11 @@ const openStateListeners: Array<(open: boolean) => void> = [];
 export function onOpenStateChanged(cb: (open: boolean) => void): void { openStateListeners.push(cb); }
 const notifyOpenState = () => { for (const l of openStateListeners) l(info !== null); };
 
+/** Changes on every open, restart and close: lets a caller tell whether the user acted since it last looked. */
+export function playbackGeneration(): number {
+  return generation;
+}
+
 export function currentVideoPath(): string | null {
   return info?.path ?? null;
 }

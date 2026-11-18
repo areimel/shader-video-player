@@ -2,12 +2,14 @@ import { ipcMain } from "electron";
 import type { Job } from "../jobs/job";
 import { ensureLibraryFolder } from "../library/service";
 import { appVideosDir } from "../media/outputDir";
-import { currentVideoPath } from "../playback";
+import { currentVideoPath, playbackGeneration } from "../playback";
 import { openSelection, pushSelection } from "../selection";
+import { shouldAutoOpen } from "./autoOpen";
 import { startDownload } from "./download";
 
-/** A finished download shows up in the library; it also starts playing when nothing is open. */
+/** A finished download shows up in the library; it also starts playing when nothing is open and the user has not opened anything since. */
 function afterDownload(job: Job): void {
+  const startGeneration = playbackGeneration();
   const off = job.onChange(() => {
     if (!job.finished) return;
     off();
@@ -15,7 +17,7 @@ function afterDownload(job: Job): void {
     if (job.state !== "done" || !path) return;
     void (async () => {
       await ensureLibraryFolder(await appVideosDir()).catch(() => undefined);
-      if (currentVideoPath() === null) pushSelection(openSelection([path]));
+      if (shouldAutoOpen(currentVideoPath(), startGeneration, playbackGeneration())) pushSelection(openSelection([path]));
     })();
   });
 }
