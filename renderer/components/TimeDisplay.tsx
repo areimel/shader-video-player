@@ -13,7 +13,8 @@ interface Props {
 export function TimeDisplay({ time, duration, remaining, onToggle }: Props) {
   const left = remaining ? `-${formatCounter(Math.max(0, duration - time))}` : formatCounter(time);
   return (
-    <button type="button" className="time-display" title={hint("toggleRemaining", IS_MAC)} onClick={onToggle}>
+    <button type="button" className="time-display" title={hint("toggleRemaining", IS_MAC)} onClick={onToggle}
+      aria-label={`${remaining ? "Remaining" : "Elapsed"} ${left} of ${formatCounter(duration)}`}>
       <span className="time-cur">{left}</span>
       <span className="time-total">{formatCounter(duration)}</span>
     </button>

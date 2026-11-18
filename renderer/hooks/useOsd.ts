@@ -14,7 +14,9 @@ export function useOsd(): { state: OsdState; show: ShowOsd } {
   const expiry = nextExpiry(state);
   useEffect(() => {
     if (expiry === null) return;
-    const t = setTimeout(() => dispatch({ type: "expire", now: Date.now() }), Math.max(0, expiry - Date.now()));
+    // A timer may fire a hair early; expiring at `expiry` at least means the slot always clears
+    // (an unchanged state would never re-arm this effect).
+    const t = setTimeout(() => dispatch({ type: "expire", now: Math.max(Date.now(), expiry) }), Math.max(0, expiry - Date.now()));
     return () => clearTimeout(t);
   }, [expiry]);
   return { state, show };

@@ -1,4 +1,4 @@
-/* Bottom band: height = rule 2 + pad 6 + seek 32 + gap 4 + row 32 + pad 8 = 84 (--controls-h in tokens.css). */
+/* Bottom band: height = rule 2 + pad 8 + seek 32 + gap 4 + row 32 + pad 8 = 86 (--controls-h in tokens.css). */
 .controls { position: absolute; left: 0; right: 0; bottom: 0; z-index: var(--z-chrome);
   padding: var(--sp-2) var(--sp-4) var(--sp-2); border-top: var(--osd-rule) solid var(--osd-ink);
   background: var(--osd-panel); transition: opacity var(--dur) var(--ease); }
@@ -15,7 +15,7 @@
 .dropdown-btn { width: auto; min-width: 32px; padding: 0 var(--sp-2); }
 .dropdown-text { font-family: var(--font-pixel); font-size: var(--px-sm); line-height: 1; text-transform: uppercase; min-width: 32px; }
 /* status + counter (overrides the generic .time-display in help.css) */
-.controls .vcr-status { margin: 0 var(--sp-2) 0 var(--sp-3); min-width: 40px; color: var(--osd-hi); }
+.controls .vcr-status { margin: 0 var(--sp-2) 0 var(--sp-3); min-width: 80px; color: var(--osd-hi); }
 .controls .time-display { display: inline-flex; align-items: baseline; gap: var(--sp-2); height: 32px; padding: 0 var(--sp-1);
   margin-left: 0; border-radius: 0; background: none; border: 0; cursor: pointer; font-family: var(--font-pixel); color: var(--osd-ink); }
 .controls .time-display:hover, .controls .time-display:focus-visible { background: var(--osd-hi); color: var(--osd-hi-ink); }

@@ -48,7 +48,7 @@ export function Controls({ plan, player: p, visible, fullscreen, subs, onAudio, 
           <IconButton icon="fwd10" label={hint("seekForward", mac)} onClick={() => onSeekStep(1)} />
           <IconButton icon={queue.loop === "one" ? "loopOne" : "loop"} label={loopLabel(queue.loop)} active={queue.loop !== "off"} onClick={queue.cycleLoop} />
           <VolumeControl volume={p.volume} muted={p.muted} onVolume={p.setVolume} onToggleMute={p.toggleMute} />
-          <span className="vcr-status vcr-text vcr-text-md">{p.paused ? "PAUSE" : "PLAY"}</span>
+          <span className="vcr-status vcr-text vcr-text-md" aria-hidden="true">{p.paused ? "PAUSE" : "PLAY"}</span>
           <TimeDisplay time={p.time} duration={p.duration} remaining={remaining} onToggle={onToggleRemaining} />
         </div>
         <div className="controls-group">
