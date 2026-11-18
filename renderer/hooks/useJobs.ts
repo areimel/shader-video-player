@@ -2,6 +2,7 @@ import { useCallback, useEffect, useReducer, useRef } from "react";
 import type { JobSnapshot } from "../../shared/jobs";
 import type { ToastKind } from "../types/player";
 import { friendlyError } from "../utils/format";
+import { setPendingStart } from "../utils/pendingStart";
 import { AUTO_DISMISS_MS, EMPTY_JOBS, jobsReducer } from "../utils/jobs";
 
 export interface Jobs {
@@ -41,7 +42,8 @@ export function useJobs(notify: (kind: ToastKind, msg: string) => void): Jobs {
   useEffect(() => () => timers.current.forEach((t) => clearTimeout(t.timer)), []);
 
   const open = useCallback((id: string, startSec?: number) => {
-    window.player.openJobResult(id, startSec).then(() => dismiss(id), (e) => notify("error", friendlyError(e)));
+    setPendingStart(startSec); // the plan push can arrive before the invoke resolves
+    window.player.openJobResult(id, startSec).then(() => dismiss(id), (e) => { setPendingStart(undefined); notify("error", friendlyError(e)); });
   }, [dismiss, notify]);
 
   return {

@@ -100,7 +100,7 @@ export function App() {
       {dragging && <div className="drop-overlay">{plan ? "Drop to play (hold Shift to add to queue)" : "Drop to play, or drop a folder to add it"}</div>}
       {helpOpen && <ShortcutHelp onClose={() => setHelpOpen(false)} />}
       {features.overlays.map((o, i) => <Fragment key={i}>{o}</Fragment>)}
-      <ToastHost items={items} onDismiss={dismissToast}><JobHost jobs={jobs} /></ToastHost>
+      <ToastHost items={items} onDismiss={dismissToast}><JobHost jobs={jobs} resumeAt={() => player.time} /></ToastHost>
     </div>
   );
 }

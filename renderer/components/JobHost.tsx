@@ -7,7 +7,7 @@ import { ProgressBar } from "./common/ProgressBar";
 
 const KIND_LABEL = { download: "Download", convert: "Convert", export: "Export" } as const;
 
-function JobCard({ job, jobs }: { job: JobSnapshot; jobs: Jobs }) {
+function JobCard({ job, jobs, resumeAt }: { job: JobSnapshot; jobs: Jobs; resumeAt?: () => number }) {
   const { state, progress, actions } = job;
   const eta = formatEta(progress.etaSec);
   return (
@@ -30,7 +30,7 @@ function JobCard({ job, jobs }: { job: JobSnapshot; jobs: Jobs }) {
       {state === "done" && (
         <div className="job-actions">
           <span className="job-label">{progress.label || "Done"}</span>
-          {actions.includes("open") && <Button variant="quiet" onClick={() => jobs.open(job.id)}>Open</Button>}
+          {actions.includes("open") && <Button variant="quiet" onClick={() => jobs.open(job.id, job.kind === "convert" ? resumeAt?.() : undefined)}>Open</Button>}
           {actions.includes("reveal") && <Button variant="quiet" onClick={() => jobs.reveal(job.id)}>Show in folder</Button>}
         </div>
       )}
@@ -41,6 +41,7 @@ function JobCard({ job, jobs }: { job: JobSnapshot; jobs: Jobs }) {
 }
 
 /** Job cards; render them inside `ToastHost` so they stack above the toasts. */
-export function JobHost({ jobs }: { jobs: Jobs }) {
-  return <>{jobs.jobs.map((j) => <JobCard key={j.id} job={j} jobs={jobs} />)}</>;
+/** `resumeAt` is the playhead: a finished convert reopens there. */
+export function JobHost({ jobs, resumeAt }: { jobs: Jobs; resumeAt?: () => number }) {
+  return <>{jobs.jobs.map((j) => <JobCard key={j.id} job={j} jobs={jobs} resumeAt={resumeAt} />)}</>;
 }

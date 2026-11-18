@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { isSuperseded } from "../../shared/superseded";
 import type { OpenResult, PlaybackPlan, QueueItem, ToastKind } from "../types/player";
 import { friendlyError, mediaErrorText } from "../utils/format";
+import { takePendingStart } from "../utils/pendingStart";
 import { loadPosition } from "../utils/storage";
 
 type Notify = (kind: ToastKind, msg: string) => void;
@@ -24,7 +25,7 @@ export function usePlaybackSource(notify: Notify, onQueue: OnQueue) {
   /** Applies saved position and the canPlayType check before showing a plan; false if superseded meanwhile. */
   const accept = useCallback(async (incoming: PlaybackPlan, id: number): Promise<boolean> => {
     let next = incoming;
-    const saved = loadPosition(next.info);
+    const saved = takePendingStart() ?? loadPosition(next.info);
     const canNative = next.mode === "native" && document.createElement("video").canPlayType(next.mime) !== "";
     if (next.mode === "native" && !canNative) next = await window.player.forceTranscode(saved);
     else if (next.mode === "transcode" && saved > 0) next = await window.player.restart(saved, 0);
