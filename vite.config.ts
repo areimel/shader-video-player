@@ -24,6 +24,8 @@ export default defineConfig({
   ],
   build: {
     outDir: resolve(__dirname, "dist-renderer"), emptyOutDir: true,
+    // Second page: the hidden export window (served at /export.html in dev too).
+    rolldownOptions: { input: { main: resolve(__dirname, "renderer/index.html"), export: resolve(__dirname, "renderer/export.html") } },
     // The CSP has no data: font-src: never inline font files (Press Start 2P's subsets are under the 4 KB default).
     assetsInlineLimit: (file) => (/\.(woff2?|ttf|otf)$/.test(file) ? false : undefined),
   },

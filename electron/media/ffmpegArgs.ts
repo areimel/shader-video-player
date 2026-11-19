@@ -43,19 +43,31 @@ export function isRemuxOnly(info: MediaInfo): boolean {
   return canRemuxVideo(info);
 }
 
-function videoArgs(info: MediaInfo, encoder: VideoEncoder): string[] {
+export type VideoProfile = "live" | "file";
+
+/** `-progress` to stdout for long jobs (convert, export); runFfmpeg inserts it. */
+export const PROGRESS_ARGS = ["-progress", "pipe:1", "-nostats"];
+
+/**
+ * "live" is the streaming transcode (fast, keyframes bound the fragments); "file" is a finished
+ * output (better quality, normal GOP). Both copy the video when the source is already h264 yuv420p.
+ */
+export function videoArgs(info: MediaInfo, encoder: VideoEncoder, profile: VideoProfile): string[] {
   if (isRemuxOnly(info)) return ["-c:v", "copy"];
+  const pixFmt = ["-pix_fmt", "yuv420p"];
+  if (profile === "file") return ["-c:v", encoder, "-preset", "medium", "-crf", "20", ...pixFmt];
   // A keyframe every 2 s bounds each fragment (frag_keyframe), so a restart after a seek has playable
   // data in ~0.4 s instead of waiting out x264's default 250-frame GOP (~2 s measured on 1080p AV1/VP9).
-  const common = ["-pix_fmt", "yuv420p", "-b:v", String(targetBitrate(info)), "-force_key_frames", `expr:gte(t,n_forced*${KEYFRAME_SEC})`];
+  const common = [...pixFmt, "-b:v", String(targetBitrate(info)), "-force_key_frames", `expr:gte(t,n_forced*${KEYFRAME_SEC})`];
   // A hardware encoder gets its own branch here, before the libx264 default.
   return ["-c:v", encoder, "-preset", "veryfast", "-tune", "zerolatency", ...common];
 }
 
-function audioArgs(info: MediaInfo, ordinal: number): string[] {
+/** Maps audio track `ordinal` of input `input` (default 0). */
+export function audioArgs(info: MediaInfo, ordinal: number, input = 0): string[] {
   const track = info.audioTracks.find((t) => t.ordinal === ordinal);
   if (!track) return ["-an"];
-  const map = ["-map", `0:a:${ordinal}`];
+  const map = ["-map", `${input}:a:${ordinal}`];
   if (track.codec === "aac" && track.channels <= 2) return [...map, "-c:a", "copy"];
   return [...map, "-c:a", "aac", "-b:a", "192k", "-ac", "2"];
 }
@@ -66,7 +78,7 @@ export function buildStreamArgs(info: MediaInfo, o: StreamOptions): string[] {
   return [
     "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
     ...INPUT_PROTOCOLS, ...seek, "-i", o.input,
-    "-map", "0:v:0", ...videoArgs(info, o.encoder),
+    "-map", "0:v:0", ...videoArgs(info, o.encoder, "live"),
     ...audioArgs(info, o.audioOrdinal),
     "-sn", "-dn",
     "-movflags", "frag_keyframe+empty_moov+default_base_moof", "-frag_duration", String(FRAGMENT_MAX_US),

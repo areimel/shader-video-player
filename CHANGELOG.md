@@ -1,10 +1,21 @@
 # Changelog
 
 ## Unreleased
+- Control bar in a 90s VCR on-screen-display look
+- Seek bar is a tape position bar with BEGIN and END
+- Volume is a segmented bar, with MUTE shown when muted
+- Pixel-style icons on the controls
+- Speed, audio, subtitle and queue menus and toasts in the VCR style
+- On-screen display for play/pause, seeking, volume, speed, repeat and subtitle delay
 - Fix "corrupt file" errors when seeking
 - YouTube .mkv downloads play directly
 - Faster seeking in converted videos
 - Playback errors say what failed
+- Open a YouTube or other video link (Ctrl+U) and play it
+- Convert files that stutter when seeking into smooth-playing MP4
+- Export a video with the effect baked in (Ctrl+E)
+- Command line: `download`, `convert`, `export` with a progress bar and time left, and `update`
+- Help → Check for updates
 
 ## 0.3.0 - 2026-11-16
 - First public beta

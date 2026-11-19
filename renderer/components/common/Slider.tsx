@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { clamp } from "../../utils/format";
 import { snapToStep } from "../../utils/step";
 
@@ -14,13 +14,17 @@ interface Props {
   buffered?: number;
   label: string;
   className?: string;
+  /** Look variant (scopes styles in slider.css): "tape" = VCR position bar, "segments" = block bar. Default: plain. */
+  variant?: "tape" | "segments";
+  /** Extra decoration drawn inside the slider (markers, labels, blocks). */
+  children?: ReactNode;
   onChange: (v: number) => void;
   tooltip?: (v: number) => string;
   /** Human-readable value for assistive tech (aria-valuetext). */
   valueText?: (v: number) => string;
 }
 
-export function Slider({ value, min = 0, max, step, keyStep, buffered = 0, label, className = "", onChange, tooltip, valueText }: Props) {
+export function Slider({ value, min = 0, max, step, keyStep, buffered = 0, label, className = "", variant, children, onChange, tooltip, valueText }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<{ x: number; v: number } | null>(null);
   const dragging = useRef(false);
@@ -48,7 +52,7 @@ export function Slider({ value, min = 0, max, step, keyStep, buffered = 0, label
 
   return (
     <div
-      ref={ref} className={`slider ${className}`} role="slider" aria-label={label}
+      ref={ref} className={`slider${variant ? ` slider-${variant}` : ""} ${className}`} role="slider" aria-label={label}
       aria-valuemin={min} aria-valuemax={max} aria-valuenow={value} aria-valuetext={valueText?.(value)}
       tabIndex={0} onKeyDown={onKeyDown}
       onPointerDown={(e) => { dragging.current = true; e.currentTarget.setPointerCapture(e.pointerId); onChange(valueAt(e).v); }}
@@ -63,6 +67,7 @@ export function Slider({ value, min = 0, max, step, keyStep, buffered = 0, label
         <div className="slider-fill" style={{ width: `${pct(value)}%` }} />
       </div>
       <div className="slider-thumb" style={{ left: `${pct(value)}%` }} />
+      {children}
       {tooltip && hover && (
         <div className="slider-tooltip" style={{ left: hover.x }}>{tooltip(hover.v)}</div>
       )}

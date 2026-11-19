@@ -9,3 +9,7 @@ export function ffmpegPath(): string {
 export function ffprobePath(): string {
   return process.env.SVP_FFPROBE_PATH || "ffprobe";
 }
+
+export function ytDlpPath(): string {
+  return process.env.SVP_YTDLP_PATH || "yt-dlp";
+}

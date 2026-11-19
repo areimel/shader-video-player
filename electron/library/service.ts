@@ -2,7 +2,7 @@ import { realpath, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { LibraryMetaPatch, LibrarySnapshot } from "../../shared/types";
 import { readJson, writeJson } from "../jsonStore";
-import { folderConflict } from "./folders";
+import { folderConflict, folderCoverage } from "./folders";
 import { isFolderId, newFolderId } from "./ids";
 import { cachedMeta, onMetaResults, scheduleMeta, setLivePaths, startMeta, stopMeta } from "./metaQueue";
 import { MAX_FOLDERS, folderFile, healFolders } from "./shape";
@@ -117,8 +117,12 @@ function rescanAll(): void {
   for (const f of folders) void scanFolder(f);
 }
 
+/** True once startLibrary ran: the CLI never starts the library, so GUI-only helpers can tell. */
+let started = false;
+
 export function startLibrary(): void {
   if (stopped) return;
+  started = true;
   folders = readJson(STORE, healFolders).map((p) => newFolder(p.id, p.path, null));
   startMeta();
   onMetaResults((results) => {
@@ -186,6 +190,23 @@ export async function addFolders(paths: readonly string[]): Promise<LibrarySnaps
   changed();
   for (const f of added) void scanFolder(f);
   return snapshot();
+}
+
+/**
+ * GUI only (never call from CLI code): registers `path` as a library folder when it is free, e.g. after a
+ * download lands in the app's videos folder. Does nothing when the library is not running, the folder is
+ * missing, already covered by or containing a registered folder, or the folder limit is reached.
+ */
+export async function ensureLibraryFolder(path: string): Promise<void> {
+  if (!started || stopped) return;
+  let real: string;
+  try {
+    real = await realpath(path);
+    if (!(await stat(real)).isDirectory()) return;
+  } catch { return; }
+  if (stopped || folders.length >= MAX_FOLDERS) return;
+  if (folderCoverage(folders.map((f) => f.real ?? f.path), real) !== "free") return;
+  try { await addFolders([path]); } catch { /* refused (limit, root, race): the library just stays as it is */ }
 }
 
 export function removeFolder(id: unknown): LibrarySnapshot {

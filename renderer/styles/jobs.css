@@ -1,0 +1,26 @@
+/* Progress bar: VCR blocks like the volume bar (slider.css), flexible width. */
+.progress { display: flex; gap: 2px; align-items: center; height: 16px; }
+.progress-block { flex: 1; min-width: 0; height: 2px; background: var(--osd-ink); opacity: 0.7; }
+.progress-block.on { height: 12px; opacity: 1; box-shadow: var(--osd-fringe); }
+.progress.is-indeterminate .progress-block { animation: progress-scan 1.2s steps(2, jump-none) infinite; }
+@keyframes progress-scan { 0%, 100% { height: 2px; opacity: 0.7; } 50% { height: 12px; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .progress.is-indeterminate .progress-block { animation: none; } }
+
+/* Job cards: siblings of the toasts (solid blue VCR box, pixel text), stacked above them. */
+.job-card { pointer-events: auto; display: flex; flex-direction: column; gap: var(--px-sm); width: 320px; max-width: 100%;
+  padding: var(--px-sm); border-radius: 0; background: var(--osd-panel-solid); color: var(--osd-ink);
+  border: var(--osd-rule) solid var(--osd-ink); font-family: var(--font-pixel); font-size: var(--px-sm); line-height: var(--px-md);
+  text-transform: uppercase; text-shadow: var(--osd-fringe); }
+.job-failed { border-color: var(--osd-alert); }
+.job-head { display: flex; align-items: center; gap: var(--px-sm); }
+.job-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: normal; }
+.job-meta, .job-actions { display: flex; align-items: center; gap: var(--px-sm); }
+.job-meta { justify-content: space-between; }
+.job-label, .job-eta { color: var(--osd-dim); font-variant-numeric: tabular-nums; }
+.job-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.job-error { color: var(--osd-ink); padding-left: var(--px-md); position: relative; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.job-error::before { content: ""; position: absolute; left: 0; top: 4px; width: var(--px-sm); height: var(--px-sm); background: var(--osd-alert); }
+/* The close button is outlined like the card's text buttons (shared look in vcr.css); only its size is local. */
+.job-head .icon-btn { width: 24px; height: 24px; flex: none; }
+.job-card .btn { padding: 0 var(--sp-1); }

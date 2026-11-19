@@ -9,10 +9,15 @@ interface Props {
 }
 
 export function SeekBar({ time, duration, buffered, onSeek }: Props) {
+  const pct = duration > 0 ? Math.min(100, Math.max(0, (time / duration) * 100)) : 0;
   return (
     <Slider
-      className="seekbar" label="Seek" value={time} max={duration} buffered={buffered}
+      className="seekbar" variant="tape" label="Seek" value={time} max={duration} buffered={buffered}
       keyStep={5} onChange={onSeek} tooltip={formatTime} valueText={formatTime}
-    />
+    >
+      <span className="tape-marker" aria-hidden="true" style={{ left: `${pct}%` }}>▼</span>
+      <span className="tape-label tape-begin" aria-hidden="true">BEGIN</span>
+      <span className="tape-label tape-end" aria-hidden="true">END</span>
+    </Slider>
   );
 }

@@ -1,23 +1,13 @@
-import { commonChunks } from "./commonChunks";
 import { createGlContext, type GlContext } from "./context";
+import { createPipeline } from "./effectPipeline";
+import { effectUniforms, type RunnableEffect } from "./effectUniforms";
 import type { FrameInput } from "./frameInput";
 import { PassGraph } from "./passGraph";
-import { checkFloatRequirement } from "./passPlan";
-import type { PassSpec, Size } from "./passTypes";
-import { clampDelta, hasActiveAnimation, mediaPosition, shouldRender, type AnimatedParam } from "./renderPolicy";
+import type { Size } from "./passTypes";
+import { clampDelta, hasActiveAnimation, mediaPosition, shouldRender } from "./renderPolicy";
 import { VideoSource } from "./videoSource";
 
-/** The part of EffectDefinition the renderer needs (structural, so gl/ does not depend on effects/). */
-export interface RunnableEffect {
-  params: readonly AnimatedParam[];
-  passes: readonly PassSpec[];
-  chunks: Readonly<Record<string, string>>;
-  requiresFloat?: boolean;
-  derive(values: Record<string, number>, env: { viewport: Size; video: Size }): Record<string, number>;
-}
-
-const prefixed = (prefix: string, values: Record<string, number>): Record<string, number> =>
-  Object.fromEntries(Object.entries(values).map(([k, v]) => [k.startsWith(prefix) ? k : prefix + k, v]));
+export type { RunnableEffect };
 
 /**
  * Drives one effect on one canvas/input pair: dirty tracking, rAF scheduling, feedback resets and
@@ -65,11 +55,12 @@ export class EffectRenderer {
     this.teardown();
     if (this.disposed || this.ctx.isLost()) return;
     try {
-      const { gl, caps } = this.ctx;
-      checkFloatRequirement(this.effect.requiresFloat, caps.floatTargets);
-      this.source = new VideoSource(gl, this.input, () => this.invalidate(), (e) => this.fail(e));
-      this.graph = new PassGraph(gl, caps, this.effect.passes, { ...commonChunks, ...this.effect.chunks }, this.source);
-      this.source.start();
+      const { source, graph } = createPipeline(this.ctx, this.effect, this.input, {
+        onFrame: () => this.invalidate(),
+        onError: (e) => this.fail(e),
+      });
+      this.source = source;
+      this.graph = graph;
       this.source.uploadNow();
       this.refreshUniforms();
       this.invalidate();
@@ -141,10 +132,7 @@ export class EffectRenderer {
 
   private refreshUniforms(): void {
     const env = { viewport: this.viewport, video: this.source?.size ?? this.viewport };
-    this.uniformValues = {
-      ...prefixed("p_", this.userValues),
-      ...prefixed("d_", this.effect.derive(this.userValues, env)),
-    };
+    this.uniformValues = effectUniforms(this.effect, this.userValues, env.viewport, env.video);
     try {
       this.graph?.resize(this.viewport, env.video, this.uniformValues); // allocates targets, which can throw
     } catch (e) {

@@ -1,5 +1,5 @@
 import { hint } from "../../shared/commands";
-import { formatRemaining, formatTime } from "../utils/format";
+import { formatCounter } from "../utils/osd";
 import { IS_MAC } from "../utils/platform";
 
 interface Props {
@@ -11,10 +11,12 @@ interface Props {
 }
 
 export function TimeDisplay({ time, duration, remaining, onToggle }: Props) {
-  const left = remaining ? formatRemaining(time, duration) : formatTime(time);
+  const left = remaining ? `-${formatCounter(Math.max(0, duration - time))}` : formatCounter(time);
   return (
-    <button type="button" className="time-display" title={hint("toggleRemaining", IS_MAC)} onClick={onToggle}>
-      {left} / {formatTime(duration)}
+    <button type="button" className="time-display" title={hint("toggleRemaining", IS_MAC)} onClick={onToggle}
+      aria-label={`${remaining ? "Remaining" : "Elapsed"} ${left} of ${formatCounter(duration)}`}>
+      <span className="time-cur">{left}</span>
+      <span className="time-total">{formatCounter(duration)}</span>
     </button>
   );
 }

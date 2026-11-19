@@ -1,12 +1,16 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { PlayerStage } from "./components/PlayerStage";
 import { ShortcutHelp } from "./components/ShortcutHelp";
 import { HomeScreen } from "./components/home/HomeScreen";
 import { ToastHost, useToasts } from "./components/common/Toast";
 import { useAppCommands } from "./hooks/useAppCommands";
 import { useEffectSettings } from "./hooks/useEffectSettings";
+import { JobHost } from "./components/JobHost";
+import { useFeatureCommands } from "./hooks/useFeatureCommands";
+import { useJobs } from "./hooks/useJobs";
 import { useFullscreen } from "./hooks/useFullscreen";
 import { useIdleControls } from "./hooks/useIdleControls";
+import { useOsd, useOsdControls } from "./hooks/useOsd";
 import { useLibrary } from "./hooks/useLibrary";
 import { usePanels } from "./hooks/usePanels";
 import { usePlayQueue } from "./hooks/usePlayQueue";
@@ -21,7 +25,7 @@ import { togglePip } from "./utils/pip";
 import { partitionDrop } from "./utils/dropItems";
 
 export function App() {
-  const { items, push } = useToasts();
+  const { items, push, dismiss: dismissToast } = useToasts();
   const videoRef = useRef<HTMLVideoElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const { plan, initialTime, loading, openDialog, openRecent, openDropped, openLibraryItem, restartAt, onVideoError, close, queue } = usePlayQueue(videoRef, push);
@@ -39,12 +43,16 @@ export function App() {
   const fs = useFullscreen(stageRef);
   // The end screen keeps the controls up so the seek bar stays reachable.
   const visible = useIdleControls(!!plan && !player.paused && !panels.showEffects && !queue.ended);
+  const osd = useOsd();
+  const osdControls = useOsdControls(player, queue, osd.show);
   const subs = useSubtitles(plan, useCallback((m: string) => push("error", m), [push]));
   const captureRef = useRef<(() => Promise<Blob>) | null>(null);
   const screenshot = useScreenshot({ videoRef, captureRef, plan, timeSec: player.time, notify: push });
+  const jobs = useJobs(push);
+  const features = useFeatureCommands({ notify: push, plan, player, videoRef, fx, jobs });
   const { commands, goHome } = useAppCommands({
-    screenshot, toggleRemaining, toggleShortcuts, videoRef, plan, player, fs, fx, subs, queue, panels, notify: push, closeMedia: close, openDialog: () => void openDialog(),
-    addFolder: library.addFolder,
+    showOsd: osd.show, screenshot, toggleRemaining, toggleShortcuts, videoRef, plan, player, fs, fx, subs, queue, panels, notify: push, closeMedia: close, openDialog: () => void openDialog(),
+    addFolder: library.addFolder, feature: features.commands,
   });
   usePlayerShortcuts(true, commands);
   useMenuCommands(commands);
@@ -83,8 +91,8 @@ export function App() {
       {plan && <div className="drag-region" />}
       {plan ? (
         <PlayerStage
-          videoRef={videoRef} captureRef={captureRef} plan={plan} initialTime={initialTime} visible={visible} player={player} fullscreen={fs}
-          subs={subs} fx={fx} queue={queue} panels={panels} notify={push} onHome={goHome} onVideoError={onVideoError}
+          videoRef={videoRef} captureRef={captureRef} plan={plan} initialTime={initialTime} visible={visible} player={osdControls.player} fullscreen={fs}
+          subs={subs} fx={fx} queue={osdControls.queue} osd={osd.state} panels={panels} notify={push} onHome={goHome} onSeekStep={(dir) => (dir < 0 ? commands.seekBack : commands.seekForward)?.()} onVideoError={onVideoError}
           onAudio={(o) => restartAt(player.time, o)} onPip={() => togglePip(videoRef.current, push)}
           remaining={remaining} onToggleRemaining={toggleRemaining}
         />
@@ -94,7 +102,8 @@ export function App() {
       {loading && <div className="loading" role="status" aria-label="Loading"><div className="spinner" /></div>}
       {dragging && <div className="drop-overlay">{plan ? "Drop to play (hold Shift to add to queue)" : "Drop to play, or drop a folder to add it"}</div>}
       {helpOpen && <ShortcutHelp onClose={() => setHelpOpen(false)} />}
-      <ToastHost items={items} />
+      {features.overlays.map((o, i) => <Fragment key={i}>{o}</Fragment>)}
+      <ToastHost items={items} onDismiss={dismissToast}><JobHost jobs={jobs} resumeAt={() => player.time} /></ToastHost>
     </div>
   );
 }

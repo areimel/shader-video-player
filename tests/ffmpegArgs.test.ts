@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ENCODER_FALLBACKS, buildStreamArgs, buildSubtitleArgs, streamStartSec, targetBitrate } from "../electron/media/ffmpegArgs";
+import { ENCODER_FALLBACKS, PROGRESS_ARGS, audioArgs, buildStreamArgs, videoArgs, buildSubtitleArgs, streamStartSec, targetBitrate } from "../electron/media/ffmpegArgs";
 import { makeInfo } from "./fixtures";
 
 const base = { input: "/v/a.mkv", output: "/tmp/o.mp4", startSec: 0, audioOrdinal: 0 };
@@ -87,5 +87,38 @@ describe("streamStartSec", () => {
     expect(streamStartSec(2, 2)).toBe(0);
     expect(streamStartSec(50, 0)).toBe(50);
     expect(streamStartSec(-1, 20)).toBe(0);
+  });
+});
+
+describe("videoArgs", () => {
+  const hevc = makeInfo({ videoCodec: "hevc" });
+  it("live keeps the streaming flags", () => {
+    const a = videoArgs(hevc, "libx264", "live").join(" ");
+    expect(a).toContain("-preset veryfast -tune zerolatency");
+    expect(a).toContain("-force_key_frames");
+  });
+  it("file uses crf, no zerolatency, no forced keyframes", () => {
+    const a = videoArgs(hevc, "libx264", "file").join(" ");
+    expect(a).toContain("-preset medium -crf 20");
+    expect(a).not.toContain("zerolatency");
+    expect(a).not.toContain("-force_key_frames");
+  });
+  it("copies h264 in both profiles", () => {
+    expect(videoArgs(makeInfo(), "libx264", "live")).toEqual(["-c:v", "copy"]);
+    expect(videoArgs(makeInfo(), "libx264", "file")).toEqual(["-c:v", "copy"]);
+  });
+});
+
+describe("audioArgs", () => {
+  it("maps from the given input", () => {
+    expect(audioArgs(makeInfo(), 0)).toContain("0:a:0");
+    expect(audioArgs(makeInfo(), 0, 1)).toContain("1:a:0");
+    expect(audioArgs(makeInfo(), 5)).toEqual(["-an"]);
+  });
+});
+
+describe("PROGRESS_ARGS", () => {
+  it("writes machine-readable progress to stdout", () => {
+    expect(PROGRESS_ARGS).toEqual(["-progress", "pipe:1", "-nostats"]);
   });
 });
